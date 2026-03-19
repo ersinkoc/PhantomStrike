@@ -136,6 +136,14 @@ func (h *Handler) handleSendMessage(w http.ResponseWriter, r *http.Request) {
 // It looks up the conversation context, builds chat history, calls the LLM, optionally
 // executes tool calls, saves the assistant response, and broadcasts it via WebSocket.
 func (h *Handler) processConversationMessage(convID, userMsgID uuid.UUID, userContent string) {
+	defer func() {
+		if r := recover(); r != nil {
+			slog.Error("PANIC in processConversationMessage", "error", r, "conversation_id", convID)
+		}
+	}()
+
+	slog.Info("AI processing started", "conversation_id", convID, "user_msg", userContent[:min(len(userContent), 100)])
+
 	// Use a background context since the HTTP request context may already be cancelled
 	ctx := context.Background()
 
@@ -213,11 +221,17 @@ analyze results, and provide recommendations. Be precise, thorough, and security
 		return
 	}
 
-	// Build available tools list from registry so LLM knows what it can call
+	// Build available tools list — limit to core tools to avoid overloading local LLMs.
+	coreTools := map[string]bool{
+		"nmap": true, "nuclei": true, "httpx": true, "amass": true,
+		"gobuster": true, "testssl": true, "hydra": true, "subfinder": true,
+		"naabu": true, "feroxbuster": true, "nikto": true, "sqlmap": true,
+		"ffuf": true, "dirsearch": true, "wpscan": true,
+	}
 	var tools []provider.Tool
 	if h.registry != nil {
 		for _, def := range h.registry.List() {
-			if !def.Enabled {
+			if !def.Enabled || !coreTools[def.Name] {
 				continue
 			}
 			properties := make(map[string]any)

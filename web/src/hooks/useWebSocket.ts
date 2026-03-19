@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 
-const WS_BASE = import.meta.env.VITE_WS_URL || 'ws://localhost:8080';
+// Use current page host for WebSocket — works with both Vite proxy and production
+const WS_BASE = import.meta.env.VITE_WS_URL || `ws://${window.location.host}`;
 
 interface WSMessage {
   type: string;
