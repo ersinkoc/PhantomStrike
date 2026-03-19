@@ -130,7 +130,11 @@ config.local.yml
 
 # Storage directories
 /storage/
-/data/
+/data/*
+!/data/.gitkeep
+!/data/catalog/
+/data/catalog/*
+!/data/catalog/.gitkeep
 /artifacts/
 /uploads/
 /reports/

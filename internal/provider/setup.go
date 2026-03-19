@@ -1,10 +1,13 @@
 package provider
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"os"
 	"strings"
+
+	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/ersinkoc/phantomstrike/internal/config"
 )
@@ -191,4 +194,183 @@ func (r *Router) RegisterProviderFromConfig(name string, pc config.ProviderConfi
 
 	slog.Info("registered provider dynamically", "name", name, "type", providerType)
 	return nil
+}
+
+// SetupRouterFromDB creates a provider router configured from database entries.
+// It loads enabled+configured providers from ai_providers, creates the appropriate
+// Provider instances, queries ai_preferences for agent overrides, and builds the
+// fallback chain based on priority ordering. Environment variables and the static
+// config are used as fallbacks for providers not yet in the database.
+func SetupRouterFromDB(ctx context.Context, pool *pgxpool.Pool, cfgProviders config.ProvidersConfig) *Router {
+	// Start with config-based defaults for the fallback chain and default name.
+	router := NewRouter(cfgProviders.Default, cfgProviders.FallbackChain)
+
+	// 1. Query enabled + configured providers from the database, ordered by priority.
+	rows, err := pool.Query(ctx,
+		`SELECT id, api_key, api_base_url, sdk_type, is_local
+		 FROM ai_providers
+		 WHERE is_enabled = true AND is_configured = true
+		 ORDER BY priority ASC`)
+	if err != nil {
+		slog.Warn("failed to query DB providers, falling back to config", "error", err)
+		return SetupRouter(cfgProviders)
+	}
+	defer rows.Close()
+
+	var dbFallback []string
+
+	for rows.Next() {
+		var (
+			id, apiKey, apiBaseURL, sdkType string
+			isLocal                         bool
+		)
+		if err := rows.Scan(&id, &apiKey, &apiBaseURL, &sdkType, &isLocal); err != nil {
+			slog.Warn("failed to scan DB provider row", "error", err)
+			continue
+		}
+
+		// If no API key in DB, try the corresponding env var
+		if apiKey == "" && !isLocal {
+			envKey := strings.ToUpper(id) + "_API_KEY"
+			apiKey = os.Getenv(envKey)
+			if apiKey == "" {
+				slog.Debug("skipping DB provider, no API key", "id", id)
+				continue
+			}
+		}
+
+		// Pick a default model for this provider from the DB
+		var defaultModel string
+		_ = pool.QueryRow(ctx,
+			`SELECT id FROM ai_models WHERE provider_id = $1 AND is_enabled = true
+			 ORDER BY context_window DESC LIMIT 1`, id,
+		).Scan(&defaultModel)
+
+		// Create the appropriate provider instance
+		var p Provider
+		switch sdkType {
+		case "anthropic":
+			p = NewAnthropicProvider(apiKey, defaultModel, 8192)
+		case "openai":
+			p = NewOpenAIProvider(apiKey, apiBaseURL, defaultModel, 4096)
+		case "openai_compatible":
+			if apiBaseURL == "" {
+				if preset, ok := OpenAICompatiblePresets[id]; ok {
+					apiBaseURL = preset.DefaultBaseURL
+				}
+			}
+			p = NewOpenAIProvider(apiKey, apiBaseURL, defaultModel, 4096)
+		case "ollama":
+			if apiBaseURL == "" {
+				apiBaseURL = "http://localhost:11434"
+			}
+			p = NewOllamaProvider(apiBaseURL, defaultModel)
+		default:
+			// Treat unknown SDK types as OpenAI-compatible
+			p = NewOpenAIProvider(apiKey, apiBaseURL, defaultModel, 4096)
+		}
+
+		router.Register(id, p)
+		dbFallback = append(dbFallback, id)
+		slog.Info("registered DB provider", "id", id, "sdk_type", sdkType, "model", defaultModel)
+	}
+
+	// 2. Also register providers from config/env that aren't in DB yet (existing behavior).
+	if _, ok := router.Get("anthropic"); !ok && cfgProviders.Anthropic.APIKey != "" {
+		p := NewAnthropicProvider(cfgProviders.Anthropic.APIKey, cfgProviders.Anthropic.Model, cfgProviders.Anthropic.MaxTokens)
+		router.Register("anthropic", p)
+		slog.Info("registered config provider", "name", "anthropic")
+	}
+	if _, ok := router.Get("openai"); !ok && cfgProviders.OpenAI.APIKey != "" {
+		p := NewOpenAIProvider(cfgProviders.OpenAI.APIKey, cfgProviders.OpenAI.BaseURL, cfgProviders.OpenAI.Model, cfgProviders.OpenAI.MaxTokens)
+		router.Register("openai", p)
+		slog.Info("registered config provider", "name", "openai")
+	}
+	if _, ok := router.Get("ollama"); !ok && cfgProviders.Ollama.BaseURL != "" {
+		p := NewOllamaProvider(cfgProviders.Ollama.BaseURL, cfgProviders.Ollama.Model)
+		router.Register("ollama", p)
+		slog.Info("registered config provider", "name", "ollama")
+	}
+	if _, ok := router.Get("groq"); !ok && cfgProviders.Groq.APIKey != "" {
+		p := NewGroqProvider(cfgProviders.Groq.APIKey, cfgProviders.Groq.Model)
+		router.Register("groq", p)
+		slog.Info("registered config provider", "name", "groq")
+	}
+	if _, ok := router.Get("azure"); !ok && cfgProviders.Azure.APIKey != "" && cfgProviders.Azure.BaseURL != "" {
+		p := NewOpenAIProvider(cfgProviders.Azure.APIKey, cfgProviders.Azure.BaseURL, cfgProviders.Azure.Model, cfgProviders.Azure.MaxTokens)
+		router.Register("azure", p)
+		slog.Info("registered config provider", "name", "azure")
+	}
+
+	// 3. Use DB-derived fallback chain if we loaded providers from DB.
+	if len(dbFallback) > 0 {
+		router.SetFallbackChain(dbFallback)
+	}
+
+	// 4. Query ai_preferences for agent overrides.
+	prefRows, err := pool.Query(ctx,
+		`SELECT key, provider_id FROM ai_preferences`)
+	if err == nil {
+		defer prefRows.Close()
+		for prefRows.Next() {
+			var key, providerID string
+			if err := prefRows.Scan(&key, &providerID); err != nil {
+				continue
+			}
+			// Map preference keys to agent overrides
+			// "default" preference updates the router's default
+			if key == "default" {
+				if p, ok := router.Get(providerID); ok {
+					router.Register("default", p)
+				}
+			} else {
+				// planner, executor, reviewer, etc.
+				if p, ok := router.Get(providerID); ok {
+					router.Register(key, p)
+					slog.Debug("DB agent preference override", "role", key, "provider", providerID)
+				}
+			}
+		}
+	}
+
+	// 5. Also apply config-based agent overrides as a fallback.
+	for agentType, providerName := range cfgProviders.AgentOverrides {
+		// Only apply if not already set from DB preferences
+		if _, ok := router.Get(agentType); !ok {
+			if p, ok := router.Get(providerName); ok {
+				router.Register(agentType, p)
+				slog.Debug("config agent override", "agent", agentType, "provider", providerName)
+			}
+		}
+	}
+
+	return router
+}
+
+// AutoSyncModels checks if models have been synced and triggers a sync if not.
+// This should be called after DB connection and migration on first startup.
+func AutoSyncModels(ctx context.Context, pool *pgxpool.Pool) {
+	var synced string
+	err := pool.QueryRow(ctx,
+		`SELECT value::text FROM setup_state WHERE key = 'models_last_synced'`,
+	).Scan(&synced)
+
+	// If the row doesn't exist, the query errors, or the value is "null", sync is needed.
+	needsSync := err != nil || synced == "" || synced == "null" || synced == `"null"`
+
+	if !needsSync {
+		slog.Info("models already synced, skipping auto-sync", "last_synced", synced)
+		return
+	}
+
+	slog.Info("first startup detected, syncing models from models.dev...")
+	providerCount, modelCount, err := SyncFromModelsDev(ctx, pool)
+	if err != nil {
+		slog.Warn("auto-sync from models.dev failed", "error", err)
+		return
+	}
+	slog.Info("auto-sync completed",
+		"providers", providerCount,
+		"models", modelCount,
+	)
 }

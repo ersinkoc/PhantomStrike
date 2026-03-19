@@ -2,7 +2,7 @@ import { NavLink } from "react-router-dom";
 import {
   LayoutDashboard, Crosshair, Shield, ShieldCheck, Wrench,
   BookOpen, FileText, Settings, LogOut, Bug,
-  Terminal, UserCog, Zap, Clock, Store, Sun, Moon
+  Terminal, UserCog, Zap, Clock, Store, Sun, Moon, Cpu, ClipboardCheck
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/auth";
@@ -18,8 +18,10 @@ const navItems = [
   { to: "/skills", icon: Zap, label: "Skills" },
   { to: "/knowledge", icon: BookOpen, label: "Knowledge" },
   { to: "/reports", icon: FileText, label: "Reports" },
+  { to: "/compliance", icon: ClipboardCheck, label: "Compliance" },
   { to: "/scheduler", icon: Clock, label: "Scheduler" },
   { to: "/marketplace", icon: Store, label: "Marketplace" },
+  { to: "/providers", icon: Cpu, label: "AI Providers" },
   { to: "/settings", icon: Settings, label: "Settings" },
   { to: "/admin", icon: ShieldCheck, label: "Admin" },
 ];

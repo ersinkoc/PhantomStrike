@@ -79,6 +79,12 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
 	mux.Handle("GET /api/v1/missions/{id}/tools", protected(http.HandlerFunc(h.handleGetMissionTools)))
 	mux.Handle("GET /api/v1/missions/{id}/reports", protected(http.HandlerFunc(h.handleGetMissionReports)))
 
+	// Mission Templates
+	mux.Handle("GET /api/v1/missions/templates", protected(http.HandlerFunc(h.handleListMissionTemplates)))
+	mux.Handle("POST /api/v1/missions/templates", protected(http.HandlerFunc(h.handleCreateMissionTemplate)))
+	mux.Handle("DELETE /api/v1/missions/templates/{id}", protected(http.HandlerFunc(h.handleDeleteMissionTemplate)))
+	mux.Handle("POST /api/v1/missions/from-template", protected(http.HandlerFunc(h.handleCreateMissionFromTemplate)))
+
 	// Conversations
 	mux.Handle("GET /api/v1/missions/{id}/conversations", protected(http.HandlerFunc(h.handleListConversations)))
 	mux.Handle("GET /api/v1/conversations/{id}/messages", protected(http.HandlerFunc(h.handleGetMessages)))
@@ -137,6 +143,9 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
 
 	// Notifications
 	mux.Handle("GET /api/v1/notifications/channels", protected(http.HandlerFunc(h.handleListNotificationChannels)))
+	mux.Handle("POST /api/v1/notifications/channels", protected(http.HandlerFunc(h.handleAddNotificationChannel)))
+	mux.Handle("PUT /api/v1/notifications/channels/{id}", protected(http.HandlerFunc(h.handleUpdateNotificationChannel)))
+	mux.Handle("DELETE /api/v1/notifications/channels/{id}", protected(http.HandlerFunc(h.handleDeleteNotificationChannel)))
 	mux.Handle("POST /api/v1/notifications/channels/{type}/test", protected(http.HandlerFunc(h.handleTestNotificationChannel)))
 
 	// Compliance
@@ -146,6 +155,24 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
 	// Admin
 	mux.Handle("GET /api/v1/admin/users", protected(http.HandlerFunc(h.handleListUsers)))
 	mux.Handle("GET /api/v1/admin/audit", protected(http.HandlerFunc(h.handleGetAuditLog)))
+
+	// AI Providers (protected)
+	mux.Handle("GET /api/v1/providers", protected(http.HandlerFunc(h.handleListProviders)))
+	mux.Handle("GET /api/v1/providers/{id}", protected(http.HandlerFunc(h.handleGetProvider)))
+	mux.Handle("PUT /api/v1/providers/{id}", protected(http.HandlerFunc(h.handleUpdateProvider)))
+	mux.Handle("POST /api/v1/providers/{id}/test", protected(http.HandlerFunc(h.handleTestProvider)))
+	mux.Handle("POST /api/v1/providers/sync", protected(http.HandlerFunc(h.handleSyncProviders)))
+
+	// AI Models (protected)
+	mux.Handle("GET /api/v1/models", protected(http.HandlerFunc(h.handleListModels)))
+
+	// AI Preferences (protected)
+	mux.Handle("GET /api/v1/preferences", protected(http.HandlerFunc(h.handleGetPreferences)))
+	mux.Handle("PUT /api/v1/preferences", protected(http.HandlerFunc(h.handleUpdatePreferences)))
+
+	// Setup (public — no auth required for first-time setup)
+	mux.HandleFunc("GET /api/v1/setup/status", h.handleSetupStatus)
+	mux.HandleFunc("POST /api/v1/setup/complete", h.handleSetupComplete)
 }
 
 // --- Response helpers ---

@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"net/smtp"
+	"strings"
 	"time"
 )
 
@@ -150,6 +152,98 @@ func (c *ConsoleSender) Send(ctx context.Context, event Event) error {
 		"mission_id", event.MissionID,
 	)
 	return nil
+}
+
+// --- EmailSender ---
+
+// EmailSender sends notifications via SMTP email.
+type EmailSender struct {
+	smtpHost   string
+	smtpPort   int
+	from       string
+	username   string
+	password   string
+	recipients []string
+}
+
+// NewEmailSender creates a new email sender.
+func NewEmailSender(host string, port int, from, username, password string, recipients []string) *EmailSender {
+	return &EmailSender{
+		smtpHost:   host,
+		smtpPort:   port,
+		from:       from,
+		username:   username,
+		password:   password,
+		recipients: recipients,
+	}
+}
+
+func (e *EmailSender) Type() string { return "email" }
+
+func (e *EmailSender) Send(ctx context.Context, event Event) error {
+	if len(e.recipients) == 0 {
+		return fmt.Errorf("no recipients configured for email sender")
+	}
+
+	subject := fmt.Sprintf("[PhantomStrike] %s: %s", event.Type, event.Title)
+
+	var body strings.Builder
+	body.WriteString(fmt.Sprintf("Subject: %s\r\n", subject))
+	body.WriteString(fmt.Sprintf("From: %s\r\n", e.from))
+	body.WriteString(fmt.Sprintf("To: %s\r\n", strings.Join(e.recipients, ", ")))
+	body.WriteString("MIME-Version: 1.0\r\n")
+	body.WriteString("Content-Type: text/plain; charset=UTF-8\r\n")
+	body.WriteString("\r\n")
+	body.WriteString(event.Message)
+	body.WriteString("\r\n\r\n")
+	body.WriteString(fmt.Sprintf("Severity: %s\r\n", event.Severity))
+	if event.MissionID != "" {
+		body.WriteString(fmt.Sprintf("Mission: %s\r\n", event.MissionID))
+	}
+	body.WriteString("\r\n---\r\nPhantomStrike Security Platform")
+
+	addr := fmt.Sprintf("%s:%d", e.smtpHost, e.smtpPort)
+	auth := smtp.PlainAuth("", e.username, e.password, e.smtpHost)
+
+	if err := smtp.SendMail(addr, auth, e.from, e.recipients, []byte(body.String())); err != nil {
+		return fmt.Errorf("sending email: %w", err)
+	}
+
+	return nil
+}
+
+// --- TelegramSender ---
+
+// TelegramSender sends notifications via the Telegram Bot API.
+type TelegramSender struct {
+	botToken string
+	chatID   string
+}
+
+// NewTelegramSender creates a new Telegram sender.
+func NewTelegramSender(botToken, chatID string) *TelegramSender {
+	return &TelegramSender{
+		botToken: botToken,
+		chatID:   chatID,
+	}
+}
+
+func (t *TelegramSender) Type() string { return "telegram" }
+
+func (t *TelegramSender) Send(ctx context.Context, event Event) error {
+	text := fmt.Sprintf("<b>%s</b>\n%s\nSeverity: %s", event.Title, event.Message, event.Severity)
+	if event.MissionID != "" {
+		text += fmt.Sprintf("\nMission: %s", event.MissionID)
+	}
+
+	url := fmt.Sprintf("https://api.telegram.org/bot%s/sendMessage", t.botToken)
+	payload := map[string]any{
+		"chat_id":    t.chatID,
+		"text":       text,
+		"parse_mode": "HTML",
+	}
+
+	return postJSON(ctx, url, payload)
 }
 
 // --- postJSON helper ---

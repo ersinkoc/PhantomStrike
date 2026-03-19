@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Settings, Bot, Server, Pencil, Save, X, Bell, Send } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Settings, Cpu, Server, Pencil, Save, X, Bell, Send, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
 
@@ -13,6 +14,7 @@ interface NotificationChannel {
 
 export default function SettingsPage() {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [editing, setEditing] = useState(false);
 
   const { data } = useQuery({
@@ -122,37 +124,23 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      {/* Providers */}
+      {/* AI Providers */}
       <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-card)]">
         <div className="flex items-center gap-2 border-b border-[var(--color-border)] px-5 py-3">
-          <Bot className="h-4 w-4 text-[var(--color-primary)]" />
-          <h2 className="font-semibold">LLM Providers</h2>
+          <Cpu className="h-4 w-4 text-[var(--color-primary)]" />
+          <h2 className="font-semibold">AI Providers</h2>
         </div>
-        {editing && (
-          <div className="border-b border-[var(--color-border)] px-5 py-3">
-            <label className="flex items-center justify-between">
-              <span className="text-sm text-[var(--color-muted-foreground)]">Default Provider</span>
-              <input
-                type="text"
-                value={providerDefault}
-                onChange={(e) => setProviderDefault(e.target.value)}
-                className="w-48 rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-1.5 text-sm focus:border-[var(--color-primary)] focus:outline-none"
-              />
-            </label>
-          </div>
-        )}
-        <div className="divide-y divide-[var(--color-border)]">
-          {data?.providers && Object.entries(data.providers).filter(([k]) => !["default", "fallback_chain"].includes(k)).map(([name, config]: [string, any]) => (
-            <div key={name} className="flex items-center justify-between px-5 py-3">
-              <div>
-                <p className="font-medium capitalize">{name}</p>
-                <p className="text-xs text-[var(--color-muted-foreground)]">Model: {config.model || "N/A"}</p>
-              </div>
-              <span className={`rounded px-2 py-0.5 text-xs ${config.configured ? "bg-emerald-500/10 text-emerald-400" : "bg-zinc-500/10 text-zinc-400"}`}>
-                {config.configured ? "Configured" : config.base_url ? "Local" : "Not configured"}
-              </span>
-            </div>
-          ))}
+        <div className="px-5 py-4">
+          <p className="text-sm text-[var(--color-muted-foreground)]">
+            Manage your AI providers, models, and agent configuration from the dedicated providers page.
+          </p>
+          <button
+            onClick={() => navigate("/providers")}
+            className="mt-3 flex items-center gap-1.5 rounded-lg bg-[var(--color-primary)] px-4 py-2 text-sm font-semibold text-[var(--color-primary-foreground)] transition-opacity hover:opacity-90"
+          >
+            Manage AI Providers
+            <ArrowRight className="h-4 w-4" />
+          </button>
         </div>
       </div>
 
@@ -161,6 +149,12 @@ export default function SettingsPage() {
         <div className="flex items-center gap-2 border-b border-[var(--color-border)] px-5 py-3">
           <Settings className="h-4 w-4 text-[var(--color-primary)]" />
           <h2 className="font-semibold">Agent Configuration</h2>
+          <span className="ml-auto text-xs text-[var(--color-muted-foreground)]">
+            Also configurable in{" "}
+            <button onClick={() => navigate("/providers")} className="text-[var(--color-primary)] hover:underline">
+              AI Providers
+            </button>
+          </span>
         </div>
         <div className="space-y-3 p-5">
           {editing ? (

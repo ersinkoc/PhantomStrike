@@ -23,6 +23,40 @@ type missionRequest struct {
 	Phases      []string `json:"phases"`
 }
 
+type missionTemplateRequest struct {
+	Name        string   `json:"name"`
+	Description string   `json:"description"`
+	Target      any      `json:"target"`
+	Mode        string   `json:"mode"`
+	Depth       string   `json:"depth"`
+	Phases      []string `json:"phases"`
+	Role        string   `json:"role"`
+	Config      any      `json:"config"`
+	IsBuiltin   bool     `json:"is_builtin"`
+}
+
+type missionTemplateResponse struct {
+	ID          uuid.UUID `json:"id"`
+	Name        string    `json:"name"`
+	Description string    `json:"description,omitempty"`
+	Target      any       `json:"target"`
+	Mode        string    `json:"mode"`
+	Depth       string    `json:"depth"`
+	Phases      []string  `json:"phases,omitempty"`
+	Role        string    `json:"role,omitempty"`
+	Config      any       `json:"config,omitempty"`
+	IsBuiltin   bool      `json:"is_builtin"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+}
+
+type createMissionFromTemplateRequest struct {
+	TemplateID  uuid.UUID `json:"template_id"`
+	Name        string    `json:"name"`
+	Description string    `json:"description"`
+	Target      any       `json:"target"` // optional override
+}
+
 type missionResponse struct {
 	ID           uuid.UUID  `json:"id"`
 	Name         string     `json:"name"`
@@ -483,4 +517,165 @@ func (h *Handler) handleGetMissionVulns(w http.ResponseWriter, r *http.Request) 
 	}
 
 	writeJSON(w, http.StatusOK, map[string]any{"vulnerabilities": vulns})
+}
+
+// --- Mission Templates ---
+
+func (h *Handler) handleListMissionTemplates(w http.ResponseWriter, r *http.Request) {
+	rows, err := h.db.Pool.Query(r.Context(),
+		`SELECT id, name, description, target, mode, depth, phases, role, config, is_builtin, created_at, updated_at
+		 FROM mission_templates ORDER BY name`)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to list mission templates")
+		return
+	}
+	defer rows.Close()
+
+	var templates []missionTemplateResponse
+	for rows.Next() {
+		var t missionTemplateResponse
+		if err := rows.Scan(&t.ID, &t.Name, &t.Description, &t.Target, &t.Mode, &t.Depth, &t.Phases, &t.Role, &t.Config, &t.IsBuiltin, &t.CreatedAt, &t.UpdatedAt); err != nil {
+			continue
+		}
+		templates = append(templates, t)
+	}
+
+	if templates == nil {
+		templates = []missionTemplateResponse{}
+	}
+
+	writeJSON(w, http.StatusOK, map[string]any{
+		"templates": templates,
+		"total":     len(templates),
+	})
+}
+
+func (h *Handler) handleCreateMissionTemplate(w http.ResponseWriter, r *http.Request) {
+	claims := auth.GetClaims(r.Context())
+	if claims == nil {
+		writeError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+	var req missionTemplateRequest
+	if err := decodeJSON(r, &req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	if req.Name == "" {
+		writeError(w, http.StatusBadRequest, "name is required")
+		return
+	}
+	if req.Mode == "" {
+		req.Mode = "autonomous"
+	}
+	if req.Depth == "" {
+		req.Depth = "standard"
+	}
+	if req.Target == nil {
+		req.Target = map[string]any{}
+	}
+	if req.Phases == nil {
+		req.Phases = []string{}
+	}
+
+	var id uuid.UUID
+	err := h.db.Pool.QueryRow(r.Context(),
+		`INSERT INTO mission_templates (name, description, target, mode, depth, phases, role, config, is_builtin, created_by)
+		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id`,
+		req.Name, req.Description, req.Target, req.Mode, req.Depth, req.Phases, req.Role, req.Config, req.IsBuiltin, claims.UserID,
+	).Scan(&id)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to create mission template")
+		return
+	}
+
+	writeJSON(w, http.StatusCreated, map[string]any{
+		"id":     id,
+		"status": "created",
+	})
+}
+
+func (h *Handler) handleDeleteMissionTemplate(w http.ResponseWriter, r *http.Request) {
+	id, err := parseUUID(r.PathValue("id"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid template ID")
+		return
+	}
+
+	tag, err := h.db.Pool.Exec(r.Context(),
+		`DELETE FROM mission_templates WHERE id = $1`, id)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to delete mission template")
+		return
+	}
+
+	if tag.RowsAffected() == 0 {
+		writeError(w, http.StatusNotFound, "mission template not found")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]string{"status": "deleted"})
+}
+
+func (h *Handler) handleCreateMissionFromTemplate(w http.ResponseWriter, r *http.Request) {
+	claims := auth.GetClaims(r.Context())
+	if claims == nil {
+		writeError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+	var req createMissionFromTemplateRequest
+	if err := decodeJSON(r, &req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	if req.TemplateID == uuid.Nil {
+		writeError(w, http.StatusBadRequest, "template_id is required")
+		return
+	}
+
+	// Load template
+	var tmpl missionTemplateResponse
+	err := h.db.Pool.QueryRow(r.Context(),
+		`SELECT id, name, description, target, mode, depth, phases, role, config, is_builtin, created_at, updated_at
+		 FROM mission_templates WHERE id = $1`, req.TemplateID,
+	).Scan(&tmpl.ID, &tmpl.Name, &tmpl.Description, &tmpl.Target, &tmpl.Mode, &tmpl.Depth, &tmpl.Phases, &tmpl.Role, &tmpl.Config, &tmpl.IsBuiltin, &tmpl.CreatedAt, &tmpl.UpdatedAt)
+	if err != nil {
+		writeError(w, http.StatusNotFound, "mission template not found")
+		return
+	}
+
+	// Use template values, allow overrides
+	name := tmpl.Name
+	if req.Name != "" {
+		name = req.Name
+	}
+	description := tmpl.Description
+	if req.Description != "" {
+		description = req.Description
+	}
+	target := tmpl.Target
+	if req.Target != nil {
+		target = req.Target
+	}
+
+	var id uuid.UUID
+	err = h.db.Pool.QueryRow(r.Context(),
+		`INSERT INTO missions (name, description, mode, depth, target, config, phases, created_by)
+		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
+		name, description, tmpl.Mode, tmpl.Depth, target, tmpl.Config, tmpl.Phases, claims.UserID,
+	).Scan(&id)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to create mission from template")
+		return
+	}
+
+	writeJSON(w, http.StatusCreated, map[string]any{
+		"id":          id,
+		"template_id": req.TemplateID,
+		"status":      "created",
+	})
 }

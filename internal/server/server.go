@@ -37,8 +37,11 @@ func New(cfg *config.Config, db *store.DB) (*Server, error) {
 	// Initialize auth service
 	authSvc := auth.NewService(cfg.Auth, db)
 
-	// Initialize provider router
-	router := provider.SetupRouter(cfg.Providers)
+	// Auto-sync models from models.dev on first startup
+	provider.AutoSyncModels(context.Background(), db.Pool)
+
+	// Initialize provider router (DB-aware, with config/env fallback)
+	router := provider.SetupRouterFromDB(context.Background(), db.Pool, cfg.Providers)
 
 	// Initialize tool registry
 	registry := tool.NewRegistry(cfg.Tools.Dir, db)

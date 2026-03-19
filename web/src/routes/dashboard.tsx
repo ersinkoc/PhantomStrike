@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { Crosshair, Bug, Shield, Activity } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Crosshair, Bug, Shield, Activity, Plus, RefreshCw, FileText, ShieldCheck } from "lucide-react";
 import { api } from "@/lib/api";
 import { cn, severityColor } from "@/lib/utils";
 import type { Mission, VulnStats } from "@/types";
@@ -19,6 +20,13 @@ function StatCard({ icon: Icon, label, value, color }: { icon: typeof Crosshair;
     </div>
   );
 }
+
+const quickActions = [
+  { to: "/missions", icon: Plus, label: "New Mission", color: "bg-[var(--color-primary)]/10 text-[var(--color-primary)] border-[var(--color-primary)]/30" },
+  { to: "/providers", icon: RefreshCw, label: "Sync Providers", color: "bg-blue-500/10 text-blue-400 border-blue-500/30" },
+  { to: "/compliance", icon: FileText, label: "Generate Report", color: "bg-emerald-500/10 text-emerald-400 border-emerald-500/30" },
+  { to: "/admin", icon: ShieldCheck, label: "View Audit Log", color: "bg-amber-500/10 text-amber-400 border-amber-500/30" },
+];
 
 export default function Dashboard() {
   const { data: missions } = useQuery({
@@ -47,6 +55,26 @@ export default function Dashboard() {
         <StatCard icon={Bug} label="Total Findings" value={stats.total} color="bg-[var(--color-destructive)]/10 text-[var(--color-destructive)]" />
         <StatCard icon={Shield} label="Critical" value={stats.critical} color="bg-[#FF3366]/10 text-[#FF3366]" />
         <StatCard icon={Activity} label="High" value={stats.high} color="bg-orange-500/10 text-orange-500" />
+      </div>
+
+      {/* Quick Actions */}
+      <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-card)] p-5">
+        <h2 className="mb-4 font-semibold">Quick Actions</h2>
+        <div className="grid grid-cols-4 gap-3">
+          {quickActions.map((action) => (
+            <Link
+              key={action.to}
+              to={action.to}
+              className={cn(
+                "flex items-center gap-3 rounded-lg border p-4 transition-colors hover:opacity-80",
+                action.color
+              )}
+            >
+              <action.icon className="h-5 w-5" />
+              <span className="text-sm font-medium">{action.label}</span>
+            </Link>
+          ))}
+        </div>
       </div>
 
       {/* Recent Missions */}
