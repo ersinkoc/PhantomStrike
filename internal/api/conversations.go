@@ -205,12 +205,31 @@ func (h *Handler) processConversationMessage(convID, userMsgID uuid.UUID, userCo
 
 	// 4. Build system prompt
 	systemPrompt := fmt.Sprintf(
-		`You are PhantomStrike, an AI-powered security assessment assistant.
-Mission: %s
-Description: %s
+		`You are PhantomStrike, an autonomous AI security testing assistant.
 
-Help the user with their security testing tasks. You can use available tools to run scans,
-analyze results, and provide recommendations. Be precise, thorough, and security-focused.`,
+MISSION: %s
+DESCRIPTION: %s
+
+YOUR ROLE:
+- Run security tools to scan the target
+- Analyze tool output to identify vulnerabilities
+- Chain tools together (e.g. nmap → nuclei → report)
+- Record findings using record_vulnerability tool
+- Provide clear analysis and recommendations
+
+WORKFLOW:
+1. Start with reconnaissance (nmap, httpx, subfinder)
+2. Based on findings, run deeper scans (nuclei, gobuster, testssl)
+3. Analyze results and identify vulnerabilities
+4. Record each vulnerability found
+5. Provide a summary with risk assessment
+
+RULES:
+- Always explain what you're doing and why
+- After each tool completes, analyze the output before running the next tool
+- Record any vulnerability found using the record_vulnerability tool
+- Be thorough but efficient — don't run unnecessary scans
+- Provide remediation advice for each finding`,
 		missionName, missionDesc,
 	)
 
@@ -221,6 +240,24 @@ analyze results, and provide recommendations. Be precise, thorough, and security
 		return
 	}
 
+	// Built-in tool: record_vulnerability — AI calls this to save findings to DB
+	recordVulnTool := provider.Tool{
+		Name:        "record_vulnerability",
+		Description: "Record a discovered vulnerability to the database. Call this for EVERY vulnerability you find.",
+		InputSchema: map[string]any{
+			"type": "object",
+			"properties": map[string]any{
+				"title":       map[string]any{"type": "string", "description": "Vulnerability title"},
+				"description": map[string]any{"type": "string", "description": "Detailed description"},
+				"severity":    map[string]any{"type": "string", "enum": []string{"critical", "high", "medium", "low", "info"}, "description": "Severity level"},
+				"target":      map[string]any{"type": "string", "description": "Affected host/URL"},
+				"evidence":    map[string]any{"type": "string", "description": "Evidence from tool output"},
+				"remediation": map[string]any{"type": "string", "description": "Recommended fix"},
+			},
+			"required": []string{"title", "severity", "target"},
+		},
+	}
+
 	// Build available tools list — limit to core tools to avoid overloading local LLMs.
 	coreTools := map[string]bool{
 		"nmap": true, "nuclei": true, "httpx": true, "amass": true,
@@ -228,7 +265,7 @@ analyze results, and provide recommendations. Be precise, thorough, and security
 		"naabu": true, "feroxbuster": true, "nikto": true, "sqlmap": true,
 		"ffuf": true, "dirsearch": true, "wpscan": true,
 	}
-	var tools []provider.Tool
+	tools := []provider.Tool{recordVulnTool}
 	if h.registry != nil {
 		for _, def := range h.registry.List() {
 			if !def.Enabled || !coreTools[def.Name] {
@@ -261,66 +298,175 @@ analyze results, and provide recommendations. Be precise, thorough, and security
 		}
 	}
 
-	resp, err := providerRouter.ChatCompletion(ctx, provider.ChatRequest{
-		System:    systemPrompt,
-		Messages:  messages,
-		Tools:     tools,
-		MaxTokens: 4096,
-	})
-	if err != nil {
-		slog.Error("AI chat completion failed", "conversation_id", convID, "error", err)
-		return
-	}
+	// 6. ReAct Loop — AI reasons, calls tools, analyzes results, decides next step
+	const maxIterations = 10
+	executor := h.swarm.GetExecutor()
 
-	// 6. If there are tool calls, execute them
-	assistantContent := resp.Content
-	if len(resp.ToolCalls) > 0 {
-		executor := h.swarm.GetExecutor()
-		if executor != nil {
-			for _, tc := range resp.ToolCalls {
-				result, err := executor.Execute(ctx, tc.Name, tc.Input, &missionID, &convID)
-				if err != nil {
-					assistantContent += fmt.Sprintf("\n\n[Tool %s failed: %v]", tc.Name, err)
-				} else {
-					assistantContent += fmt.Sprintf("\n\n[Tool %s result (exit %d):\n%s]", tc.Name, result.ExitCode, result.Stdout)
-				}
+	for iteration := 0; iteration < maxIterations; iteration++ {
+		slog.Info("AI iteration", "conversation_id", convID, "iteration", iteration+1)
+
+		resp, err := providerRouter.ChatCompletion(ctx, provider.ChatRequest{
+			System:    systemPrompt,
+			Messages:  messages,
+			Tools:     tools,
+			MaxTokens: 4096,
+		})
+		if err != nil {
+			slog.Error("AI chat completion failed", "conversation_id", convID, "iteration", iteration+1, "error", err)
+			h.saveAndBroadcast(ctx, convID, missionID, fmt.Sprintf("[AI Error: %v]", err), nil)
+			return
+		}
+
+		// Save assistant response (reasoning/text)
+		if resp.Content != "" {
+			h.saveAndBroadcast(ctx, convID, missionID, resp.Content, &resp.Model)
+
+			// Broadcast thinking event via WebSocket
+			if h.hub != nil {
+				h.hub.Broadcast(missionID, WSEvent{Type: "thinking", Data: map[string]any{
+					"agent": "executor", "thought": resp.Content, "iteration": iteration + 1,
+				}})
 			}
 		}
+
+		// No tool calls = AI is done
+		if len(resp.ToolCalls) == 0 {
+			slog.Info("AI processing complete — no more tool calls",
+				"conversation_id", convID, "iterations", iteration+1)
+			return
+		}
+
+		// Execute each tool call
+		if executor == nil {
+			h.saveAndBroadcast(ctx, convID, missionID, "[Error: Tool executor not available]", nil)
+			return
+		}
+
+		// Save assistant message with tool_calls
+		toolCallsJSON, _ := json.Marshal(resp.ToolCalls)
+		h.db.Pool.Exec(ctx,
+			`INSERT INTO messages (conversation_id, role, content, tool_calls, model)
+			 VALUES ($1, 'assistant', $2, $3, $4)`,
+			convID, resp.Content, toolCallsJSON, resp.Model)
+
+		for _, tc := range resp.ToolCalls {
+			slog.Info("executing tool", "tool", tc.Name, "params", tc.Input, "conversation_id", convID)
+
+			// Handle built-in record_vulnerability tool
+			if tc.Name == "record_vulnerability" {
+				vulnID := uuid.New()
+				title, _ := tc.Input["title"].(string)
+				desc, _ := tc.Input["description"].(string)
+				severity, _ := tc.Input["severity"].(string)
+				target, _ := tc.Input["target"].(string)
+				evidence, _ := tc.Input["evidence"].(string)
+				remediation, _ := tc.Input["remediation"].(string)
+
+				_, err := h.db.Pool.Exec(ctx,
+					`INSERT INTO vulnerabilities (id, mission_id, conversation_id, title, description, severity, target, evidence, remediation, found_by, status)
+					 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'ai-agent', 'open')`,
+					vulnID, missionID, convID, title, desc, severity, target, evidence, remediation)
+				toolOutput := fmt.Sprintf("Vulnerability recorded: %s [%s] on %s (ID: %s)", title, severity, target, vulnID)
+				if err != nil {
+					toolOutput = fmt.Sprintf("Failed to record vulnerability: %v", err)
+				} else {
+					slog.Info("vulnerability recorded by AI", "id", vulnID, "title", title, "severity", severity)
+					if h.hub != nil {
+						h.hub.Broadcast(missionID, WSEvent{Type: "vuln_found", Data: map[string]any{
+							"id": vulnID, "title": title, "severity": severity, "target": target,
+						}})
+					}
+				}
+				messages = append(messages, provider.Message{Role: "assistant", Content: resp.Content, ToolCalls: resp.ToolCalls})
+				messages = append(messages, provider.Message{Role: "tool", Content: toolOutput, ToolCallID: tc.ID, Name: tc.Name})
+				h.db.Pool.Exec(ctx, `INSERT INTO messages (conversation_id, role, content, tool_call_id) VALUES ($1, 'tool', $2, $3)`,
+					convID, toolOutput, tc.ID)
+				continue
+			}
+
+			// Broadcast tool_start
+			if h.hub != nil {
+				h.hub.Broadcast(missionID, WSEvent{Type: "tool_start", Data: map[string]any{
+					"tool": tc.Name, "params": tc.Input,
+				}})
+			}
+
+			result, execErr := executor.Execute(ctx, tc.Name, tc.Input, &missionID, &convID)
+
+			var toolOutput string
+			if execErr != nil {
+				toolOutput = fmt.Sprintf("Error: %v", execErr)
+				if h.hub != nil {
+					h.hub.Broadcast(missionID, WSEvent{Type: "tool_error", Data: map[string]any{
+						"tool": tc.Name, "error": execErr.Error(),
+					}})
+				}
+			} else {
+				toolOutput = result.Stdout
+				if result.Stderr != "" {
+					toolOutput += "\n[STDERR]: " + result.Stderr
+				}
+				// Truncate long output
+				if len(toolOutput) > 10000 {
+					toolOutput = toolOutput[:10000] + "\n... [truncated]"
+				}
+				if h.hub != nil {
+					h.hub.Broadcast(missionID, WSEvent{Type: "tool_complete", Data: map[string]any{
+						"tool": tc.Name, "exit_code": result.ExitCode,
+						"duration_ms": result.Duration.Milliseconds(),
+					}})
+				}
+				slog.Info("tool completed", "tool", tc.Name, "exit_code", result.ExitCode,
+					"duration_ms", result.Duration.Milliseconds(), "output_len", len(toolOutput))
+			}
+
+			// Add tool result to message history for AI to analyze
+			messages = append(messages, provider.Message{
+				Role:       "assistant",
+				Content:    resp.Content,
+				ToolCalls:  resp.ToolCalls,
+			})
+			messages = append(messages, provider.Message{
+				Role:       "tool",
+				Content:    toolOutput,
+				ToolCallID: tc.ID,
+				Name:       tc.Name,
+			})
+
+			// Save tool result as message in DB
+			h.db.Pool.Exec(ctx,
+				`INSERT INTO messages (conversation_id, role, content, tool_call_id)
+				 VALUES ($1, 'tool', $2, $3)`,
+				convID, toolOutput, tc.ID)
+		}
+
+		// Continue loop — AI will see tool results and decide next step
 	}
 
-	// 7. Save the assistant response as a new message
-	var assistantMsgID uuid.UUID
-	var modelName, providerName *string
-	if resp.Model != "" {
-		modelName = &resp.Model
-	}
-	err = h.db.Pool.QueryRow(ctx,
-		`INSERT INTO messages (conversation_id, role, content, model, provider)
-		 VALUES ($1, 'assistant', $2, $3, $4) RETURNING id`,
-		convID, assistantContent, modelName, providerName,
-	).Scan(&assistantMsgID)
+	slog.Warn("AI hit max iterations", "conversation_id", convID, "max", maxIterations)
+	h.saveAndBroadcast(ctx, convID, missionID, "[Maximum iterations reached. Analysis may be incomplete.]", nil)
+}
+
+// saveAndBroadcast saves an assistant message and broadcasts it via WebSocket.
+func (h *Handler) saveAndBroadcast(ctx context.Context, convID, missionID uuid.UUID, content string, model *string) {
+	var msgID uuid.UUID
+	err := h.db.Pool.QueryRow(ctx,
+		`INSERT INTO messages (conversation_id, role, content, model)
+		 VALUES ($1, 'assistant', $2, $3) RETURNING id`,
+		convID, content, model,
+	).Scan(&msgID)
 	if err != nil {
-		slog.Error("failed to save assistant message", "conversation_id", convID, "error", err)
+		slog.Error("failed to save assistant message", "error", err)
 		return
 	}
 
-	// 8. Broadcast the response via WebSocket hub
 	if h.hub != nil {
 		h.hub.Broadcast(missionID, WSEvent{
 			Type: "message",
 			Data: map[string]any{
-				"id":              assistantMsgID,
-				"conversation_id": convID,
-				"role":            "assistant",
-				"content":         assistantContent,
-				"model":           modelName,
+				"id": msgID, "conversation_id": convID,
+				"role": "assistant", "content": content, "model": model,
 			},
 		})
 	}
-
-	slog.Info("AI response saved and broadcast",
-		"conversation_id", convID,
-		"assistant_msg_id", assistantMsgID,
-		"content_length", len(assistantContent),
-	)
 }
