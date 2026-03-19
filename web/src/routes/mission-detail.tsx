@@ -283,7 +283,7 @@ function getLogColor(type: LogEntry["type"]): string {
 function AttackChainView({ missionId }: { missionId: string }) {
   const { data, isLoading } = useQuery({
     queryKey: ["attack-chain", missionId],
-    queryFn: () => api.get<{ nodes: ChainNode[]; edges: ChainEdge[] }>(`/missions/${missionId}/chain`),
+    queryFn: () => api.get<{ nodes: any[]; edges: any[] }>(`/missions/${missionId}/chain`),
   });
 
   if (isLoading) {
@@ -317,7 +317,7 @@ function AttackChainView({ missionId }: { missionId: string }) {
   const targets = new Set(edges.map(e => e.target_id));
   const roots = nodes.filter(n => !targets.has(n.id));
 
-  function renderNode(nodeId: string, depth: number = 0): JSX.Element {
+  function renderNode(nodeId: string, depth: number = 0): React.ReactNode {
     const node = nodeMap.get(nodeId);
     if (!node) return null!;
 

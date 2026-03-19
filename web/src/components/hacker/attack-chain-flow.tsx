@@ -13,28 +13,21 @@ import {
   Panel,
   Handle,
   Position,
-  type NodeProps,
+  type NodeTypes,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { Shield, Target, AlertTriangle, CheckCircle2, Play, Circle } from 'lucide-react';
+import { Shield, Target, AlertTriangle, CheckCircle2, Play, Circle, type LucideIcon } from 'lucide-react';
 
-interface AttackChainData {
-  nodes: Array<{
-    id: string;
-    type: 'recon' | 'scan' | 'exploit' | 'post' | 'complete';
-    label: string;
-    status: 'pending' | 'running' | 'complete' | 'failed';
-    tool?: string;
-    output?: string;
-  }>;
-  edges: Array<{
-    id: string;
-    source: string;
-    target: string;
-  }>;
+// Define the attack node data type
+interface AttackNodeData extends Record<string, unknown> {
+  type: 'recon' | 'scan' | 'exploit' | 'post' | 'complete';
+  label: string;
+  status: 'pending' | 'running' | 'complete' | 'failed';
+  tool?: string;
+  output?: string;
 }
 
-const nodeColors = {
+const nodeColors: Record<AttackNodeData['type'], string> = {
   recon: '#3b82f6',
   scan: '#f59e0b',
   exploit: '#ef4444',
@@ -42,7 +35,7 @@ const nodeColors = {
   complete: '#10b981',
 };
 
-const nodeIcons = {
+const nodeIcons: Record<AttackNodeData['type'], LucideIcon> = {
   recon: Target,
   scan: Shield,
   exploit: AlertTriangle,
@@ -50,16 +43,18 @@ const nodeIcons = {
   complete: CheckCircle2,
 };
 
-function AttackNode({ data, selected }: NodeProps<any>) {
-  const Icon = nodeIcons[data.type] || Circle;
-  const color = nodeColors[data.type] || '#6b7280';
+// Custom node component - using any for data to satisfy React Flow
+function AttackNodeComponent({ data, selected }: { data: Record<string, unknown>; selected?: boolean }) {
+  const nodeData = data as unknown as AttackNodeData;
+  const Icon = nodeIcons[nodeData.type] || Circle;
+  const color = nodeColors[nodeData.type] || '#6b7280';
 
   return (
     <div
       className={`relative px-4 py-3 rounded-lg border-2 transition-all ${
         selected ? 'ring-2 ring-white/50' : ''
       } ${
-        data.status === 'running'
+        nodeData.status === 'running'
           ? 'animate-pulse'
           : ''
       }`}
@@ -79,9 +74,9 @@ function AttackNode({ data, selected }: NodeProps<any>) {
           <Icon className="w-5 h-5" style={{ color }} />
         </div>
         <div className="flex-1">
-          <div className="text-white font-medium text-sm">{data.label}</div>
-          {data.tool && (
-            <div className="text-xs text-gray-400">{data.tool}</div>
+          <div className="text-white font-medium text-sm">{nodeData.label}</div>
+          {nodeData.tool && (
+            <div className="text-xs text-gray-400">{nodeData.tool}</div>
           )}
         </div>
       </div>
@@ -89,21 +84,21 @@ function AttackNode({ data, selected }: NodeProps<any>) {
       <div className="mt-2 flex items-center gap-2">
         <div
           className={`w-2 h-2 rounded-full ${
-            data.status === 'complete'
+            nodeData.status === 'complete'
               ? 'bg-green-500'
-              : data.status === 'running'
+              : nodeData.status === 'running'
                 ? 'bg-yellow-500 animate-pulse'
-                : data.status === 'failed'
+                : nodeData.status === 'failed'
                   ? 'bg-red-500'
                   : 'bg-gray-500'
           }`}
         />
-        <span className="text-xs text-gray-400 capitalize">{data.status}</span>
+        <span className="text-xs text-gray-400 capitalize">{nodeData.status}</span>
       </div>
 
-      {data.output && (
+      {nodeData.output && (
         <div className="mt-2 p-2 bg-black/50 rounded text-xs font-mono text-green-400 max-h-20 overflow-y-auto">
-          {data.output.slice(0, 100)}...
+          {nodeData.output.slice(0, 100)}...
         </div>
       )}
 
@@ -112,23 +107,40 @@ function AttackNode({ data, selected }: NodeProps<any>) {
   );
 }
 
-const nodeTypes = {
-  attack: AttackNode,
+// Node types for ReactFlow
+const nodeTypes: NodeTypes = {
+  attack: AttackNodeComponent,
 };
+
+interface AttackChainData {
+  nodes: Array<{
+    id: string;
+    type: 'recon' | 'scan' | 'exploit' | 'post' | 'complete';
+    label: string;
+    status: 'pending' | 'running' | 'complete' | 'failed';
+    tool?: string;
+    output?: string;
+  }>;
+  edges: Array<{
+    id: string;
+    source: string;
+    target: string;
+  }>;
+}
 
 interface AttackChainFlowProps {
   missionId?: string;
   data?: AttackChainData;
 }
 
-export function AttackChainFlow({ missionId, data: initialData }: AttackChainFlowProps) {
-  const [nodes, setNodes, onNodesChange] = useNodesState([]);
-  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
-  const [selectedNode, setSelectedNode] = useState<Node | null>(null);
+export function AttackChainFlow({ data: initialData }: AttackChainFlowProps) {
+  const [nodes, setNodes, onNodesChange] = useNodesState<Node<AttackNodeData>>([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
+  const [selectedNode, setSelectedNode] = useState<Node<AttackNodeData> | null>(null);
 
   useEffect(() => {
     if (initialData) {
-      const flowNodes: Node[] = initialData.nodes.map((node, index) => ({
+      const flowNodes: Node<AttackNodeData>[] = initialData.nodes.map((node, index) => ({
         id: node.id,
         type: 'attack',
         position: { x: 250 + (index % 3) * 300, y: 100 + Math.floor(index / 3) * 200 },
@@ -203,6 +215,11 @@ export function AttackChainFlow({ missionId, data: initialData }: AttackChainFlo
     [setEdges]
   );
 
+  const getNodeColor = (node: Node): string => {
+    const nodeType = (node.data as AttackNodeData | undefined)?.type;
+    return nodeType ? nodeColors[nodeType] : '#6b7280';
+  };
+
   return (
     <div className="h-[600px] w-full bg-black/50 border border-green-500/30 rounded-lg overflow-hidden">
       <ReactFlow
@@ -219,7 +236,7 @@ export function AttackChainFlow({ missionId, data: initialData }: AttackChainFlo
         <Background color="#10b981" gap={16} size={1} />
         <Controls className="bg-black/80 border-green-500/30" />
         <MiniMap
-          nodeColor={(node) => nodeColors[node.data?.type] || '#6b7280'}
+          nodeColor={getNodeColor}
           maskColor="rgba(0,0,0,0.8)"
           className="bg-black/80 border-green-500/30"
         />
@@ -252,13 +269,13 @@ export function AttackChainFlow({ missionId, data: initialData }: AttackChainFlo
 
         {selectedNode && (
           <Panel position="bottom-right" className="bg-black/90 border border-green-500/30 rounded-lg p-4 m-4 max-w-sm">
-            <h4 className="text-green-400 font-mono font-bold mb-2">{selectedNode.data.label}</h4>
+            <h4 className="text-green-400 font-mono font-bold mb-2">{String((selectedNode.data as AttackNodeData).label)}</h4>
             <div className="space-y-1 text-sm text-gray-300">
-              <p>Status: <span className="text-green-400">{selectedNode.data.status}</span></p>
-              {selectedNode.data.tool && (
-                <p>Tool: <span className="text-green-400">{selectedNode.data.tool}</span></p>
+              <p>Status: <span className="text-green-400">{String((selectedNode.data as AttackNodeData).status)}</span></p>
+              {(selectedNode.data as AttackNodeData).tool && (
+                <p>Tool: <span className="text-green-400">{String((selectedNode.data as AttackNodeData).tool)}</span></p>
               )}
-              <p>Type: <span className="text-green-400 capitalize">{selectedNode.data.type}</span></p>
+              <p>Type: <span className="text-green-400 capitalize">{String((selectedNode.data as AttackNodeData).type)}</span></p>
             </div>
           </Panel>
         )}

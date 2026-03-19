@@ -92,3 +92,100 @@ type Model struct {
 	Name          string `json:"name"`
 	ContextWindow int    `json:"context_window"`
 }
+
+// ProviderMetadata contains information about a provider type.
+type ProviderMetadata struct {
+	Name           string
+	Type           string // "anthropic", "openai", "openai_compatible", "ollama"
+	DefaultBaseURL string
+	RequiresAPIKey bool
+}
+
+// OpenAICompatiblePresets contains common OpenAI-compatible provider configurations.
+// These providers all use the same OpenAI API format but different base URLs.
+var OpenAICompatiblePresets = map[string]ProviderMetadata{
+	"deepseek": {
+		Name:           "deepseek",
+		Type:           "openai_compatible",
+		DefaultBaseURL: "https://api.deepseek.com/v1",
+		RequiresAPIKey: true,
+	},
+	"glm": {
+		Name:           "glm",
+		Type:           "openai_compatible",
+		DefaultBaseURL: "https://open.bigmodel.cn/api/paas/v4",
+		RequiresAPIKey: true,
+	},
+	"together": {
+		Name:           "together",
+		Type:           "openai_compatible",
+		DefaultBaseURL: "https://api.together.xyz/v1",
+		RequiresAPIKey: true,
+	},
+	"mistral": {
+		Name:           "mistral",
+		Type:           "openai_compatible",
+		DefaultBaseURL: "https://api.mistral.ai/v1",
+		RequiresAPIKey: true,
+	},
+	"cohere": {
+		Name:           "cohere",
+		Type:           "openai_compatible",
+		DefaultBaseURL: "https://api.cohere.ai/v1",
+		RequiresAPIKey: true,
+	},
+	"fireworks": {
+		Name:           "fireworks",
+		Type:           "openai_compatible",
+		DefaultBaseURL: "https://api.fireworks.ai/inference/v1",
+		RequiresAPIKey: true,
+	},
+	"perplexity": {
+		Name:           "perplexity",
+		Type:           "openai_compatible",
+		DefaultBaseURL: "https://api.perplexity.ai",
+		RequiresAPIKey: true,
+	},
+	"anyscale": {
+		Name:           "anyscale",
+		Type:           "openai_compatible",
+		DefaultBaseURL: "https://api.endpoints.anyscale.com/v1",
+		RequiresAPIKey: true,
+	},
+	"novita": {
+		Name:           "novita",
+		Type:           "openai_compatible",
+		DefaultBaseURL: "https://api.novita.ai/v3/openai",
+		RequiresAPIKey: true,
+	},
+	"siliconflow": {
+		Name:           "siliconflow",
+		Type:           "openai_compatible",
+		DefaultBaseURL: "https://api.siliconflow.cn/v1",
+		RequiresAPIKey: true,
+	},
+	"gemini": {
+		Name:           "gemini",
+		Type:           "openai_compatible",
+		DefaultBaseURL: "https://generativelanguage.googleapis.com/v1beta/openai",
+		RequiresAPIKey: true,
+	},
+	"openrouter": {
+		Name:           "openrouter",
+		Type:           "openai_compatible",
+		DefaultBaseURL: "https://openrouter.ai/api/v1",
+		RequiresAPIKey: true,
+	},
+	"ai21": {
+		Name:           "ai21",
+		Type:           "openai_compatible",
+		DefaultBaseURL: "https://api.ai21.com/studio/v1",
+		RequiresAPIKey: true,
+	},
+	"baseurl": {
+		Name:           "baseurl",
+		Type:           "openai_compatible",
+		DefaultBaseURL: "",
+		RequiresAPIKey: true,
+	},
+}

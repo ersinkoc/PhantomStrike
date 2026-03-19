@@ -21,7 +21,7 @@ interface VulnerabilitiesState {
   clearError: () => void;
 }
 
-export const useVulnerabilitiesStore = create<VulnerabilitiesState>((set, get) => ({
+export const useVulnerabilitiesStore = create<VulnerabilitiesState>((set, _get) => ({
   vulnerabilities: [],
   currentVulnerability: null,
   stats: null,

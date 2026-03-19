@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import {
-  Terminal,
   Activity,
   Shield,
   AlertTriangle,
@@ -15,7 +14,6 @@ import {
   Pause,
   RotateCw,
   MessageSquare,
-  X,
   Minimize2,
   Maximize2,
 } from 'lucide-react';
@@ -29,7 +27,7 @@ export function HackerDashboard() {
   const [activeTab, setActiveTab] = useState<'overview' | 'attack-chain' | 'terminal' | 'logs'>('overview');
   const [chatOpen, setChatOpen] = useState(true);
   const [missionStatus, setMissionStatus] = useState<'idle' | 'running' | 'paused'>('idle');
-  const { connected, messages } = useWebSocket();
+  const { connected, messages: _messages } = useWebSocket();
 
   const stats = [
     { label: 'Active Scans', value: 12, icon: Search, color: 'text-blue-400' },

@@ -74,15 +74,17 @@ type AdminConfig struct {
 }
 
 type ProvidersConfig struct {
-	Default        string                    `yaml:"default"`
-	Anthropic      ProviderConfig            `yaml:"anthropic"`
-	OpenAI         ProviderConfig            `yaml:"openai"`
-	Ollama         ProviderConfig            `yaml:"ollama"`
-	Groq           ProviderConfig            `yaml:"groq"`
-	Azure          ProviderConfig            `yaml:"azure"`
-	FallbackChain  []string                  `yaml:"fallback_chain"`
-	Embedding      EmbeddingConfig           `yaml:"embedding"`
-	AgentOverrides map[string]string         `yaml:"agent_overrides"`
+	Default        string                     `yaml:"default"`
+	Anthropic      ProviderConfig             `yaml:"anthropic"`
+	OpenAI         ProviderConfig             `yaml:"openai"`
+	Ollama         ProviderConfig             `yaml:"ollama"`
+	Groq           ProviderConfig             `yaml:"groq"`
+	Azure          ProviderConfig             `yaml:"azure"`
+	FallbackChain  []string                   `yaml:"fallback_chain"`
+	Embedding      EmbeddingConfig            `yaml:"embedding"`
+	AgentOverrides map[string]string          `yaml:"agent_overrides"`
+	// Additional allows unlimited dynamic provider registration
+	Additional     map[string]ProviderConfig  `yaml:"additional"`
 }
 
 type ProviderConfig struct {
@@ -308,6 +310,117 @@ func applyEnvOverrides(cfg *Config) {
 	if v := os.Getenv("MCP_AUTH_TOKEN"); v != "" {
 		cfg.MCP.Server.AuthToken = v
 	}
+
+	// Additional provider API keys (OpenAI-compatible providers)
+	// These can be used with any OpenAI-compatible provider (GLM-5, DeepSeek, etc.)
+	if cfg.Providers.Additional == nil {
+		cfg.Providers.Additional = make(map[string]ProviderConfig)
+	}
+
+	// DeepSeek
+	if v := os.Getenv("DEEPSEEK_API_KEY"); v != "" {
+		cfg.Providers.Additional["deepseek"] = ProviderConfig{
+			APIKey:  v,
+			BaseURL: "https://api.deepseek.com/v1",
+			Model:   getEnvOrDefault("DEEPSEEK_MODEL", "deepseek-chat"),
+		}
+	}
+
+	// GLM (Zhipu AI)
+	if v := os.Getenv("GLM_API_KEY"); v != "" {
+		cfg.Providers.Additional["glm"] = ProviderConfig{
+			APIKey:  v,
+			BaseURL: "https://open.bigmodel.cn/api/paas/v4",
+			Model:   getEnvOrDefault("GLM_MODEL", "glm-4"),
+		}
+	}
+
+	// Together AI
+	if v := os.Getenv("TOGETHER_API_KEY"); v != "" {
+		cfg.Providers.Additional["together"] = ProviderConfig{
+			APIKey:  v,
+			BaseURL: "https://api.together.xyz/v1",
+			Model:   getEnvOrDefault("TOGETHER_MODEL", "meta-llama/Llama-3.3-70B-Instruct-Turbo"),
+		}
+	}
+
+	// Mistral
+	if v := os.Getenv("MISTRAL_API_KEY"); v != "" {
+		cfg.Providers.Additional["mistral"] = ProviderConfig{
+			APIKey:  v,
+			BaseURL: "https://api.mistral.ai/v1",
+			Model:   getEnvOrDefault("MISTRAL_MODEL", "mistral-large-latest"),
+		}
+	}
+
+	// Cohere
+	if v := os.Getenv("COHERE_API_KEY"); v != "" {
+		cfg.Providers.Additional["cohere"] = ProviderConfig{
+			APIKey:  v,
+			BaseURL: "https://api.cohere.ai/v1",
+			Model:   getEnvOrDefault("COHERE_MODEL", "command-r-plus"),
+		}
+	}
+
+	// Fireworks
+	if v := os.Getenv("FIREWORKS_API_KEY"); v != "" {
+		cfg.Providers.Additional["fireworks"] = ProviderConfig{
+			APIKey:  v,
+			BaseURL: "https://api.fireworks.ai/inference/v1",
+			Model:   getEnvOrDefault("FIREWORKS_MODEL", "accounts/fireworks/models/llama-v3p1-70b-instruct"),
+		}
+	}
+
+	// Perplexity
+	if v := os.Getenv("PERPLEXITY_API_KEY"); v != "" {
+		cfg.Providers.Additional["perplexity"] = ProviderConfig{
+			APIKey:  v,
+			BaseURL: "https://api.perplexity.ai",
+			Model:   getEnvOrDefault("PERPLEXITY_MODEL", "llama-3.1-sonar-large-128k-online"),
+		}
+	}
+
+	// Gemini (Google) via OpenAI-compatible endpoint
+	if v := os.Getenv("GEMINI_API_KEY"); v != "" {
+		cfg.Providers.Additional["gemini"] = ProviderConfig{
+			APIKey:  v,
+			BaseURL: "https://generativelanguage.googleapis.com/v1beta/openai",
+			Model:   getEnvOrDefault("GEMINI_MODEL", "gemini-1.5-pro"),
+		}
+	}
+
+	// OpenRouter
+	if v := os.Getenv("OPENROUTER_API_KEY"); v != "" {
+		cfg.Providers.Additional["openrouter"] = ProviderConfig{
+			APIKey:  v,
+			BaseURL: "https://openrouter.ai/api/v1",
+			Model:   getEnvOrDefault("OPENROUTER_MODEL", "anthropic/claude-3.5-sonnet"),
+		}
+	}
+
+	// AI21
+	if v := os.Getenv("AI21_API_KEY"); v != "" {
+		cfg.Providers.Additional["ai21"] = ProviderConfig{
+			APIKey:  v,
+			BaseURL: "https://api.ai21.com/studio/v1",
+			Model:   getEnvOrDefault("AI21_MODEL", "jamba-1.5-large"),
+		}
+	}
+
+	// Generic OpenAI-compatible provider (for any custom provider)
+	if v := os.Getenv("OPENAI_COMPATIBLE_API_KEY"); v != "" {
+		baseURL := os.Getenv("OPENAI_COMPATIBLE_BASE_URL")
+		model := os.Getenv("OPENAI_COMPATIBLE_MODEL")
+		providerName := getEnvOrDefault("OPENAI_COMPATIBLE_NAME", "custom")
+		if baseURL != "" && model != "" {
+			cfg.Providers.Additional[providerName] = ProviderConfig{
+				APIKey:  v,
+				BaseURL: baseURL,
+				Model:   model,
+			}
+		}
+	}
+
 	if v := os.Getenv("STORAGE_PATH"); v != "" {
 		cfg.Storage.Path = v
 	}
@@ -332,4 +445,12 @@ func expandEnv(s string) string {
 		return s
 	}
 	return os.ExpandEnv(s)
+}
+
+// getEnvOrDefault returns the value of an environment variable or a default value.
+func getEnvOrDefault(key, defaultValue string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
+	}
+	return defaultValue
 }

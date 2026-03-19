@@ -18,7 +18,7 @@ interface ToolsState {
   clearError: () => void;
 }
 
-export const useToolsStore = create<ToolsState>((set, get) => ({
+export const useToolsStore = create<ToolsState>((set, _get) => ({
   tools: [],
   categories: [],
   currentTool: null,

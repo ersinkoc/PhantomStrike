@@ -88,8 +88,8 @@ func (e *ToolAssetExtractor) ExtractFromToolOutput(output []byte, toolName strin
 		}
 	}
 
-	// Extract URLs
-	if re := e.patterns[AssetTypeURL]; re != nil {
+	// Extract URLs/endpoints
+	if re := e.patterns[AssetTypeEndpoint]; re != nil {
 		matches := re.FindAllString(outputStr, -1)
 		seen := make(map[string]bool)
 		for _, match := range matches {

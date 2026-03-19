@@ -1,5 +1,4 @@
-import { useEffect, useState } from 'react';
-import { TerminalOutput, TerminalInput } from 'react-terminal-ui';
+import { useState } from 'react';
 
 interface Message {
   type: 'output' | 'input' | 'error';

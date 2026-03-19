@@ -113,3 +113,44 @@ func (r *Router) StreamChatCompletion(ctx context.Context, req ChatRequest) (<-c
 	}
 	return nil, fmt.Errorf("no providers configured")
 }
+
+// GetAllProviders returns all registered providers.
+func (r *Router) GetAllProviders() map[string]Provider {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	result := make(map[string]Provider, len(r.providers))
+	for k, v := range r.providers {
+		result[k] = v
+	}
+	return result
+}
+
+// GetFallbackChain returns the fallback chain.
+func (r *Router) GetFallbackChain() []string {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	result := make([]string, len(r.fallbackChain))
+	copy(result, r.fallbackChain)
+	return result
+}
+
+// SetFallbackChain updates the fallback chain.
+func (r *Router) SetFallbackChain(chain []string) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.fallbackChain = chain
+}
+
+// GetRegisteredNames returns all registered provider names.
+func (r *Router) GetRegisteredNames() []string {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	names := make([]string, 0, len(r.providers))
+	for name := range r.providers {
+		names = append(names, name)
+	}
+	return names
+}

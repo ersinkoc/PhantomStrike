@@ -10,6 +10,10 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    outDir: "dist",
+    sourcemap: true,
+  },
   server: {
     port: 5173,
     proxy: {
@@ -22,10 +26,5 @@ export default defineConfig({
         ws: true,
       },
     },
-  },
-  test: {
-    globals: true,
-    environment: "jsdom",
-    setupFiles: "./src/test/setup.ts",
   },
 });
