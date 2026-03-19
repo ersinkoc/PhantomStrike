@@ -28,6 +28,7 @@ WORKDIR /app
 
 COPY --from=builder /phantomstrike /app/phantomstrike
 COPY --from=builder /build/config.yaml /app/config.yaml
+COPY --from=builder /build/migrations /app/migrations
 COPY --from=builder /build/tools /app/tools
 COPY --from=builder /build/roles /app/roles
 COPY --from=builder /build/skills /app/skills
