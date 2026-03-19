@@ -20,9 +20,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build \
 # --- Runtime Stage ---
 FROM alpine:3.20
 
-RUN apk add --no-cache ca-certificates tzdata docker-cli \
-    && addgroup -g 1000 phantom \
-    && adduser -u 1000 -G phantom -s /bin/sh -D phantom
+RUN apk add --no-cache ca-certificates tzdata docker-cli
 
 WORKDIR /app
 
@@ -34,10 +32,8 @@ COPY --from=builder /build/roles /app/roles
 COPY --from=builder /build/skills /app/skills
 COPY --from=builder /build/knowledge /app/knowledge
 
-RUN mkdir -p /data/artifacts && chown -R phantom:phantom /data
+RUN mkdir -p /data/artifacts /data/catalog
 
 EXPOSE 18090 18091
-
-USER phantom
 
 ENTRYPOINT ["/app/phantomstrike"]
