@@ -206,16 +206,51 @@ analyze results, and provide recommendations. Be precise, thorough, and security
 		missionName, missionDesc,
 	)
 
-	// 5. Get provider from the swarm's router and call ChatCompletion
+	// 5. Get provider from the swarm's router and build tool definitions
 	providerRouter := h.swarm.GetRouter()
 	if providerRouter == nil {
 		slog.Error("provider router not available for AI processing")
 		return
 	}
 
+	// Build available tools list from registry so LLM knows what it can call
+	var tools []provider.Tool
+	if h.registry != nil {
+		for _, def := range h.registry.List() {
+			if !def.Enabled {
+				continue
+			}
+			properties := make(map[string]any)
+			var required []string
+			for _, p := range def.Parameters {
+				prop := map[string]any{
+					"type":        p.Type,
+					"description": p.Description,
+				}
+				if len(p.Enum) > 0 {
+					prop["enum"] = p.Enum
+				}
+				properties[p.Name] = prop
+				if p.Required {
+					required = append(required, p.Name)
+				}
+			}
+			tools = append(tools, provider.Tool{
+				Name:        def.Name,
+				Description: def.ShortDescription,
+				InputSchema: map[string]any{
+					"type":       "object",
+					"properties": properties,
+					"required":   required,
+				},
+			})
+		}
+	}
+
 	resp, err := providerRouter.ChatCompletion(ctx, provider.ChatRequest{
 		System:    systemPrompt,
 		Messages:  messages,
+		Tools:     tools,
 		MaxTokens: 4096,
 	})
 	if err != nil {

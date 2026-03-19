@@ -238,14 +238,14 @@ CREATE TABLE knowledge_items (
     content     TEXT NOT NULL,
     source_file TEXT,
     chunk_index INTEGER DEFAULT 0,
-    embedding   vector(3072),
+    embedding   vector(1536),
     metadata    JSONB DEFAULT '{}',
     created_at  TIMESTAMPTZ DEFAULT NOW(),
     updated_at  TIMESTAMPTZ DEFAULT NOW()
 );
 
 CREATE INDEX idx_knowledge_embedding ON knowledge_items
-    USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100);
+    USING hnsw (embedding vector_cosine_ops);
 CREATE INDEX idx_knowledge_category ON knowledge_items(category);
 CREATE INDEX idx_knowledge_fulltext ON knowledge_items
     USING GIN (to_tsvector('english', title || ' ' || content));
@@ -383,9 +383,9 @@ CREATE TRIGGER update_tool_registry_updated_at BEFORE UPDATE ON tool_registry
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- Migration tracking
-CREATE TABLE schema_migrations (
+CREATE TABLE IF NOT EXISTS schema_migrations (
     version     TEXT PRIMARY KEY,
     applied_at  TIMESTAMPTZ DEFAULT NOW()
 );
 
-INSERT INTO schema_migrations (version) VALUES ('001');
+INSERT INTO schema_migrations (version) VALUES ('001') ON CONFLICT DO NOTHING;

@@ -3,35 +3,38 @@ version: "1.0"
 category: web/vulnerability-scanning
 phase: scanning
 command: nikto
-docker:
-  image: sullo/nikto:latest
-  args:
-    - "-h"
-    - "${target}"
-    - "-Format"
-    - "json"
-    - "-o"
-    - "/output/nikto-results.json"
-    - "-Cgidirs"
-    - "all"
-    - "-Tuning"
-    - "x 0 1 2 3 4 5 6 7 8 9"
-  memory_limit: "512m"
-  timeout: "1800s"
+args: []
 
 short_description: Web server scanner
 description: |
   Nikto is an Open Source web server scanner which performs comprehensive tests
   against web servers for multiple items including dangerous files/CGIs.
+notes: |
+  - Runs in process mode (no Docker) - requires nikto installed locally
+  - Uses -ask no for non-interactive mode
+  - Nikto is noisy by design
 
 parameters:
+  - name: flags
+    type: string
+    required: false
+    flag: ""
+    default: "-ask no"
+    description: "Raw nikto flags (e.g. -ask no -ssl -p 443)"
   - name: target
     type: string
     required: true
-    description: Target URL
+    flag: "-h"
+    description: "Target URL or IP"
 
 output:
-  format: json
+  format: text
+  success_patterns:
+    - "\\+ Target IP:"
+    - "\\+ Server:"
+  failure_patterns:
+    - "ERROR"
+    - "No web server found"
 
 chain_suggestions:
   before:

@@ -31,6 +31,29 @@
   --font-mono: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
 }
 
+/* Light mode overrides */
+html:not(.dark) {
+  --color-background: #FAFAFA;
+  --color-foreground: #18181B;
+  --color-card: #FFFFFF;
+  --color-card-foreground: #18181B;
+  --color-popover: #FFFFFF;
+  --color-popover-foreground: #18181B;
+  --color-primary: #0D9488;
+  --color-primary-foreground: #FFFFFF;
+  --color-secondary: #F3E8FF;
+  --color-secondary-foreground: #18181B;
+  --color-muted: #F4F4F5;
+  --color-muted-foreground: #71717A;
+  --color-accent: #F4F4F5;
+  --color-accent-foreground: #18181B;
+  --color-destructive: #EF4444;
+  --color-destructive-foreground: #FFFFFF;
+  --color-border: #E4E4E7;
+  --color-input: #E4E4E7;
+  --color-ring: #0D9488;
+}
+
 body {
   background-color: var(--color-background);
   color: var(--color-foreground);

@@ -3,43 +3,60 @@ version: "1.0"
 category: password/brute-force
 phase: exploitation
 command: hydra
+args: []
+
 docker:
   image: vanhauser/hydra:latest
-  args:
-    - "-l"
-    - "${username}"
-    - "-P"
-    - "/wordlists/passwords.txt"
-    - "-t"
-    - "16"
-    - "${target}"
-    - "${protocol}"
   memory_limit: "512m"
   timeout: "1800s"
 
-short_description: Network login cracker
+short_description: Fast and flexible network login cracker
 description: |
-  Hydra is a parallelized login cracker which supports numerous protocols.
+  Hydra is a parallelized login cracker which supports numerous protocols
+  including SSH, FTP, RDP, MySQL, MSSQL, PostgreSQL, SMB, HTTP, and more.
+  It is one of the most widely used tools for brute-force password attacks.
+notes: |
+  - Syntax: hydra [options] target protocol
+  - Use -l for single username, -L for username list
+  - Use -p for single password, -P for password list
+  - Use -t for number of parallel tasks (default: 16)
+  - Use -V for verbose output showing each attempt
+  - Use -f to stop on first valid password found
 
 parameters:
+  - name: flags
+    type: string
+    required: false
+    flag: ""
+    default: "-t 16 -f -V"
+    description: "Raw hydra flags (e.g. -l admin -P /usr/share/wordlists/rockyou.txt -t 16 -f)"
   - name: target
     type: string
     required: true
-    description: Target host
-  - name: protocol
-    type: string
-    required: true
-    enum: [ssh, ftp, rdp, mysql, mssql, postgres, smb, http-post-form]
-  - name: username
-    type: string
-    required: true
-    description: Username or list
-  - name: wordlist
-    type: string
-    required: false
-    description: Password wordlist
+    flag: ""
+    description: "Target in hydra format: host protocol (e.g. 192.168.1.1 ssh)"
 
 output:
   format: text
+  success_patterns:
+    - "login:"
+    - "password:"
+    - "valid password"
+    - "host:"
+  failure_patterns:
+    - "0 valid passwords found"
+    - "Error"
+    - "could not connect"
+  severity_indicators:
+    critical:
+      - "login:"
+      - "valid password"
+    high:
+      - "password:"
+
+chain_suggestions:
+  before:
+    - "nmap"
+  after: []
 
 enabled: true

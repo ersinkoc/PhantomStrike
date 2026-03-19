@@ -3,38 +3,69 @@ version: "1.0"
 category: web/directory-enum
 phase: scanning
 command: gobuster
+args: []
+
 docker:
   image: ghcr.io/oj/gobuster:latest
-  args:
-    - "dir"
-    - "-u"
-    - "${target}"
-    - "-w"
-    - "/wordlists/common.txt"
-    - "-o"
-    - "/output/gobuster-results.txt"
-    - "-t"
-    - "50"
   memory_limit: "512m"
   timeout: "600s"
 
 short_description: Directory/file/DNS busting tool
 description: |
   Gobuster is a tool used to brute-force URIs (directories and files),
-  DNS subdomains, and virtual host names.
+  DNS subdomains, and virtual host names. Fast and written in Go.
+notes: |
+  - Modes: dir (directories), dns (subdomains), vhost (virtual hosts), fuzz (fuzzing)
+  - Requires a wordlist (-w) for brute-forcing
+  - Use -t to set number of concurrent threads (default: 10)
+  - Use -x to append file extensions (e.g. -x php,txt,html)
 
 parameters:
+  - name: flags
+    type: string
+    required: false
+    flag: ""
+    default: "dir -t 50"
+    description: "Raw gobuster flags (e.g. dir -w /usr/share/wordlists/common.txt -t 50 -x php)"
   - name: target
     type: string
     required: true
-    description: Target URL
-  - name: mode
-    type: string
-    required: false
-    default: "dir"
-    enum: [dir, dns, vhost, fuzz]
+    flag: "-u"
+    description: "Target URL to brute-force"
 
 output:
   format: text
+  success_patterns:
+    - "Status: 200"
+    - "Status: 301"
+    - "Status: 302"
+    - "Found:"
+  failure_patterns:
+    - "Error"
+    - "Unable to connect"
+    - "invalid URI"
+  severity_indicators:
+    high:
+      - "admin"
+      - "backup"
+      - "config"
+      - ".env"
+      - "phpinfo"
+    medium:
+      - "login"
+      - "dashboard"
+      - "api"
+      - "upload"
+    low:
+      - "Status: 200"
+      - "Status: 301"
+
+chain_suggestions:
+  before:
+    - "httpx"
+    - "nmap"
+  after:
+    - "nuclei"
+    - "nikto"
 
 enabled: true

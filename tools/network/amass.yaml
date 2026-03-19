@@ -3,18 +3,10 @@ version: "1.0"
 category: network/reconnaissance
 phase: reconnaissance
 command: amass
+args: []
+
 docker:
   image: caffix/amass:latest
-  args:
-    - "enum"
-    - "-d"
-    - "${domain}"
-    - "-json"
-    - "/output/amass-results.json"
-    - "-active"
-    - "-brute"
-    - "-w"
-    - "/wordlists/dns.txt"
   memory_limit: "2g"
   timeout: "1800s"
 
@@ -22,21 +14,31 @@ short_description: In-depth attack surface mapping
 description: |
   The OWASP Amass project performs network mapping of attack surfaces
   and external asset discovery using open source information gathering.
+notes: |
+  - Main subcommands: enum (enumeration), intel (OSINT)
+  - Use -passive for passive-only enumeration
+  - Use -brute for DNS brute-forcing
 
 parameters:
-  - name: domain
-    type: string
-    required: true
-    description: Domain to enumerate
-  - name: mode
+  - name: flags
     type: string
     required: false
-    default: "enum"
-    enum: [enum, intel, viz]
+    flag: ""
+    default: "enum -passive"
+    description: "Raw amass flags (e.g. enum -passive -brute -active)"
+  - name: target
+    type: string
+    required: true
+    flag: "-d"
+    description: "Domain to enumerate (e.g. example.com)"
 
 output:
-  format: json
+  format: text
   success_patterns:
-    - "name"
+    - "Querying"
+    - "names discovered"
+  failure_patterns:
+    - "0 names discovered"
+    - "Failed to"
 
 enabled: true

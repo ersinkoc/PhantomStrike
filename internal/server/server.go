@@ -93,10 +93,15 @@ func New(cfg *config.Config, db *store.DB) (*Server, error) {
 		apiHandler.SetStorage(storageProv)
 	}
 
+	// Ensure default admin user exists
+	if err := apiHandler.EnsureDefaultAdmin(context.Background()); err != nil {
+		slog.Warn("failed to ensure default admin", "error", err)
+	}
+
 	apiHandler.RegisterRoutes(mux)
 
-	// WebSocket endpoint
-	mux.Handle("/ws", apiHandler.HandleWebSocket(hub))
+	// WebSocket endpoint — registered separately to bypass middleware (needs http.Hijacker)
+	wsHandler := apiHandler.HandleWebSocket(hub)
 
 	// OAuth2 endpoints (public — no auth middleware)
 	oauth2Handler := auth.NewOAuth2Handler(authSvc, db.Pool, cfg.Auth.OAuth2)
@@ -134,11 +139,21 @@ func New(cfg *config.Config, db *store.DB) (*Server, error) {
 	rateLimiter := ratelimit.New(100, time.Minute)
 
 	// Apply global middleware (audit sits after auth, before logging)
-	handler := applyMiddleware(mux, cfg, auditLogger, rateLimiter)
+	apiHandler2 := applyMiddleware(mux, cfg, auditLogger, rateLimiter)
+
+	// Top-level handler: route /ws without middleware (needs http.Hijacker),
+	// everything else through middleware chain
+	topHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/ws" {
+			wsHandler.ServeHTTP(w, r)
+			return
+		}
+		apiHandler2.ServeHTTP(w, r)
+	})
 
 	httpSrv := &http.Server{
 		Addr:         fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port),
-		Handler:      handler,
+		Handler:      topHandler,
 		ReadTimeout:  cfg.Server.ReadTimeout,
 		WriteTimeout: cfg.Server.WriteTimeout,
 		BaseContext: func(_ net.Listener) context.Context {

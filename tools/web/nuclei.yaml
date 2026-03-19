@@ -3,18 +3,10 @@ version: "1.0"
 category: web/vulnerability-scanning
 phase: exploitation
 command: nuclei
+args: []
+
 docker:
   image: projectdiscovery/nuclei:latest
-  args:
-    - "-u"
-    - "${target}"
-    - "-json"
-    - "-o"
-    - "/output/nuclei-results.json"
-    - "-c"
-    - "50"
-    - "-rl"
-    - "150"
   memory_limit: "2g"
   timeout: "1800s"
 
@@ -23,42 +15,41 @@ description: |
   Nuclei is a fast tool for configurable targeted scanning based on templates
   offering massive extensibility and ease of use. It has 8000+ templates for CVEs,
   misconfigurations, exposed panels, and more.
+notes: |
+  - Templates are auto-updated on first run
+  - Use -t to specify custom template paths
+  - Use -severity to filter by severity level
+  - Use -tags to filter by template tags
+  - Use -c for concurrent templates, -rl for rate limit
 
 parameters:
+  - name: flags
+    type: string
+    required: false
+    flag: ""
+    default: "-silent -nc"
+    description: "Raw nuclei flags (e.g. -severity critical,high -tags cve -c 50 -rl 150)"
   - name: target
     type: string
     required: true
-    description: Target URL or host to scan
-  - name: templates
-    type: string
-    required: false
-    description: Template directory or specific templates to run
-  - name: severity
-    type: string
-    required: false
-    default: "critical,high,medium"
-    description: Severity levels to scan for
-  - name: rate-limit
-    type: integer
-    required: false
-    default: 150
-    description: Requests per second rate limit
-  - name: tags
-    type: string
-    required: false
-    description: Tags to filter templates
+    flag: "-u"
+    description: "Target URL or host to scan"
 
 output:
-  format: json
+  format: text
   success_patterns:
+    - "\\[.*\\]"
     - "matched"
   failure_patterns:
+    - "no templates provided"
+    - "context deadline exceeded"
     - "error"
   severity_indicators:
-    CRITICAL:
-      - "\"severity\": \"critical\""
-    HIGH:
-      - "\"severity\": \"high\""
+    critical: ["\\[critical\\]"]
+    high: ["\\[high\\]"]
+    medium: ["\\[medium\\]"]
+    low: ["\\[low\\]"]
+    info: ["\\[info\\]"]
 
 chain_suggestions:
   before:

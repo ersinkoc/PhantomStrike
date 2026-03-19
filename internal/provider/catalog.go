@@ -184,6 +184,24 @@ func SyncFromModelsDev(ctx context.Context, pool *pgxpool.Pool) (int, int, error
 
 		apiBaseURL := cp.API
 		if apiBaseURL == "" {
+			// Well-known provider defaults
+			knownURLs := map[string]string{
+				"anthropic":  "https://api.anthropic.com",
+				"openai":     "https://api.openai.com/v1",
+				"groq":       "https://api.groq.com/openai/v1",
+				"deepseek":   "https://api.deepseek.com/v1",
+				"mistral":    "https://api.mistral.ai/v1",
+				"cohere":     "https://api.cohere.ai/v1",
+				"together":   "https://api.together.xyz/v1",
+				"fireworks":  "https://api.fireworks.ai/inference/v1",
+				"perplexity": "https://api.perplexity.ai",
+				"openrouter": "https://openrouter.ai/api/v1",
+			}
+			if url, ok := knownURLs[providerID]; ok {
+				apiBaseURL = url
+			}
+		}
+		if apiBaseURL == "" {
 			// Use preset base URL if available
 			if preset, ok := OpenAICompatiblePresets[providerID]; ok {
 				apiBaseURL = preset.DefaultBaseURL

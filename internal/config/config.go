@@ -188,8 +188,45 @@ type MetricsConfig struct {
 	Port    int  `yaml:"port"`
 }
 
+// loadDotEnv reads a .env file and sets environment variables (if not already set).
+func loadDotEnv() {
+	for _, path := range []string{".env", "/app/.env"} {
+		data, err := os.ReadFile(path)
+		if err != nil {
+			continue
+		}
+		for _, line := range strings.Split(string(data), "\n") {
+			line = strings.TrimSpace(line)
+			if line == "" || strings.HasPrefix(line, "#") {
+				continue
+			}
+			key, val, ok := strings.Cut(line, "=")
+			if !ok {
+				continue
+			}
+			key = strings.TrimSpace(key)
+			val = strings.TrimSpace(val)
+			// Only set if not already defined in environment
+			if os.Getenv(key) == "" {
+				os.Setenv(key, val)
+			}
+		}
+		return // stop after first .env found
+	}
+}
+
+// expandEnvVars replaces ${VAR} patterns in YAML data with env var values.
+func expandEnvVars(data []byte) []byte {
+	return []byte(os.Expand(string(data), func(key string) string {
+		return os.Getenv(key)
+	}))
+}
+
 // Load reads configuration from file and environment variables.
 func Load() (*Config, error) {
+	// Load .env file first (so env vars are available for config expansion)
+	loadDotEnv()
+
 	cfg := defaults()
 
 	// Try config file paths in order
@@ -205,7 +242,9 @@ func Load() (*Config, error) {
 			continue
 		}
 		if data, err := os.ReadFile(p); err == nil {
-			if err := yaml.Unmarshal(data, cfg); err != nil {
+			// Expand ${VAR} references in YAML before parsing
+			expanded := expandEnvVars(data)
+			if err := yaml.Unmarshal(expanded, cfg); err != nil {
 				return nil, fmt.Errorf("parsing config %s: %w", p, err)
 			}
 			break

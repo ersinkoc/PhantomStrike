@@ -13,11 +13,12 @@ import { cn } from "@/lib/utils";
 interface Provider {
   id: string;
   name: string;
-  slug: string;
   api_base_url: string;
   is_enabled: boolean;
   is_configured: boolean;
-  requires_api_key: boolean;
+  is_local: boolean;
+  sdk_type: string;
+  env_var: string;
   model_count?: number;
   priority?: number;
 }
@@ -40,16 +41,6 @@ interface SyncResult {
 }
 
 /* ---------- Constants ---------- */
-
-const POPULAR_PROVIDERS = [
-  "anthropic",
-  "openai",
-  "groq",
-  "ollama",
-  "deepseek",
-  "mistral",
-  "google",
-];
 
 const STEPS = [
   { label: "Welcome", num: 1 },
@@ -99,7 +90,6 @@ function ProviderRow({
   apiKey,
   showKey,
   testStatus,
-  onToggle,
   onKeyChange,
   onToggleShowKey,
   onTest,
@@ -108,54 +98,34 @@ function ProviderRow({
   apiKey: string;
   showKey: boolean;
   testStatus: "idle" | "testing" | "success" | "error";
-  onToggle: () => void;
   onKeyChange: (v: string) => void;
   onToggleShowKey: () => void;
   onTest: () => void;
 }) {
-  const isLocal = !provider.requires_api_key;
+  const isLocal = provider.is_local === true;
 
   return (
     <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-card)] p-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--color-accent)]">
-            <Zap className="h-5 w-5 text-[var(--color-primary)]" />
-          </div>
-          <div>
-            <p className="font-semibold capitalize">{provider.name}</p>
-            <p className="text-xs text-[var(--color-muted-foreground)]">
-              {provider.api_base_url}
-              {provider.model_count != null && (
-                <span className="ml-2">
-                  ({provider.model_count} model{provider.model_count !== 1 ? "s" : ""})
-                </span>
-              )}
-            </p>
-          </div>
+      <div className="flex items-center gap-3">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--color-accent)]">
+          <Zap className="h-5 w-5 text-[var(--color-primary)]" />
         </div>
-
-        {/* Toggle */}
-        <button
-          type="button"
-          onClick={onToggle}
-          className={cn(
-            "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors",
-            provider.is_enabled
-              ? "bg-[var(--color-primary)]"
-              : "bg-[var(--color-muted)]"
-          )}
-        >
-          <span
-            className={cn(
-              "pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow transition-transform",
-              provider.is_enabled ? "translate-x-5" : "translate-x-0"
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <p className="font-semibold capitalize">{provider.name}</p>
+            {provider.is_configured && (
+              <span className="rounded bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-medium text-emerald-400">
+                Configured
+              </span>
             )}
-          />
-        </button>
+          </div>
+          <p className="text-xs text-[var(--color-muted-foreground)]">
+            {provider.model_count != null && `${provider.model_count} models`}
+          </p>
+        </div>
       </div>
 
-      {provider.is_enabled && !isLocal && (
+      {!isLocal && (
         <div className="mt-3 flex items-center gap-2">
           <div className="relative flex-1">
             <input
@@ -272,17 +242,26 @@ export default function SetupWizard() {
   const [completing, setCompleting] = useState(false);
 
   /* Load providers on step 3 */
+  const POPULAR_IDS = [
+    "anthropic", "openai", "groq", "ollama", "deepseek", "mistral",
+    "google", "gemini", "openrouter", "together", "fireworks", "cohere",
+  ];
+
   const loadProviders = useCallback(async () => {
     try {
       const res = await api.get<{ providers: Provider[] }>("/providers");
-      const sorted = (res.providers || []).sort((a, b) => {
-        const ai = POPULAR_PROVIDERS.indexOf(a.slug);
-        const bi = POPULAR_PROVIDERS.indexOf(b.slug);
-        if (ai >= 0 && bi >= 0) return ai - bi;
-        if (ai >= 0) return -1;
-        if (bi >= 0) return 1;
-        return a.name.localeCompare(b.name);
-      });
+      const all = res.providers || [];
+      // Show popular providers first, then enabled ones, then hide the rest
+      const sorted = all
+        .filter((p) => POPULAR_IDS.includes(p.id) || p.is_enabled || p.is_configured)
+        .sort((a, b) => {
+          const ai = POPULAR_IDS.indexOf(a.id);
+          const bi = POPULAR_IDS.indexOf(b.id);
+          if (ai >= 0 && bi >= 0) return ai - bi;
+          if (ai >= 0) return -1;
+          if (bi >= 0) return 1;
+          return a.name.localeCompare(b.name);
+        });
       setProviders(sorted);
     } catch {
       // providers may not exist yet
@@ -322,29 +301,14 @@ export default function SetupWizard() {
     }
   };
 
-  const handleToggleProvider = async (provider: Provider) => {
-    try {
-      await api.put(`/providers/${provider.id}`, {
-        is_enabled: !provider.is_enabled,
-      });
-      setProviders((prev) =>
-        prev.map((p) =>
-          p.id === provider.id ? { ...p, is_enabled: !p.is_enabled } : p
-        )
-      );
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to toggle provider");
-    }
-  };
-
   const handleTestConnection = async (provider: Provider) => {
     setTestStatuses((prev) => ({ ...prev, [provider.id]: "testing" }));
 
     try {
       // Save key first if there is one
       const key = apiKeys[provider.id];
-      if (key && provider.requires_api_key) {
-        await api.put(`/providers/${provider.id}`, { api_key: key });
+      if (key && !provider.is_local) {
+        await api.put(`/providers/${provider.id}`, { api_key: key, is_enabled: true });
       }
 
       await api.post(`/providers/${provider.id}/test`);
@@ -364,19 +328,19 @@ export default function SetupWizard() {
     setCompleting(true);
     try {
       // Save preferences
-      await api.put("/preferences", {
-        default_provider: defaultProvider,
-        default_model: defaultModel,
-        ...(plannerProvider && plannerModel
-          ? { planner_provider: plannerProvider, planner_model: plannerModel }
-          : {}),
-        ...(executorProvider && executorModel
-          ? { executor_provider: executorProvider, executor_model: executorModel }
-          : {}),
-        ...(reviewerProvider && reviewerModel
-          ? { reviewer_provider: reviewerProvider, reviewer_model: reviewerModel }
-          : {}),
-      });
+      const prefs: Record<string, { provider_id: string; model_id: string }> = {
+        default: { provider_id: defaultProvider, model_id: defaultModel },
+      };
+      if (plannerProvider && plannerModel) {
+        prefs.planner = { provider_id: plannerProvider, model_id: plannerModel };
+      }
+      if (executorProvider && executorModel) {
+        prefs.executor = { provider_id: executorProvider, model_id: executorModel };
+      }
+      if (reviewerProvider && reviewerModel) {
+        prefs.reviewer = { provider_id: reviewerProvider, model_id: reviewerModel };
+      }
+      await api.put("/preferences", prefs);
 
       // Complete setup
       await api.post("/setup/complete");
@@ -390,7 +354,7 @@ export default function SetupWizard() {
   };
 
   const configuredProviders = providers.filter(
-    (p) => p.is_enabled && (p.is_configured || !p.requires_api_key)
+    (p) => p.is_enabled && (p.is_configured || p.is_local)
   );
 
   const hasConfigured = configuredProviders.length > 0;
@@ -501,7 +465,6 @@ export default function SetupWizard() {
                     apiKey={apiKeys[provider.id] || ""}
                     showKey={showKeys[provider.id] || false}
                     testStatus={testStatuses[provider.id] || "idle"}
-                    onToggle={() => handleToggleProvider(provider)}
                     onKeyChange={(v) =>
                       setApiKeys((prev) => ({ ...prev, [provider.id]: v }))
                     }

@@ -3,54 +3,52 @@ version: "1.0"
 category: network/port-scanning
 phase: reconnaissance
 command: nmap
+args: []
+
 docker:
   image: instrumentisto/nmap:latest
-  args:
-    - "-sS"
-    - "-sV"
-    - "-O"
-    - "--script=vulners"
-    - "-p-"
-    - "${target}"
-    - "-oX"
-    - "/output/nmap-results.xml"
   memory_limit: "512m"
-  timeout: "1800s"
+  timeout: "600s"
 
 short_description: Network discovery and security auditing
 description: |
   Nmap is a free and open source utility for network discovery and security auditing.
-  It uses raw IP packets to determine what hosts are available on the network,
-  what services those hosts are offering, and more.
+  Uses raw IP packets to determine hosts, services, OS, and vulnerabilities.
+notes: |
+  - The 'flags' parameter accepts raw nmap flags like -sV -sS -O -A
+  - Target goes as positional argument at the end
 
 parameters:
+  - name: flags
+    type: string
+    required: false
+    flag: ""
+    default: "-sV -T4"
+    description: "Raw nmap flags (e.g. -sV -sS -O -p 80,443 -A)"
   - name: target
     type: string
     required: true
-    description: Target IP, hostname, or network
-  - name: ports
-    type: string
-    required: false
-    default: "1-65535"
-    description: Port range to scan
-  - name: scan-type
-    type: string
-    required: false
-    default: "sS"
-    enum: [sS, sT, sU, sV]
-    description: Scan type
+    description: "Target IP, hostname, or CIDR range"
 
 output:
-  format: xml
+  format: text
   success_patterns:
-    - "host"
+    - "Nmap scan report"
+    - "open"
+    - "Host is up"
   failure_patterns:
-    - "failed"
+    - "failed to resolve"
+    - "No targets were specified"
+  severity_indicators:
+    high:
+      - "VULNERABLE"
+      - "CVE-"
+    medium:
+      - "open"
 
 chain_suggestions:
-  before:
-    - masscan
   after:
     - nuclei
+    - nikto
 
 enabled: true

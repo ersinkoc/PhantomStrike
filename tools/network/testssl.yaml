@@ -3,38 +3,52 @@ version: "1.0"
 category: network/ssl-testing
 phase: scanning
 command: testssl.sh
+args: []
+
 docker:
   image: drwetter/testssl.sh:latest
-  args:
-    - "--jsonfile"
-    - "/output/testssl-results.json"
-    - "--full"
-    - "${target}"
   memory_limit: "512m"
   timeout: "600s"
 
 short_description: SSL/TLS security testing
 description: |
   Testing TLS/SSL encryption. Checks for vulnerable protocols, cipher suites,
-  certificate issues, and common vulnerabilities.
+  certificate issues, and common vulnerabilities like Heartbleed, POODLE, DROWN.
+notes: |
+  - Runs all tests by default; use specific flags for targeted checks
+  - Use --color 0 for clean non-colored output
+  - Use --ip one to test only one IP for multi-homed hosts
 
 parameters:
+  - name: flags
+    type: string
+    required: false
+    flag: ""
+    default: "--color 0"
+    description: "Raw testssl flags (e.g. --full -p -U --ip one)"
   - name: target
     type: string
     required: true
-    description: Target host:port
-  - name: mode
-    type: string
-    required: false
-    default: "full"
-    enum: [full, quick, standard]
+    flag: ""
+    description: "Target host:port (e.g. example.com:443)"
 
 output:
-  format: json
+  format: text
+  success_patterns:
+    - "Testing"
+    - "Done"
+    - "not vulnerable"
+  failure_patterns:
+    - "Fatal error"
+    - "Cannot connect"
   severity_indicators:
-    CRITICAL:
-      - "CRITICAL"
-    HIGH:
-      - "HIGH"
+    critical:
+      - "VULNERABLE"
+      - "Heartbleed"
+      - "DROWN"
+    high:
+      - "POODLE"
+      - "BEAST"
+      - "FREAK"
 
 enabled: true

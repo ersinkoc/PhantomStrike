@@ -1,62 +1,39 @@
-name: "nikto"
-version: "1.0.0"
-category: "web/vulnerability-scanning"
-tags: ["web-scanner", "misconfig", "cgi", "server-scan", "web-app"]
-command: "nikto"
-args: ["-ask", "no"]
-docker:
-  image: "phantomstrike/nikto:latest"
-  network: "isolated"
-  memory_limit: "512m"
-  cpu_limit: "1.0"
-  timeout: "600s"
-short_description: "Comprehensive web server scanner testing for dangerous files, outdated software, and misconfigurations."
+name: nikto
+version: "1.0"
+category: web/vulnerability-scanning
+phase: scanning
+command: nikto
+args: []
+
+short_description: Comprehensive web server scanner for misconfigurations and vulnerabilities
 description: |
   Nikto is an open-source web server scanner that performs comprehensive tests
   against web servers for multiple items including over 6700 potentially dangerous
-  files/CGIs, checks for outdated versions of over 1250 servers, and version-specific
-  problems on over 270 servers. It also checks for server configuration issues such
-  as the presence of multiple index files, HTTP server options, and identifies
-  installed web servers and software. Nikto is not designed as a stealthy tool --
-  it will test a web server in the shortest time possible, and is fairly obvious
-  in log files. It supports SSL, proxy, host authentication, and output in
-  multiple formats.
+  files/CGIs, checks for outdated versions of over 1250 servers, and identifies
+  server configuration issues. It supports SSL, proxy, host authentication,
+  and output in multiple formats.
 notes: |
-  - Nikto is noisy by design; it is not suitable for stealthy assessments.
-  - Use -ssl flag for HTTPS targets or Nikto may scan HTTP by default.
-  - Tuning options (-Tuning) allow focusing on specific test categories.
-  - Tuning codes: 1=Files, 2=Misconfig, 3=Info, 4=XSS, 5=Command Injection, 6=RFI, 7=DoS, 8=Command Exec, 9=SQLi, 0=File Upload, a=Auth Bypass, b=Software ID, c=Source Disclosure.
-  - Update the database regularly with -update for latest vulnerability checks.
-  - Use -Plugins to run specific test plugins only.
-  - For large scans, consider the -timeout flag to avoid hanging on unresponsive servers.
+  - Runs in process mode (no Docker) - requires nikto installed locally
+  - Uses -ask no for non-interactive mode
+  - Nikto is noisy by design; not suitable for stealthy assessments
+  - Use -ssl flag for HTTPS targets
+  - Tuning codes: 1=Files, 2=Misconfig, 3=Info, 4=XSS, 5=Command Injection, 6=RFI
+
 parameters:
-  - name: "host"
-    type: "string"
-    description: "Target host URL or IP address. Example: http://target.com, 192.168.1.1, or target.com"
+  - name: flags
+    type: string
+    required: false
+    flag: ""
+    default: "-ask no"
+    description: "Raw nikto flags (e.g. -ask no -ssl -p 443 -Tuning 123)"
+  - name: target
+    type: string
     required: true
     flag: "-h"
-  - name: "port"
-    type: "integer"
-    description: "Target port number. Default: 80. Use 443 for HTTPS. Can specify multiple: 80,443,8080."
-    required: false
-    flag: "-p"
-  - name: "ssl"
-    type: "boolean"
-    description: "Force SSL mode for HTTPS scanning. Required when target uses HTTPS on non-standard ports."
-    required: false
-    flag: "-ssl"
-  - name: "tuning"
-    type: "string"
-    description: "Scan tuning to control test types. Combine codes: 123 runs Files+Misconfig+Info. Use x to exclude: x6 skips RFI tests."
-    required: false
-    flag: "-Tuning"
-  - name: "output"
-    type: "string"
-    description: "Output file path. Format auto-detected from extension: .html, .xml, .csv, .txt, .json"
-    required: false
-    flag: "-o"
+    description: "Target host URL or IP (e.g. http://target.com or 192.168.1.1)"
+
 output:
-  format: "text"
+  format: text
   success_patterns:
     - "\\+ Target IP:"
     - "\\+ Target Hostname:"
@@ -66,7 +43,6 @@ output:
   failure_patterns:
     - "ERROR"
     - "No web server found"
-    - "host(s) tested"
     - "0 host(s) tested"
   severity_indicators:
     critical:
@@ -88,15 +64,14 @@ output:
       - "Server banner"
       - "uncommon header"
       - "allowed HTTP Methods"
+
 chain_suggestions:
   before:
     - "nmap"
     - "httpx"
-    - "whatweb"
   after:
     - "sqlmap"
     - "nuclei"
-    - "dalfox"
     - "ffuf"
-    - "gobuster"
+
 enabled: true

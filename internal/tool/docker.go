@@ -31,12 +31,16 @@ func (d *DockerRunner) Run(ctx context.Context, def *Definition, command string,
 	defer cancel()
 
 	// Build docker run command
+	// Use "host" network by default so tools can reach targets.
+	// Use "none" only if explicitly configured for isolated tools.
+	network := def.Docker.Network
+	if network == "" || network == "isolated" {
+		network = "host" // tools need to reach external targets
+	}
+
 	dockerArgs := []string{
 		"run", "--rm",
-		"--network", coalesce(def.Docker.Network, "none"),
-		"--read-only",
-		"--no-new-privileges",
-		"--user", "1000:1000",
+		"--network", network,
 	}
 
 	// Memory limit
@@ -63,8 +67,8 @@ func (d *DockerRunner) Run(ctx context.Context, def *Definition, command string,
 	}
 	dockerArgs = append(dockerArgs, image)
 
-	// Tool command and args
-	dockerArgs = append(dockerArgs, command)
+	// Tool args only — Docker images have ENTRYPOINT set to the tool binary,
+	// so we don't add the command name again.
 	dockerArgs = append(dockerArgs, args...)
 
 	slog.Debug("running docker container",

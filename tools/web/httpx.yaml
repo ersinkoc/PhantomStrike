@@ -3,20 +3,10 @@ version: "1.0"
 category: web/reconnaissance
 phase: reconnaissance
 command: httpx
+args: []
+
 docker:
   image: projectdiscovery/httpx:latest
-  args:
-    - "-l"
-    - "/input/hosts.txt"
-    - "-json"
-    - "-o"
-    - "/output/httpx-results.json"
-    - "-threads"
-    - "50"
-    - "-title"
-    - "-tech-detect"
-    - "-status-code"
-    - "-follow-redirects"
   memory_limit: "512m"
   timeout: "300s"
 
@@ -25,27 +15,33 @@ description: |
   Httpx is a fast and multi-purpose HTTP toolkit that allows running multiple
   probes using the retryablehttp library. It supports probing multiple protocols
   and has smart fallback mechanisms.
+notes: |
+  - Use -u for single target or -l for target list file
+  - Common flags: -status-code -title -tech-detect -follow-redirects
+  - Use -threads to control concurrency
 
 parameters:
+  - name: flags
+    type: string
+    required: false
+    flag: ""
+    default: "-silent -status-code -title -tech-detect"
+    description: "Raw httpx flags (e.g. -status-code -title -tech-detect -follow-redirects -threads 50)"
   - name: target
     type: string
     required: true
-    description: Target host or file with hosts
-  - name: threads
-    type: integer
-    required: false
-    default: 50
-    description: Number of threads
-  - name: timeout
-    type: integer
-    required: false
-    default: 10
-    description: Timeout in seconds
+    flag: "-u"
+    description: "Target URL or host to probe"
 
 output:
-  format: json
+  format: text
   success_patterns:
-    - "url"
+    - "http"
+    - "\\[200\\]"
+    - "\\[301\\]"
+  failure_patterns:
+    - "could not connect"
+    - "no addresses found"
 
 chain_suggestions:
   after:

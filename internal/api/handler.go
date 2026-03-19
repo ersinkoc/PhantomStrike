@@ -102,6 +102,7 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
 	mux.Handle("GET /api/v1/tools", protected(http.HandlerFunc(h.handleListTools)))
 	mux.Handle("GET /api/v1/tools/{name}", protected(http.HandlerFunc(h.handleGetTool)))
 	mux.Handle("PUT /api/v1/tools/{name}/toggle", protected(http.HandlerFunc(h.handleToggleTool)))
+	mux.Handle("POST /api/v1/tools/{name}/run", protected(http.HandlerFunc(h.handleRunTool)))
 	mux.Handle("GET /api/v1/tools/categories", protected(http.HandlerFunc(h.handleToolCategories)))
 
 	// Settings

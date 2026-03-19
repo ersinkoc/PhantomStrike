@@ -3,6 +3,7 @@ package tool
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 )
@@ -39,6 +40,8 @@ func BuildCommand(def *Definition, params map[string]any) (string, []string) {
 	args := make([]string, len(def.Args))
 	copy(args, def.Args)
 
+	var positionalArgs []string
+
 	for _, p := range def.Parameters {
 		val, ok := params[p.Name]
 		if !ok {
@@ -49,7 +52,14 @@ func BuildCommand(def *Definition, params map[string]any) (string, []string) {
 			}
 		}
 
+		// No flag = positional argument or raw flags
 		if p.Flag == "" {
+			if s, ok := val.(string); ok && s != "" {
+				// Split space-separated values into individual args
+				// This allows params like "flags": "-sV -T4 -O" to become separate args
+				parts := strings.Fields(s)
+				positionalArgs = append(positionalArgs, parts...)
+			}
 			continue
 		}
 
@@ -70,6 +80,9 @@ func BuildCommand(def *Definition, params map[string]any) (string, []string) {
 			args = append(args, p.Flag, fmt.Sprintf("%v", v))
 		}
 	}
+
+	// Positional args go at the end
+	args = append(args, positionalArgs...)
 
 	return cmd, args
 }

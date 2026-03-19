@@ -14,11 +14,11 @@ import { cn, formatDate } from "@/lib/utils";
 interface Provider {
   id: string;
   name: string;
-  slug: string;
   api_base_url: string;
   is_enabled: boolean;
   is_configured: boolean;
-  requires_api_key: boolean;
+  is_local: boolean;
+  sdk_type: string;
   model_count?: number;
   priority?: number;
   last_synced_at?: string;
@@ -125,7 +125,7 @@ function ProviderCard({
   const handleTest = async () => {
     setTestStatus("testing");
     try {
-      if (apiKey && provider.requires_api_key) {
+      if (apiKey && !provider.is_local) {
         await api.put(`/providers/${provider.id}`, { api_key: apiKey });
       }
       await api.post(`/providers/${provider.id}/test`);
@@ -254,7 +254,7 @@ function ProviderCard({
       {expanded && (
         <div className="border-t border-[var(--color-border)]">
           {/* API Key Section */}
-          {provider.requires_api_key && (
+          {!provider.is_local && (
             <div className="border-b border-[var(--color-border)] px-5 py-4 space-y-3">
               <p className="text-sm font-medium">API Key</p>
               <div className="flex items-center gap-2">
@@ -318,7 +318,7 @@ function ProviderCard({
           )}
 
           {/* Local provider test */}
-          {!provider.requires_api_key && (
+          {!!provider.is_local && (
             <div className="border-b border-[var(--color-border)] px-5 py-4">
               <div className="flex items-center gap-3">
                 <span className="rounded bg-emerald-500/10 px-2 py-0.5 text-xs text-emerald-400">
@@ -395,6 +395,104 @@ function ProviderCard({
               </p>
             )}
           </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ---------- Providers List with Search ---------- */
+
+const POPULAR = ["anthropic", "openai", "groq", "ollama", "deepseek", "mistral", "google", "gemini", "openrouter", "together", "fireworks", "cohere"];
+
+function ProvidersList({ providers, models, onRefresh }: { providers: Provider[]; models: Model[]; onRefresh: () => void }) {
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState<"all" | "popular" | "configured">("popular");
+
+  const filtered = useMemo(() => {
+    let list = [...providers];
+
+    // Filter
+    if (filter === "popular") {
+      list = list.filter((p) => POPULAR.includes(p.id) || p.is_configured || p.is_enabled);
+    } else if (filter === "configured") {
+      list = list.filter((p) => p.is_configured || p.is_enabled);
+    }
+
+    // Search
+    if (search) {
+      const q = search.toLowerCase();
+      list = list.filter((p) =>
+        p.name.toLowerCase().includes(q) || p.id.toLowerCase().includes(q)
+      );
+    }
+
+    // Sort: configured first, then popular, then alphabetical
+    list.sort((a, b) => {
+      if (a.is_configured !== b.is_configured) return a.is_configured ? -1 : 1;
+      if (a.is_enabled !== b.is_enabled) return a.is_enabled ? -1 : 1;
+      const ai = POPULAR.indexOf(a.id);
+      const bi = POPULAR.indexOf(b.id);
+      if (ai >= 0 && bi >= 0) return ai - bi;
+      if (ai >= 0) return -1;
+      if (bi >= 0) return 1;
+      return a.name.localeCompare(b.name);
+    });
+
+    return list;
+  }, [providers, search, filter]);
+
+  return (
+    <div className="space-y-4">
+      {/* Search & Filter */}
+      <div className="flex items-center gap-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--color-muted-foreground)]" />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search providers..."
+            className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] py-2 pl-10 pr-3 text-sm outline-none focus:border-[var(--color-primary)] focus:ring-1 focus:ring-[var(--color-primary)]"
+          />
+        </div>
+        <div className="flex gap-1 rounded-lg border border-[var(--color-border)] p-1">
+          {(["popular", "configured", "all"] as const).map((f) => (
+            <button
+              key={f}
+              onClick={() => setFilter(f)}
+              className={cn(
+                "rounded-md px-3 py-1 text-xs font-medium capitalize transition-colors",
+                filter === f
+                  ? "bg-[var(--color-primary)] text-[var(--color-primary-foreground)]"
+                  : "text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)]"
+              )}
+            >
+              {f}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Provider Cards */}
+      <div className="space-y-3">
+        {filtered.map((provider) => (
+          <ProviderCard
+            key={provider.id}
+            provider={provider}
+            models={models}
+            onRefresh={onRefresh}
+          />
+        ))}
+      </div>
+
+      {filtered.length === 0 && (
+        <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-card)] px-5 py-12 text-center">
+          <p className="text-[var(--color-muted-foreground)]">
+            {providers.length === 0
+              ? 'No providers found. Click "Sync from models.dev" to get started.'
+              : "No providers match your search."}
+          </p>
         </div>
       )}
     </div>
@@ -690,7 +788,7 @@ function PreferencesSection({
 }) {
   const queryClient = useQueryClient();
   const configuredProviders = providers.filter(
-    (p) => p.is_enabled && (p.is_configured || !p.requires_api_key)
+    (p) => p.is_enabled && (p.is_configured || p.is_local)
   );
 
   const { data: prefs } = useQuery({
@@ -719,7 +817,25 @@ function PreferencesSection({
   }, [prefs]);
 
   const saveMutation = useMutation({
-    mutationFn: () => api.put("/preferences", form),
+    mutationFn: () => {
+      const payload: Record<string, { provider_id: string; model_id: string }> = {};
+      if (form.default_provider && form.default_model) {
+        payload.default = { provider_id: form.default_provider, model_id: form.default_model };
+      }
+      if (form.planner_provider && form.planner_model) {
+        payload.planner = { provider_id: form.planner_provider, model_id: form.planner_model };
+      }
+      if (form.executor_provider && form.executor_model) {
+        payload.executor = { provider_id: form.executor_provider, model_id: form.executor_model };
+      }
+      if (form.reviewer_provider && form.reviewer_model) {
+        payload.reviewer = { provider_id: form.reviewer_provider, model_id: form.reviewer_model };
+      }
+      if (form.embedding_provider && form.embedding_model) {
+        payload.embedding = { provider_id: form.embedding_provider, model_id: form.embedding_model };
+      }
+      return api.put("/preferences", payload);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["preferences"] });
       toast.success("Preferences saved");
@@ -936,25 +1052,11 @@ export default function ProvidersPage() {
       )}
 
       {!providersLoading && !modelsLoading && activeTab === "providers" && (
-        <div className="space-y-4">
-          {providers.map((provider) => (
-            <ProviderCard
-              key={provider.id}
-              provider={provider}
-              models={models}
-              onRefresh={() =>
-                queryClient.invalidateQueries({ queryKey: ["providers"] })
-              }
-            />
-          ))}
-          {providers.length === 0 && (
-            <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-card)] px-5 py-12 text-center">
-              <p className="text-[var(--color-muted-foreground)]">
-                No providers found. Click "Sync from models.dev" to get started.
-              </p>
-            </div>
-          )}
-        </div>
+        <ProvidersList
+          providers={providers}
+          models={models}
+          onRefresh={() => queryClient.invalidateQueries({ queryKey: ["providers"] })}
+        />
       )}
 
       {!providersLoading && !modelsLoading && activeTab === "models" && (

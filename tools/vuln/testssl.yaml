@@ -1,63 +1,43 @@
-name: "testssl"
-version: "1.0.0"
-category: "vuln/ssl-tls"
-tags: ["ssl", "tls", "certificate", "cryptography", "compliance", "vulnerability"]
-command: "testssl.sh"
+name: testssl
+version: "1.0"
+category: vuln/ssl-tls
+phase: scanning
+command: testssl.sh
 args: []
+
 docker:
-  image: "phantomstrike/testssl:latest"
-  network: "isolated"
+  image: drwetter/testssl.sh:latest
   memory_limit: "512m"
-  cpu_limit: "1.0"
   timeout: "600s"
-short_description: "Command-line tool for testing TLS/SSL encryption, protocols, ciphers, and known vulnerabilities."
+
+short_description: Command-line tool for testing TLS/SSL encryption and vulnerabilities
 description: |
   testssl.sh is a free command-line tool that checks a server's TLS/SSL service
   for supported protocols, standard cipher suites, certificate details, and
   known cryptographic vulnerabilities. It tests for Heartbleed, CCS Injection,
-  Ticketbleed, ROBOT, BREACH, POODLE, DROWN, LOGJAM, BEAST, LUCKY13, SWEET32,
-  FREAK, RC4, and many other TLS/SSL vulnerabilities. It also checks for HTTP
-  security headers, HSTS, HPKP, certificate chain issues, and OCSP stapling.
-  testssl.sh does not require installation of additional libraries and works
-  with any OpenSSL version or even without OpenSSL using built-in functionality.
+  Ticketbleed, ROBOT, BREACH, POODLE, DROWN, LOGJAM, BEAST, and more.
 notes: |
   - testssl.sh runs all tests by default; use specific flags to run targeted checks.
   - Use --jsonfile for machine-parseable JSON output.
-  - Use --csvfile for CSV output suitable for spreadsheet analysis.
   - The --full flag runs all checks including less common tests.
   - Use --ip one to test only one IP if the hostname resolves to multiple addresses.
-  - SNI is handled automatically but can be overridden with --sni.
-  - For CI/CD integration, use --severity to set exit code thresholds.
   - Testing takes 2-5 minutes per host depending on server responsiveness.
-  - Use --starttls for testing STARTTLS on SMTP, IMAP, POP3, FTP, XMPP, etc.
+
 parameters:
-  - name: "target"
-    type: "string"
-    description: "Target host:port or URL. Examples: example.com:443, https://example.com, mail.example.com:25 (with --starttls smtp)"
+  - name: flags
+    type: string
+    required: false
+    flag: ""
+    default: "--color 0"
+    description: "Raw testssl flags (e.g. --full -p -U --ip one)"
+  - name: target
+    type: string
     required: true
     flag: ""
-  - name: "full"
-    type: "boolean"
-    description: "Run all tests including less common checks. More thorough but takes longer."
-    required: false
-    flag: "--full"
-  - name: "protocols"
-    type: "boolean"
-    description: "Test only SSL/TLS protocol support (SSLv2, SSLv3, TLS 1.0, 1.1, 1.2, 1.3)."
-    required: false
-    flag: "-p"
-  - name: "vulnerabilities"
-    type: "boolean"
-    description: "Test only for known TLS/SSL vulnerabilities (Heartbleed, POODLE, DROWN, etc.)."
-    required: false
-    flag: "-U"
-  - name: "output"
-    type: "string"
-    description: "File path for JSON output. Use --jsonfile for structured results."
-    required: false
-    flag: "--jsonfile"
+    description: "Target host:port (e.g. example.com:443 or https://example.com)"
+
 output:
-  format: "text"
+  format: text
   success_patterns:
     - "Testing"
     - "Done"
@@ -96,12 +76,12 @@ output:
       - "no HSTS"
       - "no OCSP"
       - "certificate chain"
+
 chain_suggestions:
   before:
     - "nmap"
     - "httpx"
-    - "subfinder"
   after:
     - "nuclei"
-    - "nikto"
+
 enabled: true

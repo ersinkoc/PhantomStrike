@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import Marquee from 'react-fast-marquee';
 import { Activity, Shield, AlertTriangle, CheckCircle, Terminal } from 'lucide-react';
 
 interface DataStream {
@@ -84,15 +83,14 @@ export function RealtimeDataStream() {
   return (
     <div className="bg-black/80 border border-green-500/30 rounded-lg overflow-hidden">
       {/* Stats Bar */}
-      <div className="bg-green-900/20 border-b border-green-500/30 px-4 py-2">
-        <Marquee speed={30} gradient={false} className="text-sm">
-          <span className="text-green-400 mx-4">ACTIVE SCANS: {stats.scans}</span>
-          <span className="text-red-400 mx-4">VULNERABILITIES: {stats.vulns}</span>
-          <span className="text-blue-400 mx-4">TOOLS RUNNING: {stats.tools}</span>
-          <span className="text-purple-400 mx-4">AGENTS ONLINE: {stats.agents}</span>
-          <span className="text-yellow-400 mx-4">TARGET: example.com</span>
-          <span className="text-cyan-400 mx-4">STATUS: ACTIVE</span>
-        </Marquee>
+      <div className="bg-green-900/20 border-b border-green-500/30 px-4 py-2 overflow-x-auto">
+        <div className="flex items-center gap-6 text-sm whitespace-nowrap">
+          <span className="text-green-400">ACTIVE SCANS: {stats.scans}</span>
+          <span className="text-red-400">VULNERABILITIES: {stats.vulns}</span>
+          <span className="text-blue-400">TOOLS RUNNING: {stats.tools}</span>
+          <span className="text-purple-400">AGENTS ONLINE: {stats.agents}</span>
+          <span className="text-cyan-400">STATUS: ACTIVE</span>
+        </div>
       </div>
 
       {/* Live Data Feed */}

@@ -3,45 +3,55 @@ version: "1.0"
 category: web/sql-injection
 phase: exploitation
 command: sqlmap
-docker:
-  image: paoloo/sqlmap:latest
-  args:
-    - "-u"
-    - "${target}"
-    - "--batch"
-    - "--dump-all"
-    - "--output-dir=/output/sqlmap"
-  memory_limit: "1g"
-  timeout: "1800s"
+args: []
 
-short_description: Automatic SQL injection tool
+short_description: Automatic SQL injection detection and exploitation tool
 description: |
   Sqlmap automates detecting and exploiting SQL injection flaws and taking
-  over database servers. Supports MySQL, PostgreSQL, Oracle, SQL Server.
+  over database servers. Supports MySQL, PostgreSQL, Oracle, SQL Server,
+  and many other database management systems.
+notes: |
+  - Runs in process mode (no Docker) - requires sqlmap installed locally
+  - Always uses --batch for non-interactive mode
+  - Use --level to increase test thoroughness (1-5)
+  - Use --risk to increase risk of tests (1-3)
+  - Use --dbs to enumerate databases, --tables for tables
 
 parameters:
+  - name: flags
+    type: string
+    required: false
+    flag: ""
+    default: "--batch --level=1 --risk=1"
+    description: "Raw sqlmap flags (e.g. --batch --level=3 --risk=2 --dbs --tables)"
   - name: target
     type: string
     required: true
-    description: Target URL with parameters
-  - name: level
-    type: integer
-    required: false
-    default: 1
-    description: Test level (1-5)
-  - name: risk
-    type: integer
-    required: false
-    default: 1
-    description: Risk level (1-3)
+    flag: "-u"
+    description: "Target URL with injectable parameter (e.g. http://target.com/page?id=1)"
 
 output:
-  format: json
+  format: text
   success_patterns:
     - "injection"
+    - "Parameter"
+    - "payload"
+    - "is vulnerable"
+  failure_patterns:
+    - "all tested parameters do not appear to be injectable"
+    - "connection timed out"
+  severity_indicators:
+    critical:
+      - "is vulnerable"
+      - "SQL injection"
+      - "injection point"
+    high:
+      - "payload"
+      - "injected"
 
 chain_suggestions:
   before:
     - nuclei
+  after: []
 
 enabled: true

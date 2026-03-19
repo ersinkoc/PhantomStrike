@@ -83,9 +83,14 @@ func (h *Handler) handleListSkills(w http.ResponseWriter, r *http.Request) {
 
 	var skills []map[string]interface{}
 
-	// Walk skills directory
+	// Walk skills directory (supports .yaml and .md files)
 	err := filepath.Walk(skillsDir, func(path string, info os.FileInfo, err error) error {
-		if err != nil || info.IsDir() || filepath.Ext(path) != ".yaml" {
+		if err != nil || info.IsDir() {
+			return nil
+		}
+
+		ext := filepath.Ext(path)
+		if ext != ".yaml" && ext != ".yml" && ext != ".md" {
 			return nil
 		}
 
@@ -94,12 +99,32 @@ func (h *Handler) handleListSkills(w http.ResponseWriter, r *http.Request) {
 			return nil
 		}
 
-		var skill map[string]interface{}
-		if err := yaml.Unmarshal(data, &skill); err != nil {
-			return nil
+		if ext == ".md" {
+			// Markdown files: use parent dir as name (e.g. skills/api/api-security/SKILL.md -> "api-security")
+			fileName := filepath.Base(path)
+			parentDir := filepath.Dir(path)
+			name := filepath.Base(parentDir)
+			// If file is not SKILL.md, use filename as name
+			if fileName != "SKILL.md" {
+				name = fileName[:len(fileName)-len(ext)]
+			}
+			category := filepath.Base(filepath.Dir(parentDir))
+			if category == filepath.Base(skillsDir) || category == "." {
+				category = "general"
+			}
+			skills = append(skills, map[string]interface{}{
+				"name":     name,
+				"category": category,
+				"content":  string(data),
+				"type":     "markdown",
+			})
+		} else {
+			var skill map[string]interface{}
+			if err := yaml.Unmarshal(data, &skill); err != nil {
+				return nil
+			}
+			skills = append(skills, skill)
 		}
-
-		skills = append(skills, skill)
 		return nil
 	})
 
@@ -109,10 +134,13 @@ func (h *Handler) handleListSkills(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if skills == nil {
+		skills = []map[string]interface{}{}
+	}
 	result := map[string]interface{}{"skills": skills}
 
-	// Cache the result
-	if h.cache != nil {
+	// Only cache non-empty results
+	if h.cache != nil && len(skills) > 0 {
 		_ = h.cache.SetJSON(r.Context(), "api:skills:list", result, 5*time.Minute)
 	}
 

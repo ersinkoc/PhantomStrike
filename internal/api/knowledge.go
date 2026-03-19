@@ -20,18 +20,18 @@ func (h *Handler) handleKnowledgeList(w http.ResponseWriter, r *http.Request) {
 	var args []interface{}
 
 	if search != "" {
-		query = `SELECT id, category, title, content, source_file, embedding_model, created_at
+		query = `SELECT id, category, title, content, source_file, created_at
 			 FROM knowledge_items
 			 WHERE to_tsvector('english', title || ' ' || content) @@ plainto_tsquery('english', $1)
 			 ORDER BY ts_rank(to_tsvector('english', title || ' ' || content), plainto_tsquery('english', $1)) DESC
 			 LIMIT $2`
 		args = []interface{}{search, limit}
 	} else if category != "" {
-		query = `SELECT id, category, title, content, source_file, embedding_model, created_at
+		query = `SELECT id, category, title, content, source_file, created_at
 			 FROM knowledge_items WHERE category = $1 ORDER BY title LIMIT $2`
 		args = []interface{}{category, limit}
 	} else {
-		query = `SELECT id, category, title, content, source_file, embedding_model, created_at
+		query = `SELECT id, category, title, content, source_file, created_at
 			 FROM knowledge_items ORDER BY category, title LIMIT $1`
 		args = []interface{}{limit}
 	}
@@ -45,19 +45,19 @@ func (h *Handler) handleKnowledgeList(w http.ResponseWriter, r *http.Request) {
 
 	var items []map[string]interface{}
 	for rows.Next() {
-		var id, category, title, content, sourceFile, embeddingModel string
+		var id, category, title, content string
+		var sourceFile *string
 		var createdAt string
-		if err := rows.Scan(&id, &category, &title, &content, &sourceFile, &embeddingModel, &createdAt); err != nil {
+		if err := rows.Scan(&id, &category, &title, &content, &sourceFile, &createdAt); err != nil {
 			continue
 		}
 		items = append(items, map[string]interface{}{
-			"id":              id,
-			"category":        category,
-			"title":           title,
-			"content":         content,
-			"source_file":     sourceFile,
-			"embedding_model": embeddingModel,
-			"created_at":      createdAt,
+			"id":          id,
+			"category":    category,
+			"title":       title,
+			"content":     content,
+			"source_file": sourceFile,
+			"created_at":  createdAt,
 		})
 	}
 

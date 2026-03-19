@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Shield, Users, ScrollText, ChevronLeft, ChevronRight } from "lucide-react";
+import { Users, ScrollText, ChevronLeft, ChevronRight } from "lucide-react";
 import { api } from "@/lib/api";
 
 interface AdminUser {

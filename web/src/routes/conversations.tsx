@@ -244,7 +244,6 @@ export default function Conversations() {
 
 function ChatMessage({ message }: { message: Message }) {
   const isUser = message.role === "user";
-  const isAssistant = message.role === "assistant";
   const isTool = message.role === "tool";
   const [toolExpanded, setToolExpanded] = useState(false);
 

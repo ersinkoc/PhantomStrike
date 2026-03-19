@@ -3,51 +3,55 @@ version: "1.0"
 category: web/fuzzing
 phase: scanning
 command: ffuf
-docker:
-  image: ep1nep1/ffuf:latest
-  args:
-    - "-u"
-    - "${target}/FUZZ"
-    - "-w"
-    - "/wordlists/common.txt"
-    - "-json"
-    - "-o"
-    - "/output/ffuf-results.json"
-    - "-t"
-    - "40"
-    - "-mc"
-    - "200,204,301,302,307,401,403,405"
-  memory_limit: "512m"
-  timeout: "600s"
+args: []
 
-short_description: Fast web fuzzer for directory discovery
+short_description: Fast web fuzzer for directory and parameter discovery
 description: |
   Ffuf is a fast web fuzzer written in Go that allows fuzzing of web applications
-  to discover directories, files, parameters, and virtual hosts.
+  to discover directories, files, parameters, and virtual hosts. It supports
+  multiple wordlists, filters, and matchers for flexible fuzzing.
+notes: |
+  - Runs in process mode (no Docker) - requires ffuf installed locally
+  - Use FUZZ keyword in URL for fuzz position
+  - Use -w for wordlist, -mc for match codes, -fc for filter codes
+  - Use -t for threads (default: 40)
+  - Use -e for extensions (e.g. -e .php,.txt,.html)
 
 parameters:
+  - name: flags
+    type: string
+    required: false
+    flag: ""
+    default: "-mc 200,204,301,302,307,401,403,405 -t 40"
+    description: "Raw ffuf flags (e.g. -w /usr/share/wordlists/common.txt -mc 200,301 -t 50)"
   - name: target
     type: string
     required: true
-    description: Target URL with FUZZ keyword
-  - name: wordlist
-    type: string
-    required: false
-    description: Wordlist file path
-  - name: method
-    type: string
-    required: false
-    default: "GET"
-    description: HTTP method
-  - name: extensions
-    type: string
-    required: false
-    description: File extensions (e.g., php,txt,html)
+    flag: "-u"
+    description: "Target URL with FUZZ keyword (e.g. http://target.com/FUZZ)"
 
 output:
-  format: json
+  format: text
   success_patterns:
-    - "results"
+    - "Status:"
+    - "Size:"
+    - "\\[Status:"
+  failure_patterns:
+    - "error"
+    - "No matches"
+  severity_indicators:
+    high:
+      - "admin"
+      - "backup"
+      - "config"
+      - ".env"
+    medium:
+      - "login"
+      - "dashboard"
+      - "api"
+    low:
+      - "Status: 200"
+      - "Status: 301"
 
 chain_suggestions:
   before:

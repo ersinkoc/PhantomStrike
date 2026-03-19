@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"net"
 	"net/http"
 	"strings"
 	"time"
@@ -231,6 +232,10 @@ func realIP(r *http.Request) string {
 		parts := strings.SplitN(forwarded, ",", 2)
 		return strings.TrimSpace(parts[0])
 	}
-	host, _, _ := strings.Cut(r.RemoteAddr, ":")
+	// Handle both IPv4 "1.2.3.4:port" and IPv6 "[::1]:port"
+	host := r.RemoteAddr
+	if h, _, err := net.SplitHostPort(host); err == nil {
+		host = h
+	}
 	return host
 }
