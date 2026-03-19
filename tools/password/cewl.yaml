@@ -1,0 +1,37 @@
+name: cewl
+version: "1.0"
+category: password/wordlist-generator
+phase: reconnaissance
+command: cewl
+docker:
+  image: kalilinux/cewl:latest
+  args:
+    - "${target}"
+    - "-d"
+    - "2"
+    - "-m"
+    - "6"
+    - "-w"
+    - "/output/cewl-wordlist.txt"
+  memory_limit: "512m"
+  timeout: "300s"
+
+short_description: Custom wordlist generator
+description: |
+  CeWL (Custom Word List generator) is a ruby app which spiders a
+  given URL and creates a word list.
+
+parameters:
+  - name: target
+    type: string
+    required: true
+    description: Target URL
+  - name: depth
+    type: integer
+    required: false
+    default: 2
+
+output:
+  format: text
+
+enabled: true

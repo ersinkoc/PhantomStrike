@@ -1,0 +1,36 @@
+name: rpcclient
+version: "1.0"
+category: protocol/ms-rpc
+phase: reconnaissance
+command: rpcclient
+docker:
+  image: kalilinux/rpcclient:latest
+  args:
+    - "-U"
+    - "${username}%${password}"
+    - "${target}"
+    - "-c"
+    - "enumdomusers"
+  memory_limit: "512m"
+  timeout: "300s"
+
+short_description: MS-RPC client
+description: |
+  rpcclient is a tool for executing client side MS-RPC functions.
+
+parameters:
+  - name: target
+    type: string
+    required: true
+    description: Target IP
+  - name: username
+    type: string
+    required: true
+  - name: password
+    type: string
+    required: true
+
+output:
+  format: text
+
+enabled: true

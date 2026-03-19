@@ -1,0 +1,34 @@
+name: strings
+version: "1.0"
+category: forensics/string-extraction
+phase: analysis
+command: strings
+docker:
+  image: busybox:latest
+  args:
+    - "-n"
+    - "6"
+    - "/input/binary"
+    - ">"
+    - "/output/strings-results.txt"
+  memory_limit: "256m"
+  timeout: "60s"
+
+short_description: Extract strings from binary
+description: |
+  strings extracts printable strings from binary files.
+
+parameters:
+  - name: binary
+    type: string
+    required: true
+    description: Binary file
+  - name: min_length
+    type: integer
+    required: false
+    default: 6
+
+output:
+  format: text
+
+enabled: true

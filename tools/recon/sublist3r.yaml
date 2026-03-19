@@ -1,0 +1,34 @@
+name: sublist3r
+version: "1.0"
+category: reconnaissance/subdomain
+phase: reconnaissance
+command: sublist3r
+docker:
+  image: abhaybhargav/sublist3r:latest
+  args:
+    - "-d"
+    - "${domain}"
+    - "-o"
+    - "/output/sublist3r-results.txt"
+    - "-v"
+    - "-t"
+    - "50"
+  memory_limit: "512m"
+  timeout: "600s"
+
+short_description: Subdomain enumeration tool
+description: |
+  Sublist3r is a python tool designed to enumerate subdomains of websites
+  using OSINT. It helps penetration testers and bug hunters collect
+  and gather subdomains for the domain they are targeting.
+
+parameters:
+  - name: domain
+    type: string
+    required: true
+    description: Domain to enumerate
+
+output:
+  format: text
+
+enabled: true

@@ -1,0 +1,31 @@
+name: cloudsplaining
+version: "1.0"
+category: cloud/iam-security
+phase: scanning
+command: cloudsplaining
+docker:
+  image: salesforce/cloudsplaining:latest
+  args:
+    - "scan"
+    - "--input-file"
+    - "/input/iam-data.json"
+    - "--output"
+    - "/output/cloudsplaining-results.json"
+  memory_limit: "1g"
+  timeout: "300s"
+
+short_description: AWS IAM security assessment
+description: |
+  Cloudsplaining identifies violations of least privilege in AWS IAM policies
+  and generates a risk-prioritized HTML report.
+
+parameters:
+  - name: iam_data
+    type: string
+    required: true
+    description: IAM data file
+
+output:
+  format: json
+
+enabled: true

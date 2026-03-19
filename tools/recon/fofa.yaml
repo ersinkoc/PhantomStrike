@@ -1,0 +1,37 @@
+name: fofa
+version: "1.0"
+category: reconnaissance/osint
+phase: reconnaissance
+command: fofa
+docker:
+  image: eeriecyber/fofa:latest
+  args:
+    - "-q"
+    - "${query}"
+    - "-s"
+    - "${size}"
+    - "-k"
+    - "${api_key}"
+  memory_limit: "512m"
+  timeout: "300s"
+
+short_description: FOFA search engine
+description: |
+  FOFA is a cyberspace search engine for mapping assets.
+
+parameters:
+  - name: query
+    type: string
+    required: true
+  - name: size
+    type: integer
+    required: false
+    default: 100
+  - name: api_key
+    type: string
+    required: true
+
+output:
+  format: json
+
+enabled: true

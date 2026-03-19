@@ -1,0 +1,41 @@
+name: hashpump
+version: "1.0"
+category: crypto/hash-length-extension
+phase: exploitation
+command: hashpump
+docker:
+  image: kalilinux/hashpump:latest
+  args:
+    - "-s"
+    - "${signature}"
+    - "-d"
+    - "${data}"
+    - "-a"
+    - "${append}"
+    - "-k"
+    - "${keylen}"
+  memory_limit: "256m"
+  timeout: "60s"
+
+short_description: Hash length extension attack
+description: |
+  HashPump is a tool to exploit hash length extension vulnerabilities.
+
+parameters:
+  - name: signature
+    type: string
+    required: true
+  - name: data
+    type: string
+    required: true
+  - name: append
+    type: string
+    required: true
+  - name: keylen
+    type: integer
+    required: true
+
+output:
+  format: text
+
+enabled: true

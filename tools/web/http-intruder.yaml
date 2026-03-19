@@ -1,0 +1,33 @@
+name: http-intruder
+version: "1.0"
+category: web/http-testing
+phase: scanning
+command: http-intruder
+docker:
+  image: kalilinux/http-intruder:latest
+  args:
+    - "-t"
+    - "${target}"
+    - "-p"
+    - "${payloads}"
+  memory_limit: "1g"
+  timeout: "600s"
+
+short_description: HTTP intrusion testing
+description: |
+  HTTP Intruder is a tool for testing web applications against various attacks.
+
+parameters:
+  - name: target
+    type: string
+    required: true
+    description: Target URL
+  - name: payloads
+    type: string
+    required: false
+    description: Payload file
+
+output:
+  format: text
+
+enabled: true

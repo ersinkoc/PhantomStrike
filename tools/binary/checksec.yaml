@@ -1,0 +1,28 @@
+name: checksec
+version: "1.0"
+category: binary/security-checks
+phase: analysis
+command: checksec
+docker:
+  image: kalilinux/checksec:latest
+  args:
+    - "--file=/input/binary"
+    - "--json"
+  memory_limit: "256m"
+  timeout: "60s"
+
+short_description: Binary security checker
+description: |
+  checksec.sh is a bash script to check executable properties.
+  It checks for PIE, RELRO, NX, CANARY, and FORTIFY.
+
+parameters:
+  - name: binary
+    type: string
+    required: true
+    description: Binary file
+
+output:
+  format: json
+
+enabled: true

@@ -1,112 +1,40 @@
-name: "gobuster"
-version: "1.0.0"
-category: "web/enumeration"
-tags: ["directory-bruteforce", "dns-bruteforce", "vhost", "content-discovery", "web-app"]
-command: "gobuster"
-args: []
+name: gobuster
+version: "1.0"
+category: web/directory-enum
+phase: scanning
+command: gobuster
 docker:
-  image: "phantomstrike/gobuster:latest"
-  network: "isolated"
+  image: ghcr.io/oj/gobuster:latest
+  args:
+    - "dir"
+    - "-u"
+    - "${target}"
+    - "-w"
+    - "/wordlists/common.txt"
+    - "-o"
+    - "/output/gobuster-results.txt"
+    - "-t"
+    - "50"
   memory_limit: "512m"
-  cpu_limit: "1.5"
   timeout: "600s"
-short_description: "Directory, DNS, and virtual host brute-force tool written in Go for fast content discovery."
+
+short_description: Directory/file/DNS busting tool
 description: |
-  Gobuster is a tool used to brute-force URIs (directories and files), DNS
-  subdomains, virtual host names, open Amazon S3 buckets, open Google Cloud
-  buckets, and TFTP servers. It is written in Go and designed for speed and
-  concurrency. Gobuster supports multiple modes: dir (directory/file brute-forcing),
-  dns (DNS subdomain brute-forcing), vhost (virtual host brute-forcing),
-  fuzz (fuzzing), s3 (AWS S3 bucket enumeration), gcs (Google Cloud bucket
-  enumeration), and tftp (TFTP enumeration). Unlike recursive tools, gobuster
-  does not parse responses and spider further, making it faster but requiring
-  explicit configuration.
-notes: |
-  - Gobuster does NOT do recursive scanning; use multiple runs or ffuf for recursion.
-  - The mode must be specified first: gobuster dir, gobuster dns, gobuster vhost, gobuster fuzz.
-  - Use -k to skip SSL certificate verification for self-signed certificates.
-  - Common status code filters: -s for include, -b for exclude (e.g., -b 404,403).
-  - For large wordlists, increase threads (-t) but be aware of rate limiting.
-  - In dns mode, use -d for domain and -r for custom resolver.
-  - In vhost mode, append-domain is needed for proper virtual host testing.
-  - Wordlist quality significantly affects results; SecLists is recommended.
+  Gobuster is a tool used to brute-force URIs (directories and files),
+  DNS subdomains, and virtual host names.
+
 parameters:
-  - name: "url"
-    type: "string"
-    description: "Target URL for dir/vhost modes. Example: https://target.com. Not used in dns mode."
+  - name: target
+    type: string
     required: true
-    flag: "-u"
-  - name: "wordlist"
-    type: "string"
-    description: "Path to wordlist file. Common: /usr/share/seclists/Discovery/Web-Content/common.txt"
-    required: true
-    flag: "-w"
-  - name: "mode"
-    type: "string"
-    description: "Gobuster mode: dir (directories), dns (subdomains), vhost (virtual hosts), fuzz (fuzzing), s3 (buckets)."
-    required: true
-    flag: ""
-  - name: "extensions"
-    type: "string"
-    description: "File extensions to search for in dir mode. Comma-separated. Example: php,html,txt,js,bak,asp"
+    description: Target URL
+  - name: mode
+    type: string
     required: false
-    flag: "-x"
-  - name: "status_codes"
-    type: "string"
-    description: "Positive status codes to match. Comma-separated. Default: 200,204,301,302,307,401,403. Example: 200,301,302"
-    required: false
-    flag: "-s"
-  - name: "threads"
-    type: "integer"
-    description: "Number of concurrent threads. Default: 10. Increase for faster scanning. Recommended max: 50-100."
-    required: false
-    flag: "-t"
+    default: "dir"
+    enum: [dir, dns, vhost, fuzz]
+
 output:
-  format: "text"
-  success_patterns:
-    - "Status: 200"
-    - "Status: 301"
-    - "Found:"
-    - "\\(Status:"
-  failure_patterns:
-    - "Error"
-    - "Unable to connect"
-    - "invalid URI"
-    - "Wildcard response found"
-  severity_indicators:
-    critical:
-      - "/admin"
-      - "/backup"
-      - "/.env"
-      - "/.git"
-      - "/config"
-      - "/phpinfo"
-    high:
-      - "/wp-admin"
-      - "/phpmyadmin"
-      - "/console"
-      - "/manager"
-      - "/debug"
-    medium:
-      - "/api"
-      - "/swagger"
-      - "/upload"
-      - "/test"
-      - "/staging"
-    low:
-      - "/robots.txt"
-      - "/sitemap.xml"
-      - "/humans.txt"
-chain_suggestions:
-  before:
-    - "httpx"
-    - "nmap"
-    - "whatweb"
-    - "wafw00f"
-  after:
-    - "sqlmap"
-    - "nuclei"
-    - "nikto"
-    - "dalfox"
-    - "ffuf"
+  format: text
+
 enabled: true

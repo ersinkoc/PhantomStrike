@@ -1,0 +1,26 @@
+name: anew
+version: "1.0"
+category: reconnaissance/text-processing
+phase: post-processing
+command: anew
+docker:
+  image: tomnomnom/anew:latest
+  args:
+    - "/output/new-lines.txt"
+  stdin: "${input}"
+  memory_limit: "256m"
+  timeout: "60s"
+
+short_description: Append new lines to file
+description: |
+  anew appends lines from stdin to a file if they don't already exist.
+
+parameters:
+  - name: input
+    type: string
+    required: true
+
+output:
+  format: text
+
+enabled: true

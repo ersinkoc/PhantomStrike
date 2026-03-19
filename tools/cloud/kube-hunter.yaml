@@ -1,0 +1,30 @@
+name: kube-hunter
+version: "1.0"
+category: cloud/kubernetes-pentesting
+phase: scanning
+command: kube-hunter
+docker:
+  image: aquasec/kube-hunter:latest
+  args:
+    - "--remote"
+    - "${target}"
+    - "--json"
+    - "--log"
+    - "/output/kube-hunter-results.log"
+  memory_limit: "512m"
+  timeout: "600s"
+
+short_description: Kubernetes penetration testing
+description: |
+  kube-hunter hunts for security weaknesses in Kubernetes clusters.
+
+parameters:
+  - name: target
+    type: string
+    required: true
+    description: K8s API server
+
+output:
+  format: json
+
+enabled: true

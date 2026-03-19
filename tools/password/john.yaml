@@ -1,0 +1,37 @@
+name: john
+version: "1.0"
+category: password/cracking
+phase: exploitation
+command: john
+docker:
+  image: philsmd/john:latest
+  args:
+    - "--format=${format}"
+    - "--wordlist=/wordlists/rockyou.txt"
+    - "/input/hashes.txt"
+  memory_limit: "2g"
+  timeout: "3600s"
+
+short_description: John the Ripper password cracker
+description: |
+  John the Ripper is a fast password cracker, currently available for many
+  flavors of Unix, Windows, and more.
+
+parameters:
+  - name: hashes
+    type: string
+    required: true
+    description: Hash file
+  - name: format
+    type: string
+    required: false
+    description: Hash format
+  - name: wordlist
+    type: string
+    required: false
+    description: Wordlist file
+
+output:
+  format: text
+
+enabled: true

@@ -1,0 +1,30 @@
+name: dnsenum
+version: "1.0"
+category: protocol/dns-enumeration
+phase: reconnaissance
+command: dnsenum
+docker:
+  image: kalilinux/dnsenum:latest
+  args:
+    - "${domain}"
+    - "-o"
+    - "/output/dnsenum-results.xml"
+    - "--threads"
+    - "5"
+  memory_limit: "512m"
+  timeout: "600s"
+
+short_description: DNS enumeration script
+description: |
+  Dnsenum is a perl script that enumerates DNS information from a domain.
+
+parameters:
+  - name: domain
+    type: string
+    required: true
+    description: Target domain
+
+output:
+  format: xml
+
+enabled: true

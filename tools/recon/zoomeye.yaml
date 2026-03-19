@@ -1,0 +1,32 @@
+name: zoomeye
+version: "1.0"
+category: reconnaissance/osint
+phase: reconnaissance
+command: zoomeye
+docker:
+  image: zoomeye/zoomeye:latest
+  args:
+    - "search"
+    - "${query}"
+    - "-num"
+    - "${limit}"
+  memory_limit: "512m"
+  timeout: "300s"
+
+short_description: ZoomEye search engine
+description: |
+  ZoomEye is a cyberspace search engine.
+
+parameters:
+  - name: query
+    type: string
+    required: true
+  - name: limit
+    type: integer
+    required: false
+    default: 20
+
+output:
+  format: json
+
+enabled: true

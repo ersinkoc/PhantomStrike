@@ -1,0 +1,32 @@
+name: falco
+version: "1.0"
+category: container/runtime-security
+phase: monitoring
+command: falco
+docker:
+  image: falcosecurity/falco:latest
+  args:
+    - "-c"
+    - "/etc/falco/falco.yaml"
+    - "-o"
+    - "json_output=true"
+  memory_limit: "512m"
+  timeout: "3600s"
+  privileged: true
+  volumes:
+    - "/var/run/docker.sock:/var/run/docker.sock"
+
+short_description: Container runtime security
+description: |
+  Falco is a cloud native runtime security tool for Linux operating systems.
+
+parameters:
+  - name: rules
+    type: string
+    required: false
+    description: Custom rules file
+
+output:
+  format: json
+
+enabled: true

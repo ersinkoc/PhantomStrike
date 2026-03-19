@@ -1,0 +1,32 @@
+name: fcrackzip
+version: "1.0"
+category: password/zip-cracker
+phase: exploitation
+command: fcrackzip
+docker:
+  image: kalilinux/fcrackzip:latest
+  args:
+    - "-b"
+    - "-c"
+    - "a1"
+    - "-l"
+    - "1-6"
+    - "-u"
+    - "/input/file.zip"
+  memory_limit: "512m"
+  timeout: "3600s"
+
+short_description: ZIP password cracker
+description: |
+  fcrackzip is a fast password cracker for ZIP archives.
+
+parameters:
+  - name: zipfile
+    type: string
+    required: true
+    description: ZIP file
+
+output:
+  format: text
+
+enabled: true

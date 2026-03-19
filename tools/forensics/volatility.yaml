@@ -1,0 +1,33 @@
+name: volatility
+version: "1.0"
+category: forensics/memory-analysis
+phase: analysis
+command: volatility
+docker:
+  image: volfoundation/volatility:latest
+  args:
+    - "-f"
+    - "/input/memory.dmp"
+    - "windows.info"
+  memory_limit: "4g"
+  timeout: "1800s"
+
+short_description: Memory forensics framework
+description: |
+  Volatility is an open-source memory forensics framework for incident
+  response and malware analysis.
+
+parameters:
+  - name: memory_dump
+    type: string
+    required: true
+    description: Memory dump file
+  - name: profile
+    type: string
+    required: false
+    description: OS profile
+
+output:
+  format: text
+
+enabled: true

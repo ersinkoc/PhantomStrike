@@ -1,0 +1,33 @@
+name: wifite
+version: "1.0"
+category: wireless/wifi-automation
+phase: exploitation
+command: wifite
+docker:
+  image: wifite/wifite:latest
+  args:
+    - "--wpa"
+    - "--dict"
+    - "/wordlists/wpa.txt"
+    - "-o"
+    - "/output/wifite-results"
+  memory_limit: "1g"
+  timeout: "3600s"
+  privileged: true
+  network_mode: host
+
+short_description: Automated WiFi auditor
+description: |
+  Wifite is an automated wireless attack tool that automates the process
+  of attacking multiple WEP, WPA, and WPS encrypted networks.
+
+parameters:
+  - name: interface
+    type: string
+    required: false
+    description: Wireless interface
+
+output:
+  format: text
+
+enabled: true

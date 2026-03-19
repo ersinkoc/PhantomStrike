@@ -1,0 +1,33 @@
+name: ghidra
+version: "1.0"
+category: reverse-engineering
+phase: analysis
+command: analyzeHeadless
+docker:
+  image: blacktop/ghidra:latest
+  args:
+    - "/tmp"
+    - "project"
+    - "-import"
+    - "${binary}"
+    - "-postScript"
+    - "ExportCSV.java"
+    - "/output/ghidra-results.csv"
+  memory_limit: "4g"
+  timeout: "3600s"
+
+short_description: Software reverse engineering
+description: |
+  Ghidra is a software reverse engineering framework developed by NSA's
+  Research Directorate. Includes disassembler, decompiler, and more.
+
+parameters:
+  - name: binary
+    type: string
+    required: true
+    description: Binary to analyze
+
+output:
+  format: csv
+
+enabled: true

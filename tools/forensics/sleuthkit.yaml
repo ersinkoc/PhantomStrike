@@ -1,0 +1,28 @@
+name: sleuthkit
+version: "1.0"
+category: forensics/disk-analysis
+phase: analysis
+command: fls
+docker:
+  image: kalilinux/sleuthkit:latest
+  args:
+    - "-r"
+    - "/input/disk-image"
+  memory_limit: "1g"
+  timeout: "600s"
+
+short_description: File system analysis tools
+description: |
+  The Sleuth Kit (TSK) is a library and collection of command line tools
+  that allow you to investigate disk images.
+
+parameters:
+  - name: disk_image
+    type: string
+    required: true
+    description: Disk image file
+
+output:
+  format: text
+
+enabled: true

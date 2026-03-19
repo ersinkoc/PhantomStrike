@@ -1,0 +1,30 @@
+name: exiftool
+version: "1.0"
+category: forensics/metadata
+phase: analysis
+command: exiftool
+docker:
+  image: kiliant/exiftool:latest
+  args:
+    - "-json"
+    - "/input/file"
+    - ">"
+    - "/output/exif-results.json"
+  memory_limit: "256m"
+  timeout: "60s"
+
+short_description: Metadata reader/writer
+description: |
+  ExifTool is a platform-independent Perl library plus a command-line
+  application for reading, writing and editing meta information.
+
+parameters:
+  - name: file
+    type: string
+    required: true
+    description: File to analyze
+
+output:
+  format: json
+
+enabled: true

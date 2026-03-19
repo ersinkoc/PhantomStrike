@@ -1,0 +1,28 @@
+name: nbtscan
+version: "1.0"
+category: network/netbios-scanning
+phase: reconnaissance
+command: nbtscan
+docker:
+  image: kalilinux/nbtscan:latest
+  args:
+    - "-r"
+    - "${network}"
+    - "-v"
+  memory_limit: "256m"
+  timeout: "300s"
+
+short_description: NetBIOS name scanner
+description: |
+  nbtscan is a program for scanning IP networks for NetBIOS name information.
+
+parameters:
+  - name: network
+    type: string
+    required: true
+    description: Network range
+
+output:
+  format: text
+
+enabled: true

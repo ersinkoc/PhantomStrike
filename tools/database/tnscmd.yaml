@@ -1,0 +1,27 @@
+name: tnscmd
+version: "1.0"
+category: database/oracle-scanning
+phase: scanning
+command: tnscmd10g
+docker:
+  image: kalilinux/tnscmd:latest
+  args:
+    - "ping"
+    - "${target}"
+  memory_limit: "256m"
+  timeout: "60s"
+
+short_description: Oracle TNS listener tool
+description: |
+  TNSCmd allows you to communicate directly with Oracle's TNS listener.
+
+parameters:
+  - name: target
+    type: string
+    required: true
+    description: Target IP
+
+output:
+  format: text
+
+enabled: true

@@ -1,0 +1,719 @@
+name: Ultimate Security Assessment
+version: "2.0"
+description: |
+  Kapsamlı ve ultimate güvenlik değerlendirmesi workflow'u.
+  50+ aracı otomatize eder - reconnaissance'dan exploitation'a kadar.
+
+phases:
+  - name: Phase 1 - External Reconnaissance
+    description: Domain, subdomain ve IP enumeration
+  - name: Phase 2 - Asset Discovery
+    description: Port scanning ve service identification
+  - name: Phase 3 - Web Discovery
+    description: Web uygulamalarını keşif ve fingerprinting
+  - name: Phase 4 - Vulnerability Scanning
+    description: Otomatik zafiyet taraması
+  - name: Phase 5 - Exploitation
+    description: Potansiyel exploit denemeleri
+  - name: Phase 6 - Cloud Security
+    description: Cloud konfigürasyon ve zafiyetleri
+  - name: Phase 7 - Container Security
+    description: Container ve IaC güvenlik taraması
+  - name: Phase 8 - Secrets & Code
+    description: Gizli bilgiler ve kod güvenliği
+  - name: Phase 9 - Post-Exploitation
+    description: Yetki yükseltme analizi
+  - name: Phase 10 - Reporting
+    description: Raporlama ve bildirim
+
+steps:
+  # PHASE 1: EXTERNAL RECONNAISSANCE
+  - id: amass-enum
+    name: Amass - Attack Surface Mapping
+    tool: amass
+    phase: 1
+    parameters:
+      domain: "${target.domain}"
+      mode: enum
+    timeout: 1800s
+
+  - id: subfinder-enum
+    name: Subfinder - Subdomain Discovery
+    tool: subfinder
+    phase: 1
+    parameters:
+      domain: "${target.domain}"
+    timeout: 300s
+
+  - id: sublist3r-enum
+    name: Sublist3r - OSINT Subdomains
+    tool: sublist3r
+    phase: 1
+    parameters:
+      domain: "${target.domain}"
+    timeout: 600s
+
+  - id: theharvester-osint
+    name: theHarvester - Email/OSINT
+    tool: theHarvester
+    phase: 1
+    parameters:
+      domain: "${target.domain}"
+      sources: all
+    timeout: 600s
+
+  - id: dnsrecon-dns
+    name: DNSRecon - DNS Enumeration
+    tool: dnsrecon
+    phase: 1
+    parameters:
+      domain: "${target.domain}"
+    timeout: 300s
+
+  - id: shodan-recon
+    name: Shodan - Internet Exposure
+    tool: shodan
+    phase: 1
+    parameters:
+      query: "hostname:${target.domain}"
+      api_key: "${env.SHODAN_API_KEY}"
+    condition: if
+    condition_expr: "${config.use_shodan} == true"
+    timeout: 300s
+
+  - id: censys-recon
+    name: Censys - Attack Surface
+    tool: censys
+    phase: 1
+    parameters:
+      query: "services.tls.certificates.leaf_data.subject.common_name: ${target.domain}"
+    condition: if
+    condition_expr: "${config.use_censys} == true"
+    timeout: 300s
+
+  - id: asnlookup-net
+    name: ASNLookup - IP Ranges
+    tool: asnlookup
+    phase: 1
+    parameters:
+      organization: "${target.org}"
+    timeout: 300s
+
+  # PHASE 2: ASSET DISCOVERY
+  - id: masscan-portscan
+    name: Masscan - Fast Port Scan
+    tool: masscan
+    phase: 2
+    parameters:
+      target: "${target.cidr}"
+      ports: "1-65535"
+      rate: 10000
+    timeout: 600s
+    dependencies:
+      - amass-enum
+
+  - id: nmap-service
+    name: Nmap - Service Enumeration
+    tool: nmap
+    phase: 2
+    parameters:
+      target: "${target.domain}"
+      ports: "top-1000"
+    timeout: 1800s
+    dependencies:
+      - masscan-portscan
+
+  - id: naabu-portscan
+    name: Naabu - Port Discovery
+    tool: naabu
+    phase: 2
+    parameters:
+      target: "${target.domain}"
+    timeout: 600s
+    dependencies:
+      - amass-enum
+
+  - id: testssl-ssl
+    name: TestSSL - SSL/TLS Analysis
+    tool: testssl
+    phase: 2
+    parameters:
+      target: "${target.domain}:443"
+    timeout: 300s
+    dependencies:
+      - nmap-service
+    condition: on_success
+
+  # PHASE 3: WEB DISCOVERY
+  - id: httpx-probe
+    name: httpx - Web Service Probe
+    tool: httpx
+    phase: 3
+    parameters:
+      target: "${target.domain}"
+    timeout: 300s
+    dependencies:
+      - amass-enum
+      - subfinder-enum
+
+  - id: gau-urls
+    name: gau - URL Discovery
+    tool: gau
+    phase: 3
+    parameters:
+      target: "${target.domain}"
+    timeout: 600s
+    dependencies:
+      - httpx-probe
+
+  - id: whatweb-fingerprint
+    name: WhatWeb - Technology Fingerprint
+    tool: whatweb
+    phase: 3
+    parameters:
+      target: "${target.url}"
+    timeout: 300s
+    dependencies:
+      - httpx-probe
+
+  - id: wafw00f-detect
+    name: WAFW00F - WAF Detection
+    tool: wafw00f
+    phase: 3
+    parameters:
+      target: "${target.url}"
+    timeout: 300s
+    dependencies:
+      - httpx-probe
+
+  - id: eyewitness-screenshot
+    name: EyeWitness - Screenshot
+    tool: eyewitness
+    phase: 3
+    parameters:
+      target_file: "/output/urls.txt"
+    timeout: 1800s
+    dependencies:
+      - httpx-probe
+    condition: on_success
+
+  # PHASE 4: CONTENT DISCOVERY
+  - id: ffuf-fuzz
+    name: ffuf - Directory Fuzzing
+    tool: ffuf
+    phase: 4
+    parameters:
+      target: "${target.url}/FUZZ"
+      threads: 40
+    timeout: 600s
+    dependencies:
+      - httpx-probe
+
+  - id: dirb-brute
+    name: DIRB - Directory Bruteforce
+    tool: dirb
+    phase: 4
+    parameters:
+      target: "${target.url}"
+    timeout: 600s
+    dependencies:
+      - httpx-probe
+
+  - id: gobuster-enum
+    name: Gobuster - Directory/DNS/VHost
+    tool: gobuster
+    phase: 4
+    parameters:
+      target: "${target.url}"
+      mode: dir
+    timeout: 600s
+    dependencies:
+      - httpx-probe
+
+  - id: kiterunner-api
+    name: Kiterunner - API Discovery
+    tool: kiterunner
+    phase: 4
+    parameters:
+      target: "${target.url}"
+    timeout: 1800s
+    dependencies:
+      - httpx-probe
+
+  - id: arjun-params
+    name: Arjun - Parameter Discovery
+    tool: arjun
+    phase: 4
+    parameters:
+      target: "${target.url}"
+    timeout: 600s
+    dependencies:
+      - ffuf-fuzz
+
+  # PHASE 5: VULNERABILITY SCANNING
+  - id: nuclei-vulnscan
+    name: Nuclei - Vulnerability Scan
+    tool: nuclei
+    phase: 5
+    parameters:
+      target: "${target.url}"
+      severity: "critical,high,medium"
+    timeout: 1800s
+    dependencies:
+      - httpx-probe
+
+  - id: zap-scan
+    name: ZAP - OWASP Scan
+    tool: zap
+    phase: 5
+    parameters:
+      target: "${target.url}"
+    timeout: 3600s
+    dependencies:
+      - httpx-probe
+    condition: on_success
+
+  - id: burp-scan
+    name: Burp - Professional Scan
+    tool: burp
+    phase: 5
+    parameters:
+      target: "${target.url}"
+    timeout: 3600s
+    dependencies:
+      - httpx-probe
+    condition: if
+    condition_expr: "${config.burp_pro} == true"
+
+  - id: nikto-webscan
+    name: Nikto - Web Vulnerability
+    tool: nikto
+    phase: 5
+    parameters:
+      target: "${target.url}"
+    timeout: 1800s
+    dependencies:
+      - httpx-probe
+
+  - id: dalfox-xss
+    name: DalFox - XSS Scanner
+    tool: dalfox
+    phase: 5
+    parameters:
+      target: "${target.url}"
+    timeout: 1800s
+    dependencies:
+      - gau-urls
+
+  - id: commix-cmdi
+    name: Commix - Command Injection
+    tool: commix
+    phase: 5
+    parameters:
+      target: "${target.url}"
+    timeout: 1800s
+    dependencies:
+      - arjun-params
+    condition: on_success
+
+  - id: sqlmap-sqli
+    name: SQLMap - SQL Injection
+    tool: sqlmap
+    phase: 5
+    parameters:
+      target: "${target.url}"
+      level: 2
+    timeout: 1800s
+    dependencies:
+      - arjun-params
+
+  # PHASE 6: CLOUD SECURITY
+  - id: scoutsuite-cloud
+    name: ScoutSuite - Cloud Audit
+    tool: scoutsuite
+    phase: 6
+    parameters:
+      provider: aws
+    timeout: 1800s
+    condition: if
+    condition_expr: "${target.type} == 'cloud'"
+
+  - id: prowler-aws
+    name: Prowler - AWS Security
+    tool: prowler
+    phase: 6
+    parameters:
+      provider: aws
+    timeout: 1800s
+    condition: if
+    condition_expr: "${target.type} == 'cloud'"
+
+  - id: cloudsplaining-iam
+    name: Cloudsplaining - IAM Analysis
+    tool: cloudsplaining
+    phase: 6
+    parameters:
+      iam_data: "/input/iam.json"
+    timeout: 300s
+    condition: if
+    condition_expr: "${target.type} == 'cloud'"
+
+  # PHASE 7: CONTAINER & IaC SECURITY
+  - id: trivy-container
+    name: Trivy - Container Scan
+    tool: trivy
+    phase: 7
+    parameters:
+      image: "${target.container_image}"
+    timeout: 600s
+    condition: if
+    condition_expr: "${target.container_image} != ''"
+
+  - id: clair-container
+    name: Clair - Container Static Analysis
+    tool: clair
+    phase: 7
+    parameters:
+      image: "${target.container_image}"
+    timeout: 600s
+    condition: if
+    condition_expr: "${target.container_image} != ''"
+
+  - id: grype-image
+    name: Grype - Image Vulnerability
+    tool: grype
+    phase: 7
+    parameters:
+      image: "${target.container_image}"
+    timeout: 600s
+    condition: if
+    condition_expr: "${target.container_image} != ''"
+
+  - id: checkov-iac
+    name: Checkov - IaC Security
+    tool: checkov
+    phase: 7
+    parameters:
+      directory: "/input/terraform"
+    timeout: 600s
+    condition: if
+    condition_expr: "${target.has_iac} == true"
+
+  - id: tfsec-terraform
+    name: tfsec - Terraform Scan
+    tool: tfsec
+    phase: 7
+    parameters:
+      path: "/input/terraform"
+    timeout: 300s
+    condition: if
+    condition_expr: "${target.has_iac} == true"
+
+  - id: terrascan-policy
+    name: Terrascan - Policy Scan
+    tool: terrascan
+    phase: 7
+    parameters:
+      path: "/input/iac"
+    timeout: 300s
+    condition: if
+    condition_expr: "${target.has_iac} == true"
+
+  # PHASE 8: SECRETS & CODE SECURITY
+  - id: trufflehog-secrets
+    name: TruffleHog - Secret Detection
+    tool: trufflehog
+    phase: 8
+    parameters:
+      path: "${target.repo_path}"
+    timeout: 300s
+
+  - id: gitleaks-scan
+    name: GitLeaks - Git History Scan
+    tool: gitleaks
+    phase: 8
+    parameters:
+      path: "${target.repo_path}"
+    timeout: 300s
+
+  - id: detect-secrets-scan
+    name: detect-secrets - Secret Scan
+    tool: detect-secrets
+    phase: 8
+    parameters:
+      path: "${target.repo_path}"
+    timeout: 300s
+
+  - id: git-secrets-scan
+    name: git-secrets - Git Pre-commit
+    tool: git-secrets
+    phase: 8
+    parameters:
+      path: "${target.repo_path}"
+    timeout: 300s
+
+  - id: semgrep-sast
+    name: Semgrep - Static Analysis
+    tool: semgrep
+    phase: 8
+    parameters:
+      path: "${target.repo_path}"
+    timeout: 600s
+
+  - id: snyk-sca
+    name: Snyk - Dependency Scan
+    tool: snyk
+    phase: 8
+    parameters:
+      path: "${target.repo_path}"
+    timeout: 600s
+
+  - id: bandit-python
+    name: Bandit - Python Security
+    tool: bandit
+    phase: 8
+    parameters:
+      path: "${target.repo_path}"
+    timeout: 300s
+    condition: if
+    condition_expr: "${target.language} == 'python'"
+
+  - id: gosec-go
+    name: gosec - Go Security
+    tool: gosec
+    phase: 8
+    parameters:
+      path: "${target.repo_path}"
+    timeout: 300s
+    condition: if
+    condition_expr: "${target.language} == 'go'"
+
+  - id: brakeman-rails
+    name: Brakeman - Rails Security
+    tool: brakeman
+    phase: 8
+    parameters:
+      path: "${target.repo_path}"
+    timeout: 600s
+    condition: if
+    condition_expr: "${target.framework} == 'rails'"
+
+  # PHASE 9: CMS & SPECIALIZED
+  - id: wpscan-wordpress
+    name: WPScan - WordPress Security
+    tool: wpscan
+    phase: 9
+    parameters:
+      target: "${target.url}"
+    timeout: 1800s
+    condition: if
+    condition_expr: "${target.is_wordpress} == true"
+
+  - id: droopescan-cms
+    name: Droopescan - CMS Security
+    tool: droopescan
+    phase: 9
+    parameters:
+      target: "${target.url}"
+      cms: "${target.cms_type}"
+    timeout: 600s
+    condition: if
+    condition_expr: "${target.cms_type} != ''"
+
+  - id: mobsf-mobile
+    name: MobSF - Mobile Security
+    tool: mobsf
+    phase: 9
+    parameters:
+      app: "${target.mobile_app}"
+    timeout: 1800s
+    condition: if
+    condition_expr: "${target.mobile_app} != ''"
+
+  # PHASE 10: EXPLOITATION (Conditional)
+  - id: metasploit-exploit
+    name: Metasploit - Exploitation
+    tool: metasploit
+    phase: 10
+    parameters:
+      resource_script: "/scripts/exploit.rc"
+      target: "${target.ip}"
+    timeout: 3600s
+    condition: if
+    condition_expr: "${config.exploitation} == true"
+
+  - id: crackmapexec-ad
+    name: CrackMapExec - AD Testing
+    tool: crackmapexec
+    phase: 10
+    parameters:
+      target: "${target.subnet}"
+      protocol: smb
+      username: "${env.AD_USER}"
+      password: "${env.AD_PASS}"
+    timeout: 600s
+    condition: if
+    condition_expr: "${config.active_directory} == true"
+
+  - id: impacket-tools
+    name: Impacket - Protocol Testing
+    tool: impacket
+    phase: 10
+    parameters:
+      script: psexec
+      target: "${target.ip}"
+    timeout: 600s
+    condition: if
+    condition_expr: "${config.protocol_testing} == true"
+
+  - id: bloodhound-ad
+    name: BloodHound - AD Enumeration
+    tool: bloodhound
+    phase: 10
+    parameters:
+      domain: "${target.domain}"
+      username: "${env.AD_USER}"
+      password: "${env.AD_PASS}"
+      dc_ip: "${target.dc_ip}"
+    timeout: 600s
+    condition: if
+    condition_expr: "${config.active_directory} == true"
+
+  - id: pacu-aws
+    name: Pacu - AWS Exploitation
+    tool: pacu
+    phase: 10
+    parameters:
+      session: "${target.aws_session}"
+    timeout: 1800s
+    condition: if
+    condition_expr: "${target.type} == 'cloud' && ${config.exploitation} == true"
+
+  # PHASE 11: POST-EXPLOITATION
+  - id: linpeas-linux
+    name: LinPEAS - Linux PrivEsc
+    tool: linpeas
+    phase: 11
+    parameters:
+      thorough: false
+    timeout: 600s
+    condition: if
+    condition_expr: "${target.os} == 'linux'"
+
+  - id: winpeas-windows
+    name: WinPEAS - Windows PrivEsc
+    tool: winpeas
+    phase: 11
+    parameters:
+      all: true
+    timeout: 600s
+    condition: if
+    condition_expr: "${target.os} == 'windows'"
+
+  # PHASE 12: REPORTING
+  - id: generate-report
+    name: Generate Security Report
+    tool: report-generator
+    phase: 12
+    parameters:
+      format: "pdf"
+      include_evidence: true
+      template: "executive"
+    dependencies:
+      - nuclei-vulnscan
+      - zap-scan
+      - trufflehog-secrets
+    condition: on_success
+
+  - id: notify-slack
+    name: Notify Slack
+    tool: notification
+    phase: 12
+    parameters:
+      channel: "security-alerts"
+      severity_threshold: "high"
+    dependencies:
+      - generate-report
+
+  - id: notify-email
+    name: Send Email Report
+    tool: notification
+    phase: 12
+    parameters:
+      channel: "email"
+      recipients: "${config.report_recipients}"
+    dependencies:
+      - generate-report
+
+# Parallel Execution Groups
+parallel:
+  recon_phase:
+    - amass-enum
+    - subfinder-enum
+    - sublist3r-enum
+    - theharvester-osint
+    - dnsrecon-dns
+
+  portscan_phase:
+    - masscan-portscan
+    - naabu-portscan
+
+  web_discovery:
+    - httpx-probe
+
+  content_discovery:
+    - ffuf-fuzz
+    - dirb-brute
+    - gobuster-enum
+
+  vuln_scanning:
+    - nuclei-vulnscan
+    - nikto-webscan
+    - dalfox-xss
+
+  code_security:
+    - trufflehog-secrets
+    - gitleaks-scan
+    - detect-secrets-scan
+
+# Error Handling
+on_failure:
+  action: continue
+  notify: true
+  fallback: log
+
+# Notifications
+notifications:
+  on_start:
+    - type: webhook
+      url: "${env.WEBHOOK_URL}"
+      message: "Ultimate Security Assessment started for ${target.domain}"
+  on_complete:
+    - type: slack
+      channel: "#security-reports"
+      message: "Assessment complete for ${target.domain}. Critical: ${vuln.critical}, High: ${vuln.high}"
+  on_failure:
+    - type: email
+      to: "${config.alert_email}"
+      subject: "Assessment failed for ${target.domain}"
+
+# Asset Extraction
+asset_extraction:
+  enabled: true
+  extract_from_output: true
+  extract_from_json: true
+
+# Compliance
+compliance:
+  frameworks:
+    - OWASP_2021
+    - NIST_CSF
+    - ISO_27001
+    - PCI_DSS
+  auto_map: true
+
+# Estimated Duration
+duration:
+  minimum: "2h"
+  typical: "6h"
+  maximum: "24h"

@@ -1,0 +1,44 @@
+name: prowler
+version: "1.0"
+category: cloud/security-audit
+phase: scanning
+command: prowler
+docker:
+  image: toniblyx/prowler:latest
+  args:
+    - "-c"
+    - "check310,check311,check312"
+    - "-M"
+    - "json-ocsf"
+    - "-o"
+    - "/output"
+    - "-n"
+    - "prowler-results"
+  memory_limit: "2g"
+  timeout: "1800s"
+
+short_description: AWS/Azure/GCP security assessment
+description: |
+  Prowler is an Open Source security tool to perform AWS, Azure and Google Cloud
+  security best practices assessments, audits, incident response, compliance checks.
+
+parameters:
+  - name: provider
+    type: string
+    required: false
+    default: "aws"
+    enum: [aws, azure, gcp]
+  - name: checks
+    type: string
+    required: false
+    description: Specific checks to run
+
+output:
+  format: json
+  severity_indicators:
+    CRITICAL:
+      - "CRITICAL"
+    HIGH:
+      - "HIGH"
+
+enabled: true

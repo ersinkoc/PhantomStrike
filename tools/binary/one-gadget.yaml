@@ -1,0 +1,26 @@
+name: one-gadget
+version: "1.0"
+category: binary/exploit-helper
+phase: analysis
+command: one_gadget
+docker:
+  image: kalilinux/one_gadget:latest
+  args:
+    - "/input/libc.so"
+  memory_limit: "512m"
+  timeout: "300s"
+
+short_description: One-gadget constraint finder
+description: |
+  OneGadget finds one-gadget RCE in libc.so.6.
+
+parameters:
+  - name: libc
+    type: string
+    required: true
+    description: Libc binary
+
+output:
+  format: text
+
+enabled: true

@@ -1,0 +1,38 @@
+name: feroxbuster
+version: "1.0"
+category: web/directory-enum
+phase: scanning
+command: feroxbuster
+docker:
+  image: epi052/feroxbuster:latest
+  args:
+    - "-u"
+    - "${target}"
+    - "-w"
+    - "/wordlists/common.txt"
+    - "-o"
+    - "/output/ferox-results.json"
+    - "-j"
+    - "-t"
+    - "50"
+  memory_limit: "1g"
+  timeout: "600s"
+
+short_description: Fast content discovery tool
+description: |
+  Feroxbuster is a fast, simple, recursive content discovery tool written in Rust.
+
+parameters:
+  - name: target
+    type: string
+    required: true
+    description: Target URL
+  - name: depth
+    type: integer
+    required: false
+    default: 4
+
+output:
+  format: json
+
+enabled: true

@@ -1,0 +1,30 @@
+name: radare2
+version: "1.0"
+category: binary/reverse-engineering
+phase: analysis
+command: r2
+docker:
+  image: radare/radare2:latest
+  args:
+    - "-q"
+    - "-c"
+    - "izzj"
+    - "/input/binary"
+  memory_limit: "2g"
+  timeout: "600s"
+
+short_description: Reverse engineering framework
+description: |
+  Radare2 is a complete framework for reverse-engineering and analyzing
+  binaries for Windows, Linux, Mac, and more.
+
+parameters:
+  - name: binary
+    type: string
+    required: true
+    description: Binary to analyze
+
+output:
+  format: json
+
+enabled: true

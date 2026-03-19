@@ -1,0 +1,32 @@
+name: responder
+version: "1.0"
+category: network/poisoning
+phase: exploitation
+command: responder
+docker:
+  image: trustedsec/responder:latest
+  args:
+    - "-I"
+    - "${interface}"
+    - "-wrfv"
+    - "--lm"
+  memory_limit: "512m"
+  timeout: "3600s"
+  privileged: true
+  network_mode: host
+
+short_description: LLMNR, NBT-NS and MDNS poisoner
+description: |
+  Responder is an LLMNR, NBT-NS and MDNS poisoner. It answers specific NBT-NS
+  and LLMNR queries based on the name suffix of the request.
+
+parameters:
+  - name: interface
+    type: string
+    required: true
+    description: Network interface
+
+output:
+  format: text
+
+enabled: true

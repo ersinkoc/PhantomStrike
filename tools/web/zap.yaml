@@ -1,0 +1,44 @@
+name: zap
+version: "1.0"
+category: web/vulnerability-scanning
+phase: scanning
+command: zap-full-scan.py
+docker:
+  image: owasp/zap2docker-stable:latest
+  args:
+    - "-t"
+    - "${target}"
+    - "-J"
+    - "/output/zap-report.json"
+    - "-r"
+    - "/output/zap-report.html"
+  memory_limit: "4g"
+  timeout: "3600s"
+
+short_description: OWASP ZAP - Web App vulnerability scanner
+description: |
+  OWASP Zed Attack Proxy is one of the world's most popular free security tools
+  and is actively maintained by a dedicated international team of volunteers.
+
+parameters:
+  - name: target
+    type: string
+    required: true
+    description: Target URL to scan
+  - name: context
+    type: string
+    required: false
+    description: Context file for authenticated scanning
+
+output:
+  format: json
+  success_patterns:
+    - "PASS"
+    - "WARN"
+  severity_indicators:
+    HIGH:
+      - "HIGH"
+    CRITICAL:
+      - "CRITICAL"
+
+enabled: true

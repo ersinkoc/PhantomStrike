@@ -1,0 +1,31 @@
+name: ropgadget
+version: "1.0"
+category: binary/rop-finder
+phase: analysis
+command: ROPgadget
+docker:
+  image: kalilinux/ropgadget:latest
+  args:
+    - "--binary"
+    - "/input/binary"
+    - "--ropchain"
+    - ">"
+    - "/output/ropgadget-results.txt"
+  memory_limit: "1g"
+  timeout: "300s"
+
+short_description: ROP gadget finder
+description: |
+  ROPgadget lets you search your gadgets on binaries to facilitate
+  your ROP exploitation.
+
+parameters:
+  - name: binary
+    type: string
+    required: true
+    description: Binary file
+
+output:
+  format: text
+
+enabled: true

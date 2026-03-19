@@ -1,0 +1,29 @@
+name: pdfcrack
+version: "1.0"
+category: password/pdf-cracker
+phase: exploitation
+command: pdfcrack
+docker:
+  image: kalilinux/pdfcrack:latest
+  args:
+    - "-f"
+    - "/input/file.pdf"
+    - "-w"
+    - "/wordlists/passwords.txt"
+  memory_limit: "512m"
+  timeout: "3600s"
+
+short_description: PDF password recovery
+description: |
+  pdfcrack is a command line password recovery tool for PDF files.
+
+parameters:
+  - name: pdffile
+    type: string
+    required: true
+    description: PDF file
+
+output:
+  format: text
+
+enabled: true

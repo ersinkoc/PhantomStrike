@@ -1,0 +1,35 @@
+name: pacu
+version: "1.0"
+category: cloud/exploitation
+phase: exploitation
+command: pacu
+docker:
+  image: rhinosecuritylabs/pacu:latest
+  args:
+    - "--session"
+    - "${session}"
+    - "--module"
+    - "${module}"
+    - "--exec"
+  memory_limit: "2g"
+  timeout: "1800s"
+
+short_description: AWS exploitation framework
+description: |
+  Pacu is an open-source AWS exploitation framework, designed for testing
+  the security of Amazon Web Services environments.
+
+parameters:
+  - name: session
+    type: string
+    required: true
+    description: Pacu session name
+  - name: module
+    type: string
+    required: false
+    description: Module to execute
+
+output:
+  format: json
+
+enabled: true

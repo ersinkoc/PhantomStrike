@@ -1,0 +1,37 @@
+name: terrascan
+version: "1.0"
+category: iac/policy-as-code
+phase: scanning
+command: terrascan
+docker:
+  image: accurics/terrascan:latest
+  args:
+    - "scan"
+    - "-d"
+    - "${path}"
+    - "-o"
+    - "json"
+    - ">"
+    - "/output/terrascan-results.json"
+  memory_limit: "1g"
+  timeout: "300s"
+
+short_description: Policy as code for Kubernetes and IaC
+description: |
+  Terrascan detects security vulnerabilities and compliance violations
+  across Infrastructure as Code.
+
+parameters:
+  - name: path
+    type: string
+    required: true
+    description: IaC path
+  - name: iac-type
+    type: string
+    required: false
+    default: "all"
+
+output:
+  format: json
+
+enabled: true

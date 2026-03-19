@@ -1,0 +1,42 @@
+name: amass
+version: "1.0"
+category: network/reconnaissance
+phase: reconnaissance
+command: amass
+docker:
+  image: caffix/amass:latest
+  args:
+    - "enum"
+    - "-d"
+    - "${domain}"
+    - "-json"
+    - "/output/amass-results.json"
+    - "-active"
+    - "-brute"
+    - "-w"
+    - "/wordlists/dns.txt"
+  memory_limit: "2g"
+  timeout: "1800s"
+
+short_description: In-depth attack surface mapping
+description: |
+  The OWASP Amass project performs network mapping of attack surfaces
+  and external asset discovery using open source information gathering.
+
+parameters:
+  - name: domain
+    type: string
+    required: true
+    description: Domain to enumerate
+  - name: mode
+    type: string
+    required: false
+    default: "enum"
+    enum: [enum, intel, viz]
+
+output:
+  format: json
+  success_patterns:
+    - "name"
+
+enabled: true

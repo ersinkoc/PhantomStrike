@@ -1,0 +1,32 @@
+name: dnslog
+version: "1.0"
+category: network/dns-logging
+phase: exploitation
+command: dnslog
+docker:
+  image: kalilinux/dnslog:latest
+  args:
+    - "-domain"
+    - "${domain}"
+    - "-wait"
+    - "${wait_time}"
+  memory_limit: "256m"
+  timeout: "300s"
+
+short_description: DNS logging tool
+description: |
+  dnslog is a tool for logging DNS queries.
+
+parameters:
+  - name: domain
+    type: string
+    required: true
+  - name: wait_time
+    type: integer
+    required: false
+    default: 60
+
+output:
+  format: text
+
+enabled: true

@@ -1,0 +1,28 @@
+name: api-schema-analyzer
+version: "1.0"
+category: api/schema-analysis
+phase: scanning
+command: api-schema-analyzer
+docker:
+  image: kalilinux/api-schema-analyzer:latest
+  args:
+    - "-s"
+    - "/input/schema.json"
+    - "-o"
+    - "/output/schema-analysis.json"
+  memory_limit: "512m"
+  timeout: "300s"
+
+short_description: API schema analyzer
+description: |
+  Analyzes API schemas for security issues.
+
+parameters:
+  - name: schema
+    type: string
+    required: true
+
+output:
+  format: json
+
+enabled: true

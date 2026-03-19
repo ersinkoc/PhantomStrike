@@ -1,0 +1,38 @@
+name: aircrack-ng
+version: "1.0"
+category: wireless/wifi-cracking
+phase: exploitation
+command: aircrack-ng
+docker:
+  image: aircrackng/aircrack-ng:latest
+  args:
+    - "-w"
+    - "/wordlists/wpa.txt"
+    - "-b"
+    - "${bssid}"
+    - "/input/capture.cap"
+  memory_limit: "1g"
+  timeout: "3600s"
+  privileged: true
+  network_mode: host
+  devices: ["/dev/net/tun:/dev/net/tun"]
+
+short_description: WiFi security auditing suite
+description: |
+  Aircrack-ng is a complete suite of tools to assess WiFi network security.
+  It focuses on different areas of WiFi security.
+
+parameters:
+  - name: bssid
+    type: string
+    required: true
+    description: Target BSSID
+  - name: wordlist
+    type: string
+    required: false
+    description: Password wordlist
+
+output:
+  format: text
+
+enabled: true

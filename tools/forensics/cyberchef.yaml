@@ -1,0 +1,30 @@
+name: cyberchef
+version: "1.0"
+category: forensics/data-transformation
+phase: analysis
+command: cyberchef-server
+docker:
+  image: mpepping/cyberchef:latest
+  args:
+    - "--port"
+    - "8080"
+  memory_limit: "1g"
+  timeout: "3600s"
+  ports:
+    - "8080:8080"
+
+short_description: Cyber Swiss Army Knife
+description: |
+  CyberChef is a simple, intuitive web app for analysing and decoding
+  data without having to deal with complex tools.
+
+parameters:
+  - name: port
+    type: integer
+    required: false
+    default: 8080
+
+output:
+  format: web
+
+enabled: true

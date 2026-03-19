@@ -1,0 +1,41 @@
+name: grype
+version: "1.0"
+category: container/vulnerability-scanning
+phase: scanning
+command: grype
+docker:
+  image: anchore/grype:latest
+  args:
+    - "${image}"
+    - "-o"
+    - "json"
+    - "--file"
+    - "/output/grype-results.json"
+  memory_limit: "2g"
+  timeout: "600s"
+
+short_description: Vulnerability scanner for images
+description: |
+  A vulnerability scanner for container images and filesystems. Works with
+  Syft, the powerful SBOM (software bill of materials) tool for container images.
+
+parameters:
+  - name: image
+    type: string
+    required: true
+    description: Container image or SBOM
+  - name: scope
+    type: string
+    required: false
+    default: "squashed"
+    enum: [squashed, all-layers]
+
+output:
+  format: json
+  severity_indicators:
+    CRITICAL:
+      - "Critical"
+    HIGH:
+      - "High"
+
+enabled: true

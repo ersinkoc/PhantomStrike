@@ -1,0 +1,37 @@
+name: arjun
+version: "1.0"
+category: api/parameter-discovery
+phase: scanning
+command: arjun
+docker:
+  image: s1l3nt78/arjun:latest
+  args:
+    - "-u"
+    - "${target}"
+    - "-oJ"
+    - "/output/arjun-results.json"
+    - "-t"
+    - "10"
+  memory_limit: "512m"
+  timeout: "600s"
+
+short_description: HTTP parameter discovery
+description: |
+  Arjun is a command-line tool that's designed for HTTP parameter discovery.
+  It helps find query parameters for URL endpoints.
+
+parameters:
+  - name: target
+    type: string
+    required: true
+    description: Target URL
+  - name: method
+    type: string
+    required: false
+    default: "GET"
+    enum: [GET, POST, JSON]
+
+output:
+  format: json
+
+enabled: true

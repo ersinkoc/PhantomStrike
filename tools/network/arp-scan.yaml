@@ -1,0 +1,32 @@
+name: arp-scan
+version: "1.0"
+category: network/arp-scanning
+phase: reconnaissance
+command: arp-scan
+docker:
+  image: kalilinux/arp-scan:latest
+  args:
+    - "-l"
+    - "${network}"
+    - "-o"
+    - "/output/arp-scan-results"
+  memory_limit: "256m"
+  timeout: "300s"
+  privileged: true
+  network_mode: host
+
+short_description: ARP scanning tool
+description: |
+  arp-scan sends ARP packets to hosts on the local network and displays
+  any responses.
+
+parameters:
+  - name: network
+    type: string
+    required: true
+    description: Network range
+
+output:
+  format: text
+
+enabled: true

@@ -1,0 +1,29 @@
+name: cloudmapper
+version: "1.0"
+category: cloud/security-audit
+phase: reconnaissance
+command: cloudmapper
+docker:
+  image: cloudmapper/cloudmapper:latest
+  args:
+    - "collect"
+    - "--account"
+    - "${account}"
+  memory_limit: "2g"
+  timeout: "1800s"
+
+short_description: AWS environment visualizer
+description: |
+  CloudMapper helps you analyze your Amazon Web Services (AWS) environments.
+  It creates network diagrams and helps with security auditing.
+
+parameters:
+  - name: account
+    type: string
+    required: true
+    description: AWS account name
+
+output:
+  format: json
+
+enabled: true

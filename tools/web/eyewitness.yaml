@@ -1,0 +1,32 @@
+name: eyewitness
+version: "1.0"
+category: web/screenshotting
+phase: reconnaissance
+command: eyewitness
+docker:
+  image: fortyspokes/eyewitness:latest
+  args:
+    - "--web"
+    - "-f"
+    - "/input/urls.txt"
+    - "-d"
+    - "/output/eyewitness"
+    - "--no-prompt"
+  memory_limit: "2g"
+  timeout: "1800s"
+
+short_description: Web screenshot tool
+description: |
+  EyeWitness is designed to take screenshots of websites, provide some
+  server header info, and identify default credentials if known.
+
+parameters:
+  - name: target_file
+    type: string
+    required: true
+    description: File containing URLs
+
+output:
+  format: html
+
+enabled: true

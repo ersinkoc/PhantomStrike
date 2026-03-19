@@ -1,0 +1,40 @@
+name: testssl
+version: "1.0"
+category: network/ssl-testing
+phase: scanning
+command: testssl.sh
+docker:
+  image: drwetter/testssl.sh:latest
+  args:
+    - "--jsonfile"
+    - "/output/testssl-results.json"
+    - "--full"
+    - "${target}"
+  memory_limit: "512m"
+  timeout: "600s"
+
+short_description: SSL/TLS security testing
+description: |
+  Testing TLS/SSL encryption. Checks for vulnerable protocols, cipher suites,
+  certificate issues, and common vulnerabilities.
+
+parameters:
+  - name: target
+    type: string
+    required: true
+    description: Target host:port
+  - name: mode
+    type: string
+    required: false
+    default: "full"
+    enum: [full, quick, standard]
+
+output:
+  format: json
+  severity_indicators:
+    CRITICAL:
+      - "CRITICAL"
+    HIGH:
+      - "HIGH"
+
+enabled: true

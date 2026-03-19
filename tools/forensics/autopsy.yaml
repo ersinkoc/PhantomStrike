@@ -1,0 +1,31 @@
+name: autopsy
+version: "1.0"
+category: forensics/disk-analysis
+phase: analysis
+command: autopsy
+docker:
+  image: kali/autopsy:latest
+  args:
+    - "--nogui"
+    - "-d"
+    - "/input/disk-image"
+    - "--outputDir"
+    - "/output/autopsy"
+  memory_limit: "4g"
+  timeout: "3600s"
+
+short_description: Digital forensics platform
+description: |
+  Autopsy is a GUI-based open source digital forensics platform.
+  It is used by law enforcement, military, and corporate examiners.
+
+parameters:
+  - name: disk_image
+    type: string
+    required: true
+    description: Disk image file
+
+output:
+  format: directory
+
+enabled: true

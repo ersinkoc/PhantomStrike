@@ -1,0 +1,30 @@
+name: kube-bench
+version: "1.0"
+category: cloud/kubernetes-security
+phase: scanning
+command: kube-bench
+docker:
+  image: aquasec/kube-bench:latest
+  args:
+    - "run"
+    - "--json"
+    - "-o"
+    - "/output/kube-bench-results.json"
+  memory_limit: "512m"
+  timeout: "300s"
+
+short_description: Kubernetes CIS benchmarks
+description: |
+  kube-bench is a tool that checks whether Kubernetes is deployed securely
+  by running the checks documented in the CIS Kubernetes Benchmark.
+
+parameters:
+  - name: config
+    type: string
+    required: false
+    description: Kubeconfig file
+
+output:
+  format: json
+
+enabled: true

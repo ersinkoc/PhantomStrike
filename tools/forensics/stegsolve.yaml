@@ -1,0 +1,29 @@
+name: stegsolve
+version: "1.0"
+category: forensics/steganography-analysis
+phase: analysis
+command: java
+docker:
+  image: openjdk:11-jre-slim
+  args:
+    - "-jar"
+    - "/tools/stegsolve.jar"
+    - "/input/image.png"
+    - "/output/stegsolve-results"
+  memory_limit: "1g"
+  timeout: "600s"
+
+short_description: Steganography analysis tool
+description: |
+  StegSolve is a steganography tool for analyzing images.
+
+parameters:
+  - name: image
+    type: string
+    required: true
+    description: Image file
+
+output:
+  format: directory
+
+enabled: true

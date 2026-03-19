@@ -1,0 +1,31 @@
+name: sqlninja
+version: "1.0"
+category: database/sql-injection
+phase: exploitation
+command: sqlninja
+docker:
+  image: tduval/sqlninja:latest
+  args:
+    - "-m"
+    - "test"
+    - "-f"
+    - "/config/sqlninja.conf"
+  memory_limit: "512m"
+  timeout: "1800s"
+
+short_description: MS SQL Server injection tool
+description: |
+  Sqlninja is a tool targeted to exploit SQL Injection vulnerabilities
+  on a web application that uses Microsoft SQL Server.
+
+parameters:
+  - name: mode
+    type: string
+    required: false
+    default: "test"
+    enum: [test, fingerprint, bruteforce, escalation]
+
+output:
+  format: text
+
+enabled: true

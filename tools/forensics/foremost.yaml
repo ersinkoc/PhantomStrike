@@ -1,0 +1,31 @@
+name: foremost
+version: "1.0"
+category: forensics/file-recovery
+phase: analysis
+command: foremost
+docker:
+  image: kali/foremost:latest
+  args:
+    - "-i"
+    - "/input/disk-image"
+    - "-o"
+    - "/output/foremost"
+    - "-v"
+  memory_limit: "1g"
+  timeout: "1800s"
+
+short_description: File recovery tool
+description: |
+  Foremost is a console program to recover files based on their headers,
+  footers, and internal data structures.
+
+parameters:
+  - name: disk_image
+    type: string
+    required: true
+    description: Disk image file
+
+output:
+  format: directory
+
+enabled: true

@@ -1,0 +1,35 @@
+name: dirb
+version: "1.0"
+category: web/directory-discovery
+phase: scanning
+command: dirb
+docker:
+  image: vortexau/dirb:latest
+  args:
+    - "${target}"
+    - "/wordlists/common.txt"
+    - "-o"
+    - "/output/dirb-results.txt"
+    - "-r"
+  memory_limit: "512m"
+  timeout: "600s"
+
+short_description: Web Content Scanner
+description: |
+  DIRB is a Web Content Scanner. It looks for existing (and/or hidden)
+  Web Objects by launching a dictionary-based attack against a web server.
+
+parameters:
+  - name: target
+    type: string
+    required: true
+    description: Target URL
+  - name: wordlist
+    type: string
+    required: false
+    description: Wordlist file
+
+output:
+  format: text
+
+enabled: true

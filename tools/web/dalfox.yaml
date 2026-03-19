@@ -1,95 +1,42 @@
-name: "dalfox"
-version: "1.0.0"
-category: "web/xss"
-tags: ["xss", "cross-site-scripting", "injection", "web-app", "reflected-xss", "stored-xss"]
-command: "dalfox"
-args: []
+name: dalfox
+version: "1.0"
+category: web/xss
+phase: exploitation
+command: dalfox
 docker:
-  image: "phantomstrike/dalfox:latest"
-  network: "isolated"
-  memory_limit: "512m"
-  cpu_limit: "1.0"
-  timeout: "600s"
-short_description: "Parameter analysis and XSS vulnerability scanner with automatic payload generation and WAF evasion."
+  image: hahwul/dalfox:latest
+  args:
+    - "url"
+    - "${target}"
+    - "--format"
+    - "json"
+    - "--output"
+    - "/output/dalfox-results.json"
+    - "--worker"
+    - "10"
+  memory_limit: "1g"
+  timeout: "1800s"
+
+short_description: XSS scanning and parameter analysis
 description: |
-  DalFox (Finder Of XSS) is a fast, powerful parameter analysis and XSS
-  scanning tool written in Go. It performs automatic parameter analysis to
-  find reflected parameters, DOM-based XSS, and stored XSS. DalFox features
-  intelligent payload generation based on response analysis, built-in WAF
-  evasion techniques, support for blind XSS detection via callback servers,
-  and pipeline integration. It can process URLs from stdin (pipe mode), making
-  it ideal for use after tools like gau, waybackurls, or paramspider. DalFox
-  analyzes parameters for reflection points and then tests with context-aware
-  XSS payloads.
-notes: |
-  - DalFox has two main modes: 'url' for single URL and 'pipe' for stdin input.
-  - Pipe mode is ideal for processing large numbers of URLs from other tools.
-  - Use --blind flag with a callback URL (e.g., Burp Collaborator, interactsh) for blind XSS detection.
-  - Custom payloads can be specified with --custom-payload for organization-specific tests.
-  - DalFox automatically detects and attempts to bypass WAFs.
-  - Use --output or -o to save results to a file.
-  - The --follow-redirects flag is recommended for testing login-protected pages.
-  - Combine with paramspider or gau output for comprehensive parameter discovery.
+  DalFox is a powerful open source XSS scanning tool and parameter analyzer.
+  It focuses on automation and high performance.
+
 parameters:
-  - name: "url"
-    type: "string"
-    description: "Target URL with parameters to test for XSS. Example: https://target.com/search?q=test. Use 'url' subcommand."
+  - name: target
+    type: string
     required: true
-    flag: "url"
-  - name: "pipe_mode"
-    type: "boolean"
-    description: "Read target URLs from stdin. Use 'pipe' subcommand instead of 'url'. Ideal for processing URL lists."
+    description: Target URL
+  - name: worker
+    type: integer
     required: false
-    flag: "pipe"
-  - name: "blind"
-    type: "string"
-    description: "Blind XSS callback URL for detecting stored/blind XSS. Example: https://your-collaborator.burpcollaborator.net"
-    required: false
-    flag: "--blind"
-  - name: "custom_payload"
-    type: "string"
-    description: "File path containing custom XSS payloads, one per line."
-    required: false
-    flag: "--custom-payload"
-  - name: "output"
-    type: "string"
-    description: "File path to save scan results."
-    required: false
-    flag: "-o"
+    default: 10
+    description: Number of worker threads
+
 output:
-  format: "text"
+  format: json
   success_patterns:
-    - "\\[POC\\]"
-    - "\\[V\\]"
-    - "Verified"
-    - "Reflected"
-  failure_patterns:
-    - "not found"
-    - "No parameter"
-    - "context deadline exceeded"
-    - "connection refused"
-  severity_indicators:
-    critical:
-      - "[POC]"
-      - "Verified"
-      - "stored"
-    high:
-      - "Reflected"
-      - "DOM"
-      - "event handler"
-    medium:
-      - "parameter reflected"
-      - "potential"
-    low:
-      - "filtered"
-      - "WAF detected"
-chain_suggestions:
-  before:
-    - "ffuf"
-    - "gobuster"
-    - "nuclei"
-    - "httpx"
-    - "wafw00f"
-  after:
-    - "metasploit"
+    - "POC"
+    - "found"
+
 enabled: true

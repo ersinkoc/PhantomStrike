@@ -1,0 +1,27 @@
+name: jwt-analyzer
+version: "1.0"
+category: web/jwt-security
+phase: scanning
+command: jwt_tool
+docker:
+  image: kalilinux/jwt-tool:latest
+  args:
+    - "${token}"
+    - "-t"
+  memory_limit: "512m"
+  timeout: "300s"
+
+short_description: JWT security testing
+description: |
+  jwt_tool is a toolkit for validating, forging, scanning and tampering JWTs.
+
+parameters:
+  - name: token
+    type: string
+    required: true
+    description: JWT token
+
+output:
+  format: text
+
+enabled: true

@@ -1,0 +1,28 @@
+name: uro
+version: "1.0"
+category: reconnaissance/url-optimization
+phase: post-processing
+command: uro
+docker:
+  image: s0md3v/uro:latest
+  args:
+    - "-f"
+    - "/input/urls.txt"
+    - "-o"
+    - "/output/uro-results.txt"
+  memory_limit: "512m"
+  timeout: "300s"
+
+short_description: URL optimization tool
+description: |
+  uro removes unnecessary URLs from a list.
+
+parameters:
+  - name: urls
+    type: string
+    required: true
+
+output:
+  format: text
+
+enabled: true

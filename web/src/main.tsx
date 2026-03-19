@@ -8,6 +8,7 @@ import { AppLayout } from "@/components/layout/app-layout";
 import { useAuthStore } from "@/stores/auth";
 
 import Dashboard from "@/routes/dashboard";
+import HackerDashboard from "@/routes/hacker-dashboard";
 import Missions from "@/routes/missions";
 import MissionDetail from "@/routes/mission-detail";
 import Vulnerabilities from "@/routes/vulnerabilities";
@@ -48,6 +49,7 @@ function App() {
             }
           >
             <Route index element={<Dashboard />} />
+            <Route path="hacker" element={<HackerDashboard />} />
             <Route path="missions" element={<Missions />} />
             <Route path="missions/:id" element={<MissionDetail />} />
             <Route path="vulnerabilities" element={<Vulnerabilities />} />

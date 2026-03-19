@@ -1,0 +1,29 @@
+name: swagger-scan
+version: "1.0"
+category: api/swagger-security
+phase: scanning
+command: swagger-scan
+docker:
+  image: 42crunch/scand-agent:latest
+  args:
+    - "-P"
+    - "/input/swagger.json"
+    - "-o"
+    - "/output/swagger-scan-results.json"
+  memory_limit: "1g"
+  timeout: "600s"
+
+short_description: Swagger/OpenAPI security scanner
+description: |
+  Scans Swagger/OpenAPI specifications for security issues.
+
+parameters:
+  - name: spec
+    type: string
+    required: true
+    description: Swagger/OpenAPI spec file
+
+output:
+  format: json
+
+enabled: true

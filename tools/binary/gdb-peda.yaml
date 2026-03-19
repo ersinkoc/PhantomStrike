@@ -1,0 +1,28 @@
+name: gdb-peda
+version: "1.0"
+category: binary/debugging
+phase: analysis
+command: gdb-peda
+docker:
+  image: kalilinux/gdb-peda:latest
+  args:
+    - "-batch"
+    - "-ex"
+    - "checksec"
+    - "/input/binary"
+  memory_limit: "1g"
+  timeout: "300s"
+
+short_description: GDB with PEDA
+description: |
+  PEDA (Python Exploit Development Assistance) is a GDB plugin.
+
+parameters:
+  - name: binary
+    type: string
+    required: true
+
+output:
+  format: text
+
+enabled: true

@@ -1,0 +1,34 @@
+name: openvpn-scanner
+version: "1.0"
+category: network/vpn-scanning
+phase: scanning
+command: python3
+docker:
+  image: python:3.9-slim
+  args:
+    - "/tools/openvpn-scanner.py"
+    - "-t"
+    - "${target}"
+    - "-p"
+    - "${port}"
+  memory_limit: "512m"
+  timeout: "300s"
+
+short_description: OpenVPN security scanner
+description: |
+  Scans OpenVPN servers for common misconfigurations and vulnerabilities.
+
+parameters:
+  - name: target
+    type: string
+    required: true
+    description: Target IP
+  - name: port
+    type: integer
+    required: false
+    default: 1194
+
+output:
+  format: json
+
+enabled: true

@@ -1,0 +1,29 @@
+name: autorecon
+version: "1.0"
+category: reconnaissance/automation
+phase: reconnaissance
+command: autorecon
+docker:
+  image: tib36/autorecon:latest
+  args:
+    - "${target}"
+    - "-o"
+    - "/output/autorecon-results"
+  memory_limit: "2g"
+  timeout: "3600s"
+
+short_description: Automated reconnaissance
+description: |
+  AutoRecon is a multi-threaded network reconnaissance tool which
+  performs automated enumeration of services.
+
+parameters:
+  - name: target
+    type: string
+    required: true
+    description: Target IP/CIDR
+
+output:
+  format: directory
+
+enabled: true

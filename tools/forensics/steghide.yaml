@@ -1,0 +1,36 @@
+name: steghide
+version: "1.0"
+category: steganography/hide-extract
+phase: analysis
+command: steghide
+docker:
+  image: kali/steghide:latest
+  args:
+    - "extract"
+    - "-sf"
+    - "/input/image.jpg"
+    - "-p"
+    - "${password}"
+    - "-xf"
+    - "/output/extracted"
+  memory_limit: "256m"
+  timeout: "300s"
+
+short_description: Steganography tool
+description: |
+  Steghide is a steganography program that hides data in image and audio files.
+
+parameters:
+  - name: file
+    type: string
+    required: true
+    description: Stego file
+  - name: password
+    type: string
+    required: false
+    description: Password
+
+output:
+  format: binary
+
+enabled: true

@@ -1,0 +1,32 @@
+name: burp
+version: "1.0"
+category: web/vulnerability-scanning
+phase: scanning
+command: burpsuite
+docker:
+  image: mstojkovic/burpsuite:latest
+  args:
+    - "--project-file=/output/burp-project.burp"
+    - "--config-file=/config/burp-config.json"
+  memory_limit: "4g"
+  timeout: "3600s"
+
+short_description: Burp Suite - Web vulnerability scanner
+description: |
+  Burp Suite is an integrated platform for performing security testing of web applications.
+  Enterprise edition supports automated scanning.
+
+parameters:
+  - name: target
+    type: string
+    required: true
+    description: Target URL
+  - name: config
+    type: string
+    required: false
+    description: Burp configuration file
+
+output:
+  format: json
+
+enabled: true

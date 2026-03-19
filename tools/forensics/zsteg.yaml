@@ -1,0 +1,28 @@
+name: zsteg
+version: "1.0"
+category: steganography/png-analysis
+phase: analysis
+command: zsteg
+docker:
+  image: remnux/zsteg:latest
+  args:
+    - "--all"
+    - "/input/image.png"
+  memory_limit: "512m"
+  timeout: "300s"
+
+short_description: PNG/BMP steganography detector
+description: |
+  zsteg is a tool that can detect hidden data in PNG and BMP files.
+  It tests various steganography methods.
+
+parameters:
+  - name: image
+    type: string
+    required: true
+    description: Image file
+
+output:
+  format: text
+
+enabled: true

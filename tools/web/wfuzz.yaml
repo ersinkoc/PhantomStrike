@@ -1,0 +1,39 @@
+name: wfuzz
+version: "1.0"
+category: web/fuzzing
+phase: scanning
+command: wfuzz
+docker:
+  image: ghcr.io/xmendez/wfuzz:latest
+  args:
+    - "-w"
+    - "/wordlists/common.txt"
+    - "${target}/FUZZ"
+    - "--hc"
+    - "404"
+    - "-o"
+    - "json"
+    - ">"
+    - "/output/wfuzz-results.json"
+  memory_limit: "1g"
+  timeout: "600s"
+
+short_description: Web application fuzzer
+description: |
+  Wfuzz is a tool designed for bruteforcing Web Applications.
+  It can be used for finding resources and injection points.
+
+parameters:
+  - name: target
+    type: string
+    required: true
+    description: Target URL with FUZZ
+  - name: wordlist
+    type: string
+    required: false
+    description: Wordlist file
+
+output:
+  format: json
+
+enabled: true

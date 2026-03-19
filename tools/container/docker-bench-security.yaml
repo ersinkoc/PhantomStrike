@@ -1,0 +1,31 @@
+name: docker-bench-security
+version: "1.0"
+category: container/cis-benchmarks
+phase: scanning
+command: docker-bench-security
+docker:
+  image: docker/docker-bench-security:latest
+  args:
+    - "-o"
+    - "/output/docker-bench-results"
+  memory_limit: "512m"
+  timeout: "300s"
+  privileged: true
+  volumes:
+    - "/var/run/docker.sock:/var/run/docker.sock"
+
+short_description: Docker CIS benchmark check
+description: |
+  The Docker Bench for Security is a script that checks for dozens of
+  common best practices around deploying Docker containers.
+
+parameters:
+  - name: version
+    type: string
+    required: false
+    description: Docker version
+
+output:
+  format: text
+
+enabled: true

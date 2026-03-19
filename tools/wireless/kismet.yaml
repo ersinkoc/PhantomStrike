@@ -1,0 +1,33 @@
+name: kismet
+version: "1.0"
+category: wireless/network-detection
+phase: reconnaissance
+command: kismet
+docker:
+  image: kismet/kismet:latest
+  args:
+    - "-c"
+    - "${interface}"
+    - "--daemonize"
+    - "--log-prefix"
+    - "/output/kismet"
+  memory_limit: "2g"
+  timeout: "3600s"
+  privileged: true
+  network_mode: host
+
+short_description: Wireless network detector
+description: |
+  Kismet is a wireless network and device detector, sniffer, wardriving
+  tool, and WIDS framework.
+
+parameters:
+  - name: interface
+    type: string
+    required: true
+    description: Wireless interface
+
+output:
+  format: xml
+
+enabled: true

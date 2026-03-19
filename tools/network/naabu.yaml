@@ -1,0 +1,46 @@
+name: naabu
+version: "1.0"
+category: network/port-scanning
+phase: reconnaissance
+command: naabu
+docker:
+  image: projectdiscovery/naabu:latest
+  args:
+    - "-host"
+    - "${target}"
+    - "-json"
+    - "-o"
+    - "/output/naabu-results.json"
+    - "-rate"
+    - "10000"
+    - "-c"
+    - "50"
+  memory_limit: "512m"
+  timeout: "600s"
+
+short_description: Fast port scanner
+description: |
+  Naabu is a port scanning tool written in Go that allows you to enumerate
+  valid ports for hosts in a fast and reliable manner.
+
+parameters:
+  - name: target
+    type: string
+    required: true
+    description: Target host or CIDR
+  - name: ports
+    type: string
+    required: false
+    default: "top-1000"
+    description: Ports to scan
+
+output:
+  format: json
+  success_patterns:
+    - "port"
+
+chain_suggestions:
+  after:
+    - httpx
+
+enabled: true

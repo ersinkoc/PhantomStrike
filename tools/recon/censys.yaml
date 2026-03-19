@@ -1,0 +1,32 @@
+name: censys
+version: "1.0"
+category: reconnaissance/osint
+phase: reconnaissance
+command: censys
+docker:
+  image: censys/censys-cli:latest
+  args:
+    - "search"
+    - "${query}"
+    - "--index-type"
+    - "hosts"
+    - "-f"
+    - "json"
+  memory_limit: "512m"
+  timeout: "300s"
+
+short_description: Attack surface discovery
+description: |
+  Censys helps organizations secure their networks by providing an accurate
+  and up-to-date view of their internet-facing assets.
+
+parameters:
+  - name: query
+    type: string
+    required: true
+    description: Censys search query
+
+output:
+  format: json
+
+enabled: true

@@ -1,0 +1,28 @@
+name: asnlookup
+version: "1.0"
+category: reconnaissance/network
+phase: reconnaissance
+command: asnlookup
+docker:
+  image: yassineaboukir/asnlookup:latest
+  args:
+    - "-o"
+    - "${organization}"
+  memory_limit: "256m"
+  timeout: "300s"
+
+short_description: ASN and IP ranges lookup
+description: |
+  ASNLookup searches for the ASN (Autonomous System Number) of an organization
+  and retrieves all associated IP ranges.
+
+parameters:
+  - name: organization
+    type: string
+    required: true
+    description: Organization name
+
+output:
+  format: text
+
+enabled: true

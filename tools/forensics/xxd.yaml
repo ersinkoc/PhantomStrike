@@ -1,0 +1,28 @@
+name: xxd
+version: "1.0"
+category: forensics/hex-dump
+phase: analysis
+command: xxd
+docker:
+  image: busybox:latest
+  args:
+    - "/input/binary"
+    - ">"
+    - "/output/xxd-results.txt"
+  memory_limit: "256m"
+  timeout: "60s"
+
+short_description: Hex dump tool
+description: |
+  xxd creates a hex dump of a given file or standard input.
+
+parameters:
+  - name: binary
+    type: string
+    required: true
+    description: Binary file
+
+output:
+  format: text
+
+enabled: true

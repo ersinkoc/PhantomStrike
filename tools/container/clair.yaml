@@ -1,0 +1,39 @@
+name: clair
+version: "1.0"
+category: container/vulnerability-scanning
+phase: scanning
+command: clairctl
+docker:
+  image: quay.io/projectquay/clair:latest
+  args:
+    - "report"
+    - "${image}"
+    - "-o"
+    - "json"
+  memory_limit: "2g"
+  timeout: "600s"
+
+short_description: Container vulnerability static analysis
+description: |
+  Clair is an open source project for the static analysis of vulnerabilities
+  in application containers (currently including OCI and docker).
+
+parameters:
+  - name: image
+    type: string
+    required: true
+    description: Container image to scan
+
+output:
+  format: json
+  severity_indicators:
+    CRITICAL:
+      - "Critical"
+    HIGH:
+      - "High"
+
+chain_suggestions:
+  after:
+    - trivy
+
+enabled: true

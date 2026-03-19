@@ -1,0 +1,31 @@
+name: paramspider
+version: "1.0"
+category: web/parameter-mining
+phase: reconnaissance
+command: paramspider
+docker:
+  image: devanshbatham/paramspider:latest
+  args:
+    - "-d"
+    - "${domain}"
+    - "-l"
+    - "high"
+    - "-o"
+    - "/output/paramspider"
+  memory_limit: "512m"
+  timeout: "600s"
+
+short_description: Parameter mining tool
+description: |
+  ParamSpider finds URLs with parameters from web archives.
+
+parameters:
+  - name: domain
+    type: string
+    required: true
+    description: Target domain
+
+output:
+  format: text
+
+enabled: true

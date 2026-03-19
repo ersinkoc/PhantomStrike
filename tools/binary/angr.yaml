@@ -1,0 +1,27 @@
+name: angr
+version: "1.0"
+category: binary/symbolic-execution
+phase: analysis
+command: python3
+docker:
+  image: angr/angr:latest
+  args:
+    - "/input/solve.py"
+  memory_limit: "4g"
+  timeout: "1800s"
+
+short_description: Binary analysis framework
+description: |
+  angr is a python framework for analyzing binaries.
+  It combines both static and dynamic symbolic analysis.
+
+parameters:
+  - name: script
+    type: string
+    required: true
+    description: Python script
+
+output:
+  format: text
+
+enabled: true

@@ -1,0 +1,35 @@
+name: commix
+version: "1.0"
+category: web/command-injection
+phase: exploitation
+command: commix
+docker:
+  image: commixproject/commix:latest
+  args:
+    - "-u"
+    - "${target}"
+    - "--batch"
+    - "--output-dir=/output"
+  memory_limit: "1g"
+  timeout: "1800s"
+
+short_description: Command injection exploiter
+description: |
+  Commix (short for [comm]and [i]njection e[x]ploiter) is an automated tool
+  that can be used by web developers, penetration testers, and security
+  researchers to test web applications for command injection vulnerabilities.
+
+parameters:
+  - name: target
+    type: string
+    required: true
+    description: Target URL
+  - name: data
+    type: string
+    required: false
+    description: POST data
+
+output:
+  format: text
+
+enabled: true

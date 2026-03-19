@@ -1,0 +1,29 @@
+name: gdb
+version: "1.0"
+category: binary/debugging
+phase: analysis
+command: gdb
+docker:
+  image: kalilinux/gdb:latest
+  args:
+    - "-batch"
+    - "-ex"
+    - "info functions"
+    - "/input/binary"
+  memory_limit: "1g"
+  timeout: "300s"
+
+short_description: GNU debugger
+description: |
+  GDB is the GNU Project debugger for debugging applications.
+
+parameters:
+  - name: binary
+    type: string
+    required: true
+    description: Binary file
+
+output:
+  format: text
+
+enabled: true

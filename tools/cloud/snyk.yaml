@@ -1,0 +1,39 @@
+name: snyk
+version: "1.0"
+category: cloud/sca
+phase: scanning
+command: snyk
+docker:
+  image: snyk/snyk-cli:latest
+  args:
+    - "test"
+    - "--json"
+    - "--severity-threshold=high"
+  memory_limit: "2g"
+  timeout: "600s"
+
+short_description: Snyk vulnerability scanner
+description: |
+  Snyk finds and fixes vulnerabilities in dependencies, containers,
+  infrastructure as code, and source code.
+
+parameters:
+  - name: path
+    type: string
+    required: true
+    description: Path to scan
+  - name: severity
+    type: string
+    required: false
+    default: "high"
+    enum: [low, medium, high, critical]
+
+output:
+  format: json
+  severity_indicators:
+    CRITICAL:
+      - "critical"
+    HIGH:
+      - "high"
+
+enabled: true

@@ -1,0 +1,37 @@
+name: droopescan
+version: "1.0"
+category: cms/scanning
+phase: scanning
+command: droopescan
+docker:
+  image: g0t4ly5/droopescan:latest
+  args:
+    - "scan"
+    - "drupal"
+    - "-u"
+    - "${target}"
+    - "-o"
+    - "json"
+  memory_limit: "512m"
+  timeout: "600s"
+
+short_description: CMS vulnerability scanner
+description: |
+  A plugin-based scanner that aids security researchers in identifying
+  issues with several CMSs: Drupal, WordPress, Joomla, SilverStripe.
+
+parameters:
+  - name: target
+    type: string
+    required: true
+    description: Target URL
+  - name: cms
+    type: string
+    required: false
+    default: "drupal"
+    enum: [drupal, wordpress, joomla, silverstripe, moodle]
+
+output:
+  format: json
+
+enabled: true

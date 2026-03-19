@@ -1,0 +1,32 @@
+name: dnsrecon
+version: "1.0"
+category: reconnaissance/dns
+phase: reconnaissance
+command: dnsrecon
+docker:
+  image: berserker/dnsrecon:latest
+  args:
+    - "-d"
+    - "${domain}"
+    - "-t"
+    - "std,axfr"
+    - "-j"
+    - "/output/dnsrecon-results.json"
+  memory_limit: "512m"
+  timeout: "300s"
+
+short_description: DNS enumeration tool
+description: |
+  DNSRecon is a Python script that provides the ability to perform DNS
+  enumeration and validation.
+
+parameters:
+  - name: domain
+    type: string
+    required: true
+    description: Target domain
+
+output:
+  format: json
+
+enabled: true

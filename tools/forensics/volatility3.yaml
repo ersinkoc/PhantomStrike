@@ -1,0 +1,29 @@
+name: volatility3
+version: "1.0"
+category: forensics/memory-analysis
+phase: analysis
+command: volatility3
+docker:
+  image: volfoundation/volatility3:latest
+  args:
+    - "-f"
+    - "/input/memory.dmp"
+    - "windows.info"
+  memory_limit: "4g"
+  timeout: "1800s"
+
+short_description: Next-gen memory forensics
+description: |
+  Volatility 3 is the next generation of the Volatility memory
+  forensics framework.
+
+parameters:
+  - name: memory_dump
+    type: string
+    required: true
+    description: Memory dump file
+
+output:
+  format: text
+
+enabled: true

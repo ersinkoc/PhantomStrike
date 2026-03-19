@@ -1,0 +1,27 @@
+name: waybackurls
+version: "1.0"
+category: reconnaissance/url-discovery
+phase: reconnaissance
+command: waybackurls
+docker:
+  image: tomnomnom/waybackurls:latest
+  args:
+    - "-dates"
+  stdin: "${domains}"
+  memory_limit: "512m"
+  timeout: "300s"
+
+short_description: Fetch URLs from Wayback Machine
+description: |
+  waybackurls fetches all the URLs that the Wayback Machine knows about.
+
+parameters:
+  - name: domains
+    type: string
+    required: true
+    description: Domains (newline separated)
+
+output:
+  format: text
+
+enabled: true

@@ -1,0 +1,29 @@
+name: enum4linux-ng
+version: "1.0"
+category: network/smb-enum
+phase: reconnaissance
+command: enum4linux-ng
+docker:
+  image: cddc/enum4linux-ng:latest
+  args:
+    - "-A"
+    - "-C"
+    - "-oY"
+    - "/output/enum4linux-ng-results.yaml"
+    - "${target}"
+  memory_limit: "512m"
+  timeout: "600s"
+
+short_description: Next-gen enum4linux
+description: |
+  enum4linux-ng is a rewrite of enum4linux with additional features.
+
+parameters:
+  - name: target
+    type: string
+    required: true
+
+output:
+  format: yaml
+
+enabled: true

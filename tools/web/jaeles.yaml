@@ -1,0 +1,35 @@
+name: jaeles
+version: "1.0"
+category: web/vulnerability-scanning
+phase: scanning
+command: jaeles
+docker:
+  image: jaeles/jaeles:latest
+  args:
+    - "scan"
+    - "-u"
+    - "${target}"
+    - "-o"
+    - "/output/jaeles-results"
+  memory_limit: "1g"
+  timeout: "1800s"
+
+short_description: Advanced web vulnerability scanner
+description: |
+  Jaeles is a powerful, flexible and easily extensible framework written
+  in Go for building your own vulnerability scanner.
+
+parameters:
+  - name: target
+    type: string
+    required: true
+    description: Target URL
+  - name: signature
+    type: string
+    required: false
+    description: Custom signature
+
+output:
+  format: json
+
+enabled: true

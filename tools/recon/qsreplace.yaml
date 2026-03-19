@@ -1,0 +1,29 @@
+name: qsreplace
+version: "1.0"
+category: reconnaissance/url-modification
+phase: post-processing
+command: qsreplace
+docker:
+  image: tomnomnom/qsreplace:latest
+  args:
+    - "${payload}"
+  stdin: "${urls}"
+  memory_limit: "256m"
+  timeout: "60s"
+
+short_description: Query string replacement
+description: |
+  qsreplace replaces query string values in URLs.
+
+parameters:
+  - name: urls
+    type: string
+    required: true
+  - name: payload
+    type: string
+    required: true
+
+output:
+  format: text
+
+enabled: true
