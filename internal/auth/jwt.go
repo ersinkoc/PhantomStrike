@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"time"
@@ -30,15 +31,31 @@ type Claims struct {
 	OrgID  uuid.UUID `json:"org_id,omitempty"`
 }
 
+// TokenBlacklist checks whether a token has been revoked.
+type TokenBlacklist interface {
+	IsBlacklisted(ctx context.Context, token string) bool
+}
+
 // Service provides authentication operations.
 type Service struct {
-	cfg config.AuthConfig
-	db  *store.DB
+	cfg       config.AuthConfig
+	db        *store.DB
+	blacklist TokenBlacklist
 }
 
 // NewService creates a new auth service.
 func NewService(cfg config.AuthConfig, db *store.DB) *Service {
 	return &Service{cfg: cfg, db: db}
+}
+
+// SetBlacklist sets the token blacklist implementation on the service.
+func (s *Service) SetBlacklist(bl TokenBlacklist) {
+	s.blacklist = bl
+}
+
+// GetConfig returns the auth configuration (used by OAuth2 handlers).
+func (s *Service) GetConfig() config.AuthConfig {
+	return s.cfg
 }
 
 // GenerateToken creates a JWT access token for a user.

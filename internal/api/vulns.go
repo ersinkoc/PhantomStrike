@@ -193,6 +193,15 @@ func (h *Handler) handleDeleteVuln(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) handleVulnStats(w http.ResponseWriter, r *http.Request) {
+	// Check cache first
+	if h.cache != nil {
+		var cached map[string]any
+		if err := h.cache.GetJSON(r.Context(), "api:vulns:stats", &cached); err == nil {
+			writeJSON(w, http.StatusOK, cached)
+			return
+		}
+	}
+
 	var total, critical, high, medium, low, info int
 	_ = h.db.Pool.QueryRow(r.Context(), "SELECT COUNT(*) FROM vulnerabilities").Scan(&total)
 	_ = h.db.Pool.QueryRow(r.Context(), "SELECT COUNT(*) FROM vulnerabilities WHERE severity = 'critical'").Scan(&critical)
@@ -201,12 +210,19 @@ func (h *Handler) handleVulnStats(w http.ResponseWriter, r *http.Request) {
 	_ = h.db.Pool.QueryRow(r.Context(), "SELECT COUNT(*) FROM vulnerabilities WHERE severity = 'low'").Scan(&low)
 	_ = h.db.Pool.QueryRow(r.Context(), "SELECT COUNT(*) FROM vulnerabilities WHERE severity = 'info'").Scan(&info)
 
-	writeJSON(w, http.StatusOK, map[string]any{
+	result := map[string]any{
 		"total":    total,
 		"critical": critical,
 		"high":     high,
 		"medium":   medium,
 		"low":      low,
 		"info":     info,
-	})
+	}
+
+	// Cache the result
+	if h.cache != nil {
+		_ = h.cache.SetJSON(r.Context(), "api:vulns:stats", result, 60*time.Second)
+	}
+
+	writeJSON(w, http.StatusOK, result)
 }

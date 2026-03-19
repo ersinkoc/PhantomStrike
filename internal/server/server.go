@@ -75,6 +75,8 @@ func New(cfg *config.Config, db *store.DB) (*Server, error) {
 			slog.Warn("redis cache unavailable, running without cache", "error", err)
 		} else {
 			apiHandler.SetCache(c)
+			// Wire token blacklist into auth service
+			authSvc.SetBlacklist(cache.NewTokenBlacklist(c))
 		}
 	}
 
@@ -90,6 +92,13 @@ func New(cfg *config.Config, db *store.DB) (*Server, error) {
 
 	// WebSocket endpoint
 	mux.Handle("/ws", apiHandler.HandleWebSocket(hub))
+
+	// OAuth2 endpoints (public — no auth middleware)
+	oauth2Handler := auth.NewOAuth2Handler(authSvc, db.Pool, cfg.Auth.OAuth2)
+	mux.HandleFunc("GET /api/v1/auth/github", oauth2Handler.HandleGitHubLogin)
+	mux.HandleFunc("GET /api/v1/auth/github/callback", oauth2Handler.HandleGitHubCallback)
+	mux.HandleFunc("GET /api/v1/auth/google", oauth2Handler.HandleGoogleLogin)
+	mux.HandleFunc("GET /api/v1/auth/google/callback", oauth2Handler.HandleGoogleCallback)
 
 	// Apply global middleware (audit sits after auth, before logging)
 	handler := applyMiddleware(mux, cfg, auditLogger)

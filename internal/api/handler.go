@@ -13,6 +13,8 @@ import (
 	"github.com/ersinkoc/phantomstrike/internal/storage"
 	"github.com/ersinkoc/phantomstrike/internal/store"
 	"github.com/ersinkoc/phantomstrike/internal/tool"
+
+	_ "github.com/ersinkoc/phantomstrike/internal/notify"
 )
 
 // Handler is the main API handler that registers all routes.
@@ -117,13 +119,29 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
 	mux.Handle("POST /api/v1/scheduler/{id}/trigger", protected(http.HandlerFunc(h.handleTriggerScheduler)))
 	mux.Handle("DELETE /api/v1/scheduler/{id}", protected(http.HandlerFunc(h.handleDeleteScheduler)))
 
-	// Roles & Skills
+	// Roles
 	mux.Handle("GET /api/v1/roles", protected(http.HandlerFunc(h.handleListRoles)))
+	mux.Handle("POST /api/v1/roles", protected(http.HandlerFunc(h.handleCreateRole)))
+	mux.Handle("PUT /api/v1/roles/{name}", protected(http.HandlerFunc(h.handleUpdateRole)))
+	mux.Handle("DELETE /api/v1/roles/{name}", protected(http.HandlerFunc(h.handleDeleteRole)))
+
+	// Skills
 	mux.Handle("GET /api/v1/skills", protected(http.HandlerFunc(h.handleListSkills)))
+	mux.Handle("POST /api/v1/skills", protected(http.HandlerFunc(h.handleCreateSkill)))
+	mux.Handle("PUT /api/v1/skills/{name}", protected(http.HandlerFunc(h.handleUpdateSkill)))
+	mux.Handle("DELETE /api/v1/skills/{name}", protected(http.HandlerFunc(h.handleDeleteSkill)))
 
 	// Marketplace
 	mux.Handle("GET /api/v1/marketplace/tools", protected(http.HandlerFunc(h.handleListMarketplaceTools)))
 	mux.Handle("GET /api/v1/marketplace/skills", protected(http.HandlerFunc(h.handleListMarketplaceSkills)))
+
+	// Notifications
+	mux.Handle("GET /api/v1/notifications/channels", protected(http.HandlerFunc(h.handleListNotificationChannels)))
+	mux.Handle("POST /api/v1/notifications/channels/{type}/test", protected(http.HandlerFunc(h.handleTestNotificationChannel)))
+
+	// Admin
+	mux.Handle("GET /api/v1/admin/users", protected(http.HandlerFunc(h.handleListUsers)))
+	mux.Handle("GET /api/v1/admin/audit", protected(http.HandlerFunc(h.handleGetAuditLog)))
 }
 
 // --- Response helpers ---

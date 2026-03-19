@@ -19,6 +19,12 @@ func (s *Service) Middleware(next http.Handler) http.Handler {
 			return
 		}
 
+		// Check blacklist before validating (fast-reject revoked tokens)
+		if s.blacklist != nil && s.blacklist.IsBlacklisted(r.Context(), token) {
+			http.Error(w, `{"error":"token has been revoked"}`, http.StatusUnauthorized)
+			return
+		}
+
 		claims, err := s.ValidateToken(token)
 		if err != nil {
 			http.Error(w, `{"error":"invalid or expired token"}`, http.StatusUnauthorized)

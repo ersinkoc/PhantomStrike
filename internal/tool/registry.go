@@ -142,6 +142,13 @@ func (r *Registry) SyncToDB(ctx context.Context) error {
 	return nil
 }
 
+// Register adds or replaces a single tool definition in the registry.
+func (r *Registry) Register(def *Definition) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.tools[def.Name] = def
+}
+
 // Get returns a tool definition by name.
 func (r *Registry) Get(name string) (*Definition, bool) {
 	r.mu.RLock()

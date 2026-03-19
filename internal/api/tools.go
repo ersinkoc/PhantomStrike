@@ -1,8 +1,20 @@
 package api
 
-import "net/http"
+import (
+	"net/http"
+	"time"
+)
 
 func (h *Handler) handleListTools(w http.ResponseWriter, r *http.Request) {
+	// Check cache first
+	if h.cache != nil {
+		var cached map[string]any
+		if err := h.cache.GetJSON(r.Context(), "api:tools:list", &cached); err == nil {
+			writeJSON(w, http.StatusOK, cached)
+			return
+		}
+	}
+
 	rows, err := h.db.Pool.Query(r.Context(),
 		`SELECT name, category, enabled, source, avg_exec_time, success_rate, last_used FROM tool_registry ORDER BY category, name`)
 	if err != nil {
@@ -31,7 +43,14 @@ func (h *Handler) handleListTools(w http.ResponseWriter, r *http.Request) {
 		tools = []map[string]any{}
 	}
 
-	writeJSON(w, http.StatusOK, map[string]any{"tools": tools})
+	result := map[string]any{"tools": tools}
+
+	// Cache the result
+	if h.cache != nil {
+		_ = h.cache.SetJSON(r.Context(), "api:tools:list", result, 5*time.Minute)
+	}
+
+	writeJSON(w, http.StatusOK, result)
 }
 
 func (h *Handler) handleGetTool(w http.ResponseWriter, r *http.Request) {
@@ -65,6 +84,11 @@ func (h *Handler) handleToggleTool(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "toggle failed")
 		return
+	}
+
+	// Invalidate tools list cache
+	if h.cache != nil {
+		_ = h.cache.Delete(r.Context(), "api:tools:list")
 	}
 
 	writeJSON(w, http.StatusOK, map[string]string{"status": "toggled"})

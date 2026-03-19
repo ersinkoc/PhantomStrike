@@ -4,13 +4,22 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/ersinkoc/phantomstrike/internal/auth"
 )
 
 func (h *Handler) handleGetSettings(w http.ResponseWriter, r *http.Request) {
-	// Return non-sensitive configuration
-	writeJSON(w, http.StatusOK, map[string]any{
+	// Check cache first
+	if h.cache != nil {
+		var cached map[string]any
+		if err := h.cache.GetJSON(r.Context(), "api:settings", &cached); err == nil {
+			writeJSON(w, http.StatusOK, cached)
+			return
+		}
+	}
+
+	result := map[string]any{
 		"providers": map[string]any{
 			"default":        h.cfg.Providers.Default,
 			"fallback_chain": h.cfg.Providers.FallbackChain,
@@ -31,7 +40,14 @@ func (h *Handler) handleGetSettings(w http.ResponseWriter, r *http.Request) {
 		"auth": map[string]any{
 			"allow_registration": h.cfg.Auth.AllowRegistration,
 		},
-	})
+	}
+
+	// Cache the result
+	if h.cache != nil {
+		_ = h.cache.SetJSON(r.Context(), "api:settings", result, 10*time.Minute)
+	}
+
+	writeJSON(w, http.StatusOK, result)
 }
 
 func (h *Handler) handleUpdateSettings(w http.ResponseWriter, r *http.Request) {
@@ -152,6 +168,11 @@ func (h *Handler) handleUpdateSettings(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 		}
+	}
+
+	// Invalidate settings cache
+	if h.cache != nil {
+		_ = h.cache.Delete(r.Context(), "api:settings")
 	}
 
 	// Return the updated count

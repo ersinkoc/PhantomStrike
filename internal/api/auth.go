@@ -2,8 +2,10 @@ package api
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -243,9 +245,35 @@ func (h *Handler) handleUpdateMe(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) handleLogout(w http.ResponseWriter, r *http.Request) {
-	// JWT is stateless — client should discard the token.
-	// Future: add token to blacklist in Redis.
+	// Extract token from request
+	token := extractBearerToken(r)
+	if token == "" {
+		writeJSON(w, http.StatusOK, map[string]string{"status": "logged out"})
+		return
+	}
+
+	// Blacklist the token in Redis if cache is available
+	if h.cache != nil {
+		claims, err := h.authSvc.ValidateToken(token)
+		if err == nil && claims.ExpiresAt != nil {
+			remaining := time.Until(claims.ExpiresAt.Time)
+			if remaining > 0 {
+				key := fmt.Sprintf("blacklist:%s", token)
+				_ = h.cache.Set(r.Context(), key, "1", remaining)
+			}
+		}
+	}
+
 	writeJSON(w, http.StatusOK, map[string]string{"status": "logged out"})
+}
+
+// extractBearerToken gets the raw bearer token from the Authorization header.
+func extractBearerToken(r *http.Request) string {
+	auth := r.Header.Get("Authorization")
+	if strings.HasPrefix(auth, "Bearer ") {
+		return strings.TrimPrefix(auth, "Bearer ")
+	}
+	return ""
 }
 
 // EnsureDefaultAdmin creates the default admin user if it doesn't exist.

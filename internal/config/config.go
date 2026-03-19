@@ -61,16 +61,30 @@ type S3Config struct {
 }
 
 type AuthConfig struct {
-	JWTSecret         string       `yaml:"jwt_secret"`
+	JWTSecret         string        `yaml:"jwt_secret"`
 	TokenExpiry       time.Duration `yaml:"token_expiry"`
 	RefreshExpiry     time.Duration `yaml:"refresh_expiry"`
-	AllowRegistration bool         `yaml:"allow_registration"`
-	DefaultAdmin      AdminConfig  `yaml:"default_admin"`
+	AllowRegistration bool          `yaml:"allow_registration"`
+	DefaultAdmin      AdminConfig   `yaml:"default_admin"`
+	OAuth2            OAuth2Config  `yaml:"oauth2"`
 }
 
 type AdminConfig struct {
 	Email    string `yaml:"email"`
 	Password string `yaml:"password"`
+}
+
+// OAuth2Config holds OAuth2 provider configurations.
+type OAuth2Config struct {
+	GitHub OAuthProvider `yaml:"github"`
+	Google OAuthProvider `yaml:"google"`
+}
+
+// OAuthProvider holds credentials for a single OAuth2 provider.
+type OAuthProvider struct {
+	ClientID     string `yaml:"client_id"`
+	ClientSecret string `yaml:"client_secret"`
+	RedirectURL  string `yaml:"redirect_url"`
 }
 
 type ProvidersConfig struct {
@@ -419,6 +433,26 @@ func applyEnvOverrides(cfg *Config) {
 				Model:   model,
 			}
 		}
+	}
+
+	// OAuth2 providers
+	if v := os.Getenv("GITHUB_CLIENT_ID"); v != "" {
+		cfg.Auth.OAuth2.GitHub.ClientID = v
+	}
+	if v := os.Getenv("GITHUB_CLIENT_SECRET"); v != "" {
+		cfg.Auth.OAuth2.GitHub.ClientSecret = v
+	}
+	if v := os.Getenv("GITHUB_REDIRECT_URL"); v != "" {
+		cfg.Auth.OAuth2.GitHub.RedirectURL = v
+	}
+	if v := os.Getenv("GOOGLE_CLIENT_ID"); v != "" {
+		cfg.Auth.OAuth2.Google.ClientID = v
+	}
+	if v := os.Getenv("GOOGLE_CLIENT_SECRET"); v != "" {
+		cfg.Auth.OAuth2.Google.ClientSecret = v
+	}
+	if v := os.Getenv("GOOGLE_REDIRECT_URL"); v != "" {
+		cfg.Auth.OAuth2.Google.RedirectURL = v
 	}
 
 	if v := os.Getenv("STORAGE_PATH"); v != "" {

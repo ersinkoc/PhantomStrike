@@ -1,4 +1,4 @@
-import { StrictMode } from "react";
+import React, { Suspense, StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -7,22 +7,24 @@ import { Toaster } from "sonner";
 import { AppLayout } from "@/components/layout/app-layout";
 import { useAuthStore } from "@/stores/auth";
 
-import Dashboard from "@/routes/dashboard";
-import HackerDashboard from "@/routes/hacker-dashboard";
-import Missions from "@/routes/missions";
-import MissionDetail from "@/routes/mission-detail";
-import Vulnerabilities from "@/routes/vulnerabilities";
-import Tools from "@/routes/tools";
-import SettingsPage from "@/routes/settings";
 import Login from "@/routes/login";
-import Knowledge from "@/routes/knowledge";
-import Reports from "@/routes/reports";
-import Roles from "@/routes/roles";
-import Skills from "@/routes/skills";
-import Scheduler from "@/routes/scheduler";
-import Marketplace from "@/routes/marketplace";
+import Dashboard from "@/routes/dashboard";
 
 import "./index.css";
+
+// Lazy-loaded route components for code splitting
+const HackerDashboard = React.lazy(() => import("@/routes/hacker-dashboard"));
+const Missions = React.lazy(() => import("@/routes/missions"));
+const MissionDetail = React.lazy(() => import("@/routes/mission-detail"));
+const Vulnerabilities = React.lazy(() => import("@/routes/vulnerabilities"));
+const Tools = React.lazy(() => import("@/routes/tools"));
+const Knowledge = React.lazy(() => import("@/routes/knowledge"));
+const Reports = React.lazy(() => import("@/routes/reports"));
+const Roles = React.lazy(() => import("@/routes/roles"));
+const Skills = React.lazy(() => import("@/routes/skills"));
+const Scheduler = React.lazy(() => import("@/routes/scheduler"));
+const Marketplace = React.lazy(() => import("@/routes/marketplace"));
+const SettingsPage = React.lazy(() => import("@/routes/settings"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -34,6 +36,14 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   if (!isAuthenticated) return <Navigate to="/login" replace />;
   return <>{children}</>;
+}
+
+function LazyFallback() {
+  return (
+    <div className="flex items-center justify-center h-full w-full min-h-[200px]">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white" />
+    </div>
+  );
 }
 
 function App() {
@@ -50,18 +60,18 @@ function App() {
             }
           >
             <Route index element={<Dashboard />} />
-            <Route path="hacker" element={<HackerDashboard />} />
-            <Route path="missions" element={<Missions />} />
-            <Route path="missions/:id" element={<MissionDetail />} />
-            <Route path="vulnerabilities" element={<Vulnerabilities />} />
-            <Route path="tools" element={<Tools />} />
-            <Route path="knowledge" element={<Knowledge />} />
-            <Route path="reports" element={<Reports />} />
-            <Route path="roles" element={<Roles />} />
-            <Route path="skills" element={<Skills />} />
-            <Route path="scheduler" element={<Scheduler />} />
-            <Route path="marketplace" element={<Marketplace />} />
-            <Route path="settings" element={<SettingsPage />} />
+            <Route path="hacker" element={<Suspense fallback={<LazyFallback />}><HackerDashboard /></Suspense>} />
+            <Route path="missions" element={<Suspense fallback={<LazyFallback />}><Missions /></Suspense>} />
+            <Route path="missions/:id" element={<Suspense fallback={<LazyFallback />}><MissionDetail /></Suspense>} />
+            <Route path="vulnerabilities" element={<Suspense fallback={<LazyFallback />}><Vulnerabilities /></Suspense>} />
+            <Route path="tools" element={<Suspense fallback={<LazyFallback />}><Tools /></Suspense>} />
+            <Route path="knowledge" element={<Suspense fallback={<LazyFallback />}><Knowledge /></Suspense>} />
+            <Route path="reports" element={<Suspense fallback={<LazyFallback />}><Reports /></Suspense>} />
+            <Route path="roles" element={<Suspense fallback={<LazyFallback />}><Roles /></Suspense>} />
+            <Route path="skills" element={<Suspense fallback={<LazyFallback />}><Skills /></Suspense>} />
+            <Route path="scheduler" element={<Suspense fallback={<LazyFallback />}><Scheduler /></Suspense>} />
+            <Route path="marketplace" element={<Suspense fallback={<LazyFallback />}><Marketplace /></Suspense>} />
+            <Route path="settings" element={<Suspense fallback={<LazyFallback />}><SettingsPage /></Suspense>} />
           </Route>
         </Routes>
       </BrowserRouter>
