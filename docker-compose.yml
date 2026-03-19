@@ -41,11 +41,6 @@ services:
       - VITE_API_URL=http://server:18090
     volumes:
       - ./web/src:/app/src
-      - ./web/public:/app/public
-      - ./web/index.html:/app/index.html
-      - ./web/vite.config.ts:/app/vite.config.ts
-      - ./web/tsconfig.json:/app/tsconfig.json
-      - ./web/tsconfig.app.json:/app/tsconfig.app.json
     depends_on:
       - server
     restart: unless-stopped
