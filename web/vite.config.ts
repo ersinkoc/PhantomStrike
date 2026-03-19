@@ -36,14 +36,14 @@ export default defineConfig({
     },
   },
   server: {
-    port: 5173,
+    port: 15173,
     proxy: {
       "/api": {
-        target: "http://localhost:8090",
+        target: "http://localhost:18090",
         changeOrigin: true,
       },
       "/ws": {
-        target: "ws://localhost:8090",
+        target: "ws://localhost:18090",
         ws: true,
       },
     },

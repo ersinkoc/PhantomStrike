@@ -1,72 +1,4 @@
 services:
-  # --- Core ---
-  server:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    ports:
-      - "8080:8080"
-      - "8081:8081"
-    environment:
-      - DATABASE_URL=postgresql://phantom:${DB_PASSWORD:-phantom123}@postgres:5432/phantomstrike
-      - REDIS_URL=redis://redis:6379
-      - STORAGE_PATH=/data/artifacts
-      - CONFIG_PATH=/app/config.yaml
-      - JWT_SECRET=${JWT_SECRET:-change-me-in-production}
-      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin123}
-      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
-      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
-      - GROQ_API_KEY=${GROQ_API_KEY:-}
-      # Additional AI Providers
-      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY:-}
-      - GLM_API_KEY=${GLM_API_KEY:-}
-      - TOGETHER_API_KEY=${TOGETHER_API_KEY:-}
-      - MISTRAL_API_KEY=${MISTRAL_API_KEY:-}
-      - COHERE_API_KEY=${COHERE_API_KEY:-}
-      - FIREWORKS_API_KEY=${FIREWORKS_API_KEY:-}
-      - PERPLEXITY_API_KEY=${PERPLEXITY_API_KEY:-}
-      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
-      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
-      - AI21_API_KEY=${AI21_API_KEY:-}
-      # Provider configuration
-      - PROVIDERS=${PROVIDERS:-}
-      - MCP_AUTH_TOKEN=${MCP_AUTH_TOKEN:-}
-      - LOG_LEVEL=${LOG_LEVEL:-info}
-    volumes:
-      - ./config.yaml:/app/config.yaml:ro
-      - ./tools:/app/tools:ro
-      - ./roles:/app/roles:ro
-      - ./skills:/app/skills:ro
-      - ./knowledge:/app/knowledge:ro
-      - artifacts:/data/artifacts
-      - /var/run/docker.sock:/var/run/docker.sock
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    restart: unless-stopped
-
-  # --- Worker ---
-  worker:
-    build:
-      context: .
-      dockerfile: Dockerfile.worker
-    environment:
-      - DATABASE_URL=postgresql://phantom:${DB_PASSWORD:-phantom123}@postgres:5432/phantomstrike
-      - REDIS_URL=redis://redis:6379
-      - LOG_LEVEL=${LOG_LEVEL:-info}
-    volumes:
-      - ./tools:/app/tools:ro
-      - artifacts:/data/artifacts
-      - /var/run/docker.sock:/var/run/docker.sock
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    restart: unless-stopped
-
   # --- Data ---
   postgres:
     image: pgvector/pgvector:pg17
@@ -77,7 +9,7 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
     ports:
-      - "5432:5432"
+      - "15432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U phantom"]
       interval: 5s
@@ -90,7 +22,7 @@ services:
     volumes:
       - redisdata:/data
     ports:
-      - "6379:6379"
+      - "16379:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -108,8 +40,8 @@ services:
     volumes:
       - miniodata:/data
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - "19000:9000"
+      - "19001:9001"
     profiles: ["full"]
     restart: unless-stopped
 
@@ -117,4 +49,3 @@ volumes:
   pgdata:
   redisdata:
   miniodata:
-  artifacts:
