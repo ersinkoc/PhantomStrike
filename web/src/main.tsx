@@ -1,4 +1,4 @@
-import React, { Suspense, StrictMode } from "react";
+import React, { Suspense, StrictMode, useState, useEffect, useCallback } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -6,6 +6,7 @@ import { Toaster } from "sonner";
 
 import { AppLayout } from "@/components/layout/app-layout";
 import { useAuthStore } from "@/stores/auth";
+import { CommandPalette } from "@/components/common/command-palette";
 
 import Login from "@/routes/login";
 import Dashboard from "@/routes/dashboard";
@@ -48,6 +49,20 @@ function LazyFallback() {
 }
 
 function App() {
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
+
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+      e.preventDefault();
+      setCommandPaletteOpen((prev) => !prev);
+    }
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [handleKeyDown]);
+
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
@@ -76,6 +91,7 @@ function App() {
             <Route path="admin" element={<Suspense fallback={<LazyFallback />}><AdminPage /></Suspense>} />
           </Route>
         </Routes>
+        <CommandPalette open={commandPaletteOpen} onClose={() => setCommandPaletteOpen(false)} />
       </BrowserRouter>
       <Toaster theme="dark" position="bottom-right" richColors />
     </QueryClientProvider>

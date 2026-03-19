@@ -2,10 +2,11 @@ import { NavLink } from "react-router-dom";
 import {
   LayoutDashboard, Crosshair, Shield, ShieldCheck, Wrench,
   BookOpen, FileText, Settings, LogOut, Bug,
-  Terminal, UserCog, Zap, Clock, Store
+  Terminal, UserCog, Zap, Clock, Store, Sun, Moon
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/auth";
+import { useTheme } from "@/hooks/useTheme";
 
 const navItems = [
   { to: "/", icon: LayoutDashboard, label: "Dashboard" },
@@ -25,6 +26,7 @@ const navItems = [
 
 export function Sidebar() {
   const { user, logout } = useAuthStore();
+  const { theme, toggle: toggleTheme } = useTheme();
 
   return (
     <aside className="fixed left-0 top-0 z-40 flex h-screen w-60 flex-col border-r border-[var(--color-border)] bg-[var(--color-card)]">
@@ -60,6 +62,18 @@ export function Sidebar() {
           ))}
         </ul>
       </nav>
+
+      {/* Theme Toggle */}
+      <div className="border-t border-[var(--color-border)] px-3 py-2">
+        <button
+          onClick={toggleTheme}
+          className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-[var(--color-muted-foreground)] transition-colors hover:bg-[var(--color-accent)] hover:text-[var(--color-foreground)]"
+          title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+        >
+          {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+        </button>
+      </div>
 
       {/* User */}
       <div className="border-t border-[var(--color-border)] p-3">

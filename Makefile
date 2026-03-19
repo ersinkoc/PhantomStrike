@@ -1,4 +1,4 @@
-.PHONY: help build run dev test clean migrate lint fmt docker-up docker-down setup install generate build-all release
+.PHONY: help build run dev test clean migrate lint fmt docker-up docker-down setup install generate build-all release build-release embed-frontend
 
 # Variables
 BINARY_NAME=phantomstrike
@@ -27,6 +27,7 @@ help:
 	@echo "  make build-cli     Build CLI only"
 	@echo "  make build-worker  Build worker only"
 	@echo "  make build-web     Build web UI"
+	@echo "  make build-release Build server with embedded frontend"
 	@echo "  make release       Build release binaries for all platforms"
 	@echo ""
 	@echo "Development:"
@@ -112,6 +113,19 @@ build-web:
 	cd web && npm run build
 
 build-all: build build-web
+
+# Embed frontend into server binary: build web, copy dist, then build server
+embed-frontend:
+	@echo "Copying web/dist to internal/server/static..."
+	@rm -rf internal/server/static/*
+	@cp -r web/dist/* internal/server/static/ 2>/dev/null || echo "web/dist not found — run 'make build-web' first"
+
+# Build a release server binary with embedded frontend
+build-release: build-web embed-frontend
+	@echo "Building release server with embedded frontend..."
+	@mkdir -p $(BUILD_DIR)
+	go build $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME) ./cmd/server
+	@echo "Release binary: $(BUILD_DIR)/$(BINARY_NAME)"
 
 # Run
 dev:

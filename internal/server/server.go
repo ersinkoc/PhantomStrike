@@ -15,6 +15,7 @@ import (
 	"github.com/ersinkoc/phantomstrike/internal/auth"
 	"github.com/ersinkoc/phantomstrike/internal/cache"
 	"github.com/ersinkoc/phantomstrike/internal/config"
+	"github.com/ersinkoc/phantomstrike/internal/metrics"
 	"github.com/ersinkoc/phantomstrike/internal/pkg/ratelimit"
 	"github.com/ersinkoc/phantomstrike/internal/provider"
 	"github.com/ersinkoc/phantomstrike/internal/storage"
@@ -100,6 +101,31 @@ func New(cfg *config.Config, db *store.DB) (*Server, error) {
 	mux.HandleFunc("GET /api/v1/auth/github/callback", oauth2Handler.HandleGitHubCallback)
 	mux.HandleFunc("GET /api/v1/auth/google", oauth2Handler.HandleGoogleLogin)
 	mux.HandleFunc("GET /api/v1/auth/google/callback", oauth2Handler.HandleGoogleCallback)
+
+	// Prometheus metrics endpoint (public, no auth)
+	appMetrics := metrics.NewMetrics()
+	mux.HandleFunc("GET /metrics", appMetrics.Handler())
+
+	// Swagger UI endpoint (public, no auth)
+	mux.HandleFunc("GET /swagger/", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+		w.Write([]byte(`<!DOCTYPE html>
+<html><head><title>PhantomStrike API</title>
+<link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist/swagger-ui.css">
+</head><body>
+<div id="swagger-ui"></div>
+<script src="https://unpkg.com/swagger-ui-dist/swagger-ui-bundle.js"></script>
+<script>SwaggerUIBundle({url:"/api/v1/openapi.yaml",dom_id:"#swagger-ui"})</script>
+</body></html>`))
+	})
+
+	// Serve OpenAPI spec
+	mux.HandleFunc("GET /api/v1/openapi.yaml", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "api/openapi.yaml")
+	})
+
+	// Static file handler — SPA fallback (must be registered last)
+	mux.Handle("/", staticHandler())
 
 	// Initialize rate limiter (100 requests per minute per IP)
 	rateLimiter := ratelimit.New(100, time.Minute)
