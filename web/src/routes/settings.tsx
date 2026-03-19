@@ -1,8 +1,15 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Settings, Bot, Server, Pencil, Save, X } from "lucide-react";
+import { Settings, Bot, Server, Pencil, Save, X, Bell, Send } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
+
+interface NotificationChannel {
+  type: string;
+  name: string;
+  enabled: boolean;
+  event_filters: string[];
+}
 
 export default function SettingsPage() {
   const queryClient = useQueryClient();
@@ -11,6 +18,20 @@ export default function SettingsPage() {
   const { data } = useQuery({
     queryKey: ["settings"],
     queryFn: () => api.get<Record<string, any>>("/settings"),
+  });
+
+  const { data: channels } = useQuery({
+    queryKey: ["notification-channels"],
+    queryFn: () =>
+      api.get<{ channels: NotificationChannel[] }>("/notifications/channels"),
+  });
+
+  const testChannelMutation = useMutation({
+    mutationFn: (type: string) =>
+      api.post(`/notifications/channels/${type}/test`),
+    onSuccess: () => toast.success("Test notification sent"),
+    onError: (err: Error) =>
+      toast.error(err.message || "Failed to send test notification"),
   });
 
   // Editable form state
@@ -216,6 +237,66 @@ export default function SettingsPage() {
             <span className="text-sm text-[var(--color-muted-foreground)]">Port</span>
             <span className="font-mono text-sm">{data?.mcp?.port ?? "8081"}</span>
           </div>
+        </div>
+      </div>
+
+      {/* Notifications */}
+      <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-card)]">
+        <div className="flex items-center gap-2 border-b border-[var(--color-border)] px-5 py-3">
+          <Bell className="h-4 w-4 text-[var(--color-primary)]" />
+          <h2 className="font-semibold">Notifications</h2>
+        </div>
+        <div className="divide-y divide-[var(--color-border)]">
+          {channels?.channels && channels.channels.length > 0 ? (
+            channels.channels.map((channel) => (
+              <div
+                key={channel.type}
+                className="flex items-center justify-between px-5 py-3"
+              >
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <p className="font-medium">{channel.name}</p>
+                    <span className="rounded bg-zinc-500/10 px-2 py-0.5 text-xs text-zinc-400">
+                      {channel.type}
+                    </span>
+                    <span
+                      className={`rounded px-2 py-0.5 text-xs ${
+                        channel.enabled
+                          ? "bg-emerald-500/10 text-emerald-400"
+                          : "bg-zinc-500/10 text-zinc-400"
+                      }`}
+                    >
+                      {channel.enabled ? "Enabled" : "Disabled"}
+                    </span>
+                  </div>
+                  {channel.event_filters && channel.event_filters.length > 0 && (
+                    <div className="mt-1 flex flex-wrap gap-1">
+                      {channel.event_filters.map((filter) => (
+                        <span
+                          key={filter}
+                          className="rounded bg-[var(--color-accent)] px-1.5 py-0.5 text-xs text-[var(--color-muted-foreground)]"
+                        >
+                          {filter}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <button
+                  onClick={() => testChannelMutation.mutate(channel.type)}
+                  disabled={testChannelMutation.isPending}
+                  className="ml-4 flex shrink-0 items-center gap-1.5 rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-sm text-[var(--color-muted-foreground)] hover:bg-[var(--color-accent)] disabled:opacity-50"
+                >
+                  <Send className="h-3.5 w-3.5" />
+                  Test
+                </button>
+              </div>
+            ))
+          ) : (
+            <div className="px-5 py-8 text-center text-sm text-[var(--color-muted-foreground)]">
+              No notification channels configured
+            </div>
+          )}
         </div>
       </div>
     </div>

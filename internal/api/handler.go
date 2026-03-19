@@ -139,6 +139,10 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
 	mux.Handle("GET /api/v1/notifications/channels", protected(http.HandlerFunc(h.handleListNotificationChannels)))
 	mux.Handle("POST /api/v1/notifications/channels/{type}/test", protected(http.HandlerFunc(h.handleTestNotificationChannel)))
 
+	// Compliance
+	mux.Handle("POST /api/v1/compliance/report", protected(http.HandlerFunc(h.handleGenerateComplianceReport)))
+	mux.Handle("GET /api/v1/compliance/frameworks", protected(http.HandlerFunc(h.handleListFrameworks)))
+
 	// Admin
 	mux.Handle("GET /api/v1/admin/users", protected(http.HandlerFunc(h.handleListUsers)))
 	mux.Handle("GET /api/v1/admin/audit", protected(http.HandlerFunc(h.handleGetAuditLog)))

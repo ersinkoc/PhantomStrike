@@ -21,6 +21,7 @@ type Definition struct {
 	Command          string       `yaml:"command" json:"command"`
 	Args             []string     `yaml:"args" json:"args"`
 	Docker           DockerDef    `yaml:"docker" json:"docker"`
+	WASMPath         string       `yaml:"wasm_path" json:"wasm_path,omitempty"`
 	ShortDescription string       `yaml:"short_description" json:"short_description"`
 	Description      string       `yaml:"description" json:"description"`
 	Notes            string       `yaml:"notes" json:"notes"`

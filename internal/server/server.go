@@ -15,6 +15,7 @@ import (
 	"github.com/ersinkoc/phantomstrike/internal/auth"
 	"github.com/ersinkoc/phantomstrike/internal/cache"
 	"github.com/ersinkoc/phantomstrike/internal/config"
+	"github.com/ersinkoc/phantomstrike/internal/pkg/ratelimit"
 	"github.com/ersinkoc/phantomstrike/internal/provider"
 	"github.com/ersinkoc/phantomstrike/internal/storage"
 	"github.com/ersinkoc/phantomstrike/internal/store"
@@ -100,8 +101,11 @@ func New(cfg *config.Config, db *store.DB) (*Server, error) {
 	mux.HandleFunc("GET /api/v1/auth/google", oauth2Handler.HandleGoogleLogin)
 	mux.HandleFunc("GET /api/v1/auth/google/callback", oauth2Handler.HandleGoogleCallback)
 
+	// Initialize rate limiter (100 requests per minute per IP)
+	rateLimiter := ratelimit.New(100, time.Minute)
+
 	// Apply global middleware (audit sits after auth, before logging)
-	handler := applyMiddleware(mux, cfg, auditLogger)
+	handler := applyMiddleware(mux, cfg, auditLogger, rateLimiter)
 
 	httpSrv := &http.Server{
 		Addr:         fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port),
@@ -153,12 +157,13 @@ func (s *Server) Run(ctx context.Context) error {
 }
 
 // applyMiddleware wraps the handler with global middleware.
-func applyMiddleware(h http.Handler, cfg *config.Config, auditLogger *audit.Logger) http.Handler {
+func applyMiddleware(h http.Handler, cfg *config.Config, auditLogger *audit.Logger, rateLimiter *ratelimit.Limiter) http.Handler {
 	// Order: outermost runs first, innermost runs closest to the handler.
 	// audit runs after auth (claims are in context) but before logging.
 	h = auditLogger.Middleware(h)
 	h = recoveryMiddleware(h)
 	h = requestIDMiddleware(h)
+	h = rateLimiter.Middleware(h)
 	h = loggingMiddleware(h)
 	h = corsMiddleware(h, cfg.Server.CORSOrigins)
 	return h

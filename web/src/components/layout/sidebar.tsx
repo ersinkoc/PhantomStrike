@@ -1,6 +1,6 @@
 import { NavLink } from "react-router-dom";
 import {
-  LayoutDashboard, Crosshair, Shield, Wrench,
+  LayoutDashboard, Crosshair, Shield, ShieldCheck, Wrench,
   BookOpen, FileText, Settings, LogOut, Bug,
   Terminal, UserCog, Zap, Clock, Store
 } from "lucide-react";
@@ -20,6 +20,7 @@ const navItems = [
   { to: "/scheduler", icon: Clock, label: "Scheduler" },
   { to: "/marketplace", icon: Store, label: "Marketplace" },
   { to: "/settings", icon: Settings, label: "Settings" },
+  { to: "/admin", icon: ShieldCheck, label: "Admin" },
 ];
 
 export function Sidebar() {

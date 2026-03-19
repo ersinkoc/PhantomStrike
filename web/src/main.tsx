@@ -25,6 +25,7 @@ const Skills = React.lazy(() => import("@/routes/skills"));
 const Scheduler = React.lazy(() => import("@/routes/scheduler"));
 const Marketplace = React.lazy(() => import("@/routes/marketplace"));
 const SettingsPage = React.lazy(() => import("@/routes/settings"));
+const AdminPage = React.lazy(() => import("@/routes/admin"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -72,6 +73,7 @@ function App() {
             <Route path="scheduler" element={<Suspense fallback={<LazyFallback />}><Scheduler /></Suspense>} />
             <Route path="marketplace" element={<Suspense fallback={<LazyFallback />}><Marketplace /></Suspense>} />
             <Route path="settings" element={<Suspense fallback={<LazyFallback />}><SettingsPage /></Suspense>} />
+            <Route path="admin" element={<Suspense fallback={<LazyFallback />}><AdminPage /></Suspense>} />
           </Route>
         </Routes>
       </BrowserRouter>

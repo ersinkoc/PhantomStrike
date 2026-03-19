@@ -53,6 +53,16 @@ func NewSwarm(cfg config.AgentConfig, router *provider.Router, executor *tool.Ex
 	}
 }
 
+// GetRouter returns the provider router used by the swarm.
+func (s *Swarm) GetRouter() *provider.Router {
+	return s.router
+}
+
+// GetExecutor returns the tool executor used by the swarm.
+func (s *Swarm) GetExecutor() *tool.Executor {
+	return s.executor
+}
+
 // CancelMission cancels a running mission by its ID.
 func (s *Swarm) CancelMission(missionID uuid.UUID) {
 	s.cancelMu.Lock()

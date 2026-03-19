@@ -361,6 +361,75 @@ paths:
                     items:
                       $ref: "#/components/schemas/Vulnerability"
 
+  /missions/{id}/tools:
+    get:
+      summary: Get mission tool executions
+      description: Returns tool execution history for a specific mission
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Mission tool executions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  executions:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        tool_name:
+                          type: string
+                        status:
+                          type: string
+                          enum: [running, completed, failed]
+                        started_at:
+                          type: string
+                          format: date-time
+                        finished_at:
+                          type: string
+                          format: date-time
+                        output:
+                          type: object
+        "404":
+          description: Mission not found
+
+  /missions/{id}/reports:
+    get:
+      summary: Get mission reports
+      description: Returns generated reports for a specific mission
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Mission reports
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  reports:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Report"
+        "404":
+          description: Mission not found
+
   # Vulnerabilities
   /vulnerabilities:
     get:
@@ -674,6 +743,91 @@ paths:
                     items:
                       $ref: "#/components/schemas/ScheduledJob"
 
+    post:
+      summary: Create scheduled job
+      description: Create a new scheduled scan job
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - cron_expr
+                - mission_template
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                cron_expr:
+                  type: string
+                enabled:
+                  type: boolean
+                  default: true
+                mission_template:
+                  type: object
+      responses:
+        "201":
+          description: Scheduled job created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScheduledJob"
+        "400":
+          description: Invalid input
+
+  /scheduler/{id}:
+    put:
+      summary: Update scheduled job
+      description: Update an existing scheduled job
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                cron_expr:
+                  type: string
+                enabled:
+                  type: boolean
+                mission_template:
+                  type: object
+      responses:
+        "200":
+          description: Scheduled job updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScheduledJob"
+        "404":
+          description: Scheduled job not found
+
+    delete:
+      summary: Delete scheduled job
+      description: Delete a scheduled job
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Job deleted
+
   /scheduler/{id}/trigger:
     post:
       summary: Trigger job
@@ -687,20 +841,6 @@ paths:
       responses:
         "200":
           description: Job triggered
-
-  /scheduler/{id}:
-    delete:
-      summary: Delete scheduled job
-      description: Delete a scheduled job
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        "200":
-          description: Job deleted
 
   # Roles & Skills
   /roles:
@@ -720,6 +860,98 @@ paths:
                     items:
                       $ref: "#/components/schemas/Role"
 
+    post:
+      summary: Create role
+      description: Create a new security testing role
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                phases:
+                  type: array
+                  items:
+                    type: string
+                skills:
+                  type: array
+                  items:
+                    type: string
+                icon:
+                  type: string
+      responses:
+        "201":
+          description: Role created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Role"
+        "400":
+          description: Invalid input
+        "409":
+          description: Role already exists
+
+  /roles/{name}:
+    put:
+      summary: Update role
+      description: Update an existing security testing role
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                description:
+                  type: string
+                phases:
+                  type: array
+                  items:
+                    type: string
+                skills:
+                  type: array
+                  items:
+                    type: string
+                icon:
+                  type: string
+      responses:
+        "200":
+          description: Role updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Role"
+        "404":
+          description: Role not found
+
+    delete:
+      summary: Delete role
+      description: Delete a security testing role
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Role deleted
+        "404":
+          description: Role not found
+
   /skills:
     get:
       summary: List skills
@@ -736,6 +968,311 @@ paths:
                     type: array
                     items:
                       $ref: "#/components/schemas/Skill"
+
+    post:
+      summary: Create skill
+      description: Create a new security testing skill
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - category
+              properties:
+                name:
+                  type: string
+                category:
+                  type: string
+                description:
+                  type: string
+                content:
+                  type: string
+      responses:
+        "201":
+          description: Skill created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Skill"
+        "400":
+          description: Invalid input
+        "409":
+          description: Skill already exists
+
+  /skills/{name}:
+    put:
+      summary: Update skill
+      description: Update an existing security testing skill
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                category:
+                  type: string
+                description:
+                  type: string
+                content:
+                  type: string
+      responses:
+        "200":
+          description: Skill updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Skill"
+        "404":
+          description: Skill not found
+
+    delete:
+      summary: Delete skill
+      description: Delete a security testing skill
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Skill deleted
+        "404":
+          description: Skill not found
+
+  # Marketplace
+  /marketplace/tools:
+    get:
+      summary: List marketplace tools
+      description: Returns available tools from the community marketplace
+      responses:
+        "200":
+          description: Marketplace tools
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tools:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                        description:
+                          type: string
+                        author:
+                          type: string
+                        version:
+                          type: string
+                        category:
+                          type: string
+                        downloads:
+                          type: integer
+                        installed:
+                          type: boolean
+
+  /marketplace/skills:
+    get:
+      summary: List marketplace skills
+      description: Returns available skills from the community marketplace
+      responses:
+        "200":
+          description: Marketplace skills
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  skills:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                        description:
+                          type: string
+                        author:
+                          type: string
+                        version:
+                          type: string
+                        category:
+                          type: string
+                        downloads:
+                          type: integer
+                        installed:
+                          type: boolean
+
+  # Notifications
+  /notifications/channels:
+    get:
+      summary: List notification channels
+      description: Returns configured notification channels (Slack, Discord, Webhook)
+      responses:
+        "200":
+          description: Notification channels
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  channels:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/NotificationChannel"
+
+  /notifications/channels/{type}/test:
+    post:
+      summary: Test notification channel
+      description: Send a test notification to the specified channel type
+      parameters:
+        - name: type
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [slack, discord, webhook]
+      responses:
+        "200":
+          description: Test notification sent
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+        "404":
+          description: Channel not configured
+
+  # Admin
+  /admin/users:
+    get:
+      summary: List users
+      description: Returns all platform users (admin only)
+      responses:
+        "200":
+          description: User list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  users:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/AdminUser"
+        "403":
+          description: Forbidden - admin access required
+
+  /admin/audit:
+    get:
+      summary: List audit log
+      description: Returns audit log entries with pagination (admin only)
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        "200":
+          description: Audit log entries
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  entries:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/AuditEntry"
+                  total:
+                    type: integer
+        "403":
+          description: Forbidden - admin access required
+
+  # OAuth2 Authentication
+  /auth/github:
+    get:
+      summary: GitHub OAuth2 login
+      description: Redirects the user to GitHub for OAuth2 authentication
+      security: []
+      responses:
+        "302":
+          description: Redirect to GitHub authorization page
+
+  /auth/github/callback:
+    get:
+      summary: GitHub OAuth2 callback
+      description: Handles the OAuth2 callback from GitHub and issues JWT tokens
+      security: []
+      parameters:
+        - name: code
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: state
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "302":
+          description: Redirect to application with auth tokens
+        "400":
+          description: Invalid callback parameters
+
+  /auth/google:
+    get:
+      summary: Google OAuth2 login
+      description: Redirects the user to Google for OAuth2 authentication
+      security: []
+      responses:
+        "302":
+          description: Redirect to Google authorization page
+
+  /auth/google/callback:
+    get:
+      summary: Google OAuth2 callback
+      description: Handles the OAuth2 callback from Google and issues JWT tokens
+      security: []
+      parameters:
+        - name: code
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: state
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "302":
+          description: Redirect to application with auth tokens
+        "400":
+          description: Invalid callback parameters
 
 components:
   securitySchemes:
@@ -1055,3 +1592,58 @@ components:
           type: string
         content:
           type: string
+
+    NotificationChannel:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [slack, discord, webhook]
+        name:
+          type: string
+        enabled:
+          type: boolean
+        event_filters:
+          type: array
+          items:
+            type: string
+
+    AdminUser:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        role:
+          type: string
+          enum: [admin, manager, analyst, viewer]
+        last_login:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+
+    AuditEntry:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        action:
+          type: string
+        resource:
+          type: string
+        user_email:
+          type: string
+          format: email
+        ip_address:
+          type: string
+        created_at:
+          type: string
+          format: date-time

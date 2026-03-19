@@ -25,7 +25,15 @@ func (s *Service) Middleware(next http.Handler) http.Handler {
 			return
 		}
 
-		claims, err := s.ValidateToken(token)
+		var claims *Claims
+		var err error
+
+		// If the token doesn't contain dots, treat it as an API key rather than a JWT
+		if !strings.Contains(token, ".") {
+			claims, err = s.ValidateAPIKey(r.Context(), token)
+		} else {
+			claims, err = s.ValidateToken(token)
+		}
 		if err != nil {
 			http.Error(w, `{"error":"invalid or expired token"}`, http.StatusUnauthorized)
 			return

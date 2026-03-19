@@ -28,6 +28,7 @@ type Executor struct {
 	pool     *pgxpool.Pool
 	docker   *DockerRunner
 	process  *ProcessRunner
+	wasm     *WASMRunner
 }
 
 // NewExecutor creates a new tool executor.
@@ -36,6 +37,7 @@ func NewExecutor(registry *Registry, pool *pgxpool.Pool, dockerEnabled bool) *Ex
 		registry: registry,
 		pool:     pool,
 		process:  NewProcessRunner(),
+		wasm:     NewWASMRunner(true),
 	}
 	if dockerEnabled {
 		e.docker = NewDockerRunner()
@@ -57,7 +59,9 @@ func (e *Executor) Execute(ctx context.Context, toolName string, params map[stri
 	// Create execution record
 	execID := uuid.New()
 	mode := "process"
-	if e.docker != nil && def.Docker.Image != "" {
+	if e.wasm != nil && def.WASMPath != "" {
+		mode = "wasm"
+	} else if e.docker != nil && def.Docker.Image != "" {
 		mode = "docker"
 	}
 
@@ -77,9 +81,14 @@ func (e *Executor) Execute(ctx context.Context, toolName string, params map[stri
 	start := time.Now()
 	var result *ExecResult
 
-	if mode == "docker" {
+	switch mode {
+	case "wasm":
+		// For WASM, serialize parameters as JSON input
+		input := []byte(fmt.Sprintf(`{"command":%q,"args":%q}`, cmd, args))
+		result, err = e.wasm.Run(ctx, def.WASMPath, input)
+	case "docker":
 		result, err = e.docker.Run(ctx, def, cmd, args)
-	} else {
+	default:
 		result, err = e.process.Run(ctx, cmd, args, 5*time.Minute)
 	}
 
