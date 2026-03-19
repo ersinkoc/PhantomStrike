@@ -45,6 +45,17 @@ services:
       - server
     restart: unless-stopped
 
+  # ─── All-in-One Security Tools ─────────────────────────
+  # Build once: docker compose build tools
+  # Contains: nmap, nuclei, httpx, subfinder, gobuster, ffuf, sqlmap, hydra, nikto, testssl, etc.
+  tools:
+    build:
+      context: .
+      dockerfile: Dockerfile.tools
+    image: phantomstrike-tools:latest
+    profiles: ["build-tools"]
+    command: ["echo", "Tools image built successfully"]
+
   # ─── PostgreSQL + pgvector ───────────────────────────
   postgres:
     image: pgvector/pgvector:pg17

@@ -60,15 +60,21 @@ func (d *DockerRunner) Run(ctx context.Context, def *Definition, command string,
 	// Tmpfs for writable directories
 	dockerArgs = append(dockerArgs, "--tmpfs", "/tmp:rw,noexec,nosuid,size=100m")
 
-	// Image
+	// Image — use tool-specific image if available, otherwise fall back to
+	// the all-in-one phantomstrike-tools image
 	image := def.Docker.Image
-	if image == "" {
-		return nil, fmt.Errorf("docker image not specified for tool %s", def.Name)
+	useAllInOne := false
+	if image == "" || strings.HasPrefix(image, "phantomstrike/") {
+		image = "phantomstrike-tools:latest"
+		useAllInOne = true
 	}
 	dockerArgs = append(dockerArgs, image)
 
-	// Tool args only — Docker images have ENTRYPOINT set to the tool binary,
-	// so we don't add the command name again.
+	// For the all-in-one image, we need to specify the command name
+	// because there's no ENTRYPOINT. For dedicated images, ENTRYPOINT is set.
+	if useAllInOne {
+		dockerArgs = append(dockerArgs, command)
+	}
 	dockerArgs = append(dockerArgs, args...)
 
 	slog.Debug("running docker container",
