@@ -25,19 +25,18 @@ interface Provider {
 
 interface Model {
   id: string;
-  model_id: string;
   name: string;
   provider_id: string;
   provider_name?: string;
   family?: string;
   context_window?: number;
-  supports_tool_calls?: boolean;
-  supports_reasoning?: boolean;
+  tool_call?: boolean;
+  reasoning?: boolean;
 }
 
 interface SyncResult {
-  providers_count: number;
-  models_count: number;
+  providers: number;
+  models: number;
 }
 
 /* ---------- Constants ---------- */
@@ -362,7 +361,7 @@ export default function SetupWizard() {
   const filteredModels = (providerId: string, toolCallOnly = true) => {
     let filtered = models.filter((m) => m.provider_id === providerId);
     if (toolCallOnly) {
-      filtered = filtered.filter((m) => m.supports_tool_calls !== false);
+      filtered = filtered.filter((m) => m.tool_call !== false);
     }
     return filtered;
   };
@@ -431,7 +430,7 @@ export default function SetupWizard() {
                   {syncing
                     ? "Fetching available AI providers and models from models.dev..."
                     : syncResult
-                      ? `Found ${syncResult.providers_count} providers with ${syncResult.models_count} models`
+                      ? `Found ${syncResult.providers} providers with ${syncResult.models} models`
                       : "Ready to continue"}
                 </p>
               </div>
@@ -557,7 +556,7 @@ export default function SetupWizard() {
                       <option value="">Select model...</option>
                       {defaultProvider &&
                         filteredModels(defaultProvider).map((m) => (
-                          <option key={m.id} value={m.model_id}>
+                          <option key={m.id} value={m.id}>
                             {m.name}
                           </option>
                         ))}
@@ -611,7 +610,7 @@ export default function SetupWizard() {
                           <option value="">Select model...</option>
                           {plannerProvider &&
                             filteredModels(plannerProvider).map((m) => (
-                              <option key={m.id} value={m.model_id}>
+                              <option key={m.id} value={m.id}>
                                 {m.name}
                               </option>
                             ))}
@@ -659,7 +658,7 @@ export default function SetupWizard() {
                           <option value="">Select model...</option>
                           {executorProvider &&
                             filteredModels(executorProvider).map((m) => (
-                              <option key={m.id} value={m.model_id}>
+                              <option key={m.id} value={m.id}>
                                 {m.name}
                               </option>
                             ))}
@@ -707,7 +706,7 @@ export default function SetupWizard() {
                           <option value="">Select model...</option>
                           {reviewerProvider &&
                             filteredModels(reviewerProvider).map((m) => (
-                              <option key={m.id} value={m.model_id}>
+                              <option key={m.id} value={m.id}>
                                 {m.name}
                               </option>
                             ))}

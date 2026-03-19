@@ -85,7 +85,7 @@ export default function Dashboard() {
         <div className="divide-y divide-[var(--color-border)]">
           {missions?.missions?.length ? (
             missions.missions.map((m) => (
-              <a key={m.id} href={`/missions/${m.id}`} className="flex items-center justify-between px-5 py-3 hover:bg-[var(--color-accent)] transition-colors">
+              <Link key={m.id} to={`/missions/${m.id}`} className="flex items-center justify-between px-5 py-3 hover:bg-[var(--color-accent)] transition-colors">
                 <div>
                   <p className="font-medium">{m.name}</p>
                   <p className="text-xs text-[var(--color-muted-foreground)]">{m.mode} · {m.depth}</p>
@@ -96,7 +96,7 @@ export default function Dashboard() {
                   </span>
                   <p className="text-xs text-[var(--color-muted-foreground)]">{m.progress}%</p>
                 </div>
-              </a>
+              </Link>
             ))
           ) : (
             <div className="px-5 py-8 text-center text-sm text-[var(--color-muted-foreground)]">

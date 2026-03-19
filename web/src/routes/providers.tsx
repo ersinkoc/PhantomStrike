@@ -26,16 +26,15 @@ interface Provider {
 
 interface Model {
   id: string;
-  model_id: string;
   name: string;
   provider_id: string;
   provider_name?: string;
   family?: string;
   context_window?: number;
-  supports_tool_calls?: boolean;
-  supports_reasoning?: boolean;
-  input_cost_per_million?: number;
-  output_cost_per_million?: number;
+  tool_call?: boolean;
+  reasoning?: boolean;
+  cost_input?: number;
+  cost_output?: number;
 }
 
 interface Preferences {
@@ -128,7 +127,8 @@ function ProviderCard({
       if (apiKey && !provider.is_local) {
         await api.put(`/providers/${provider.id}`, { api_key: apiKey });
       }
-      await api.post(`/providers/${provider.id}/test`);
+      const result = await api.post<{success?: boolean; error?: string}>(`/providers/${provider.id}/test`);
+      if (result.success === false) throw new Error(result.error || 'Connection failed');
       setTestStatus("success");
       toast.success(`${provider.name} connected successfully`);
       onRefresh();
@@ -375,12 +375,12 @@ function ProviderCard({
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
-                      {m.supports_tool_calls && (
+                      {m.tool_call && (
                         <span className="rounded bg-blue-500/10 px-1.5 py-0.5 text-xs text-blue-400">
                           tools
                         </span>
                       )}
-                      {m.supports_reasoning && (
+                      {m.reasoning && (
                         <span className="rounded bg-purple-500/10 px-1.5 py-0.5 text-xs text-purple-400">
                           reasoning
                         </span>
@@ -528,7 +528,7 @@ function ModelsTable({ models }: { models: Model[] }) {
       result = result.filter(
         (m) =>
           m.name.toLowerCase().includes(q) ||
-          m.model_id.toLowerCase().includes(q)
+          m.id.toLowerCase().includes(q)
       );
     }
     if (providerFilter) {
@@ -538,14 +538,14 @@ function ModelsTable({ models }: { models: Model[] }) {
       result = result.filter((m) => m.family === familyFilter);
     }
     if (toolCallFilter === "yes") {
-      result = result.filter((m) => m.supports_tool_calls === true);
+      result = result.filter((m) => m.tool_call === true);
     } else if (toolCallFilter === "no") {
-      result = result.filter((m) => m.supports_tool_calls !== true);
+      result = result.filter((m) => m.tool_call !== true);
     }
     if (reasoningFilter === "yes") {
-      result = result.filter((m) => m.supports_reasoning === true);
+      result = result.filter((m) => m.reasoning === true);
     } else if (reasoningFilter === "no") {
-      result = result.filter((m) => m.supports_reasoning !== true);
+      result = result.filter((m) => m.reasoning !== true);
     }
 
     result.sort((a, b) => {
@@ -559,13 +559,13 @@ function ModelsTable({ models }: { models: Model[] }) {
           break;
         case "input_cost":
           cmp =
-            (a.input_cost_per_million ?? 0) -
-            (b.input_cost_per_million ?? 0);
+            (a.cost_input ?? 0) -
+            (b.cost_input ?? 0);
           break;
         case "output_cost":
           cmp =
-            (a.output_cost_per_million ?? 0) -
-            (b.output_cost_per_million ?? 0);
+            (a.cost_output ?? 0) -
+            (b.cost_output ?? 0);
           break;
       }
       return sortDir === "asc" ? cmp : -cmp;
@@ -735,24 +735,24 @@ function ModelsTable({ models }: { models: Model[] }) {
                   {formatNumber(m.context_window)}
                 </td>
                 <td className="px-4 py-3 text-center">
-                  {m.supports_tool_calls ? (
+                  {m.tool_call ? (
                     <Check className="mx-auto h-4 w-4 text-emerald-400" />
                   ) : (
                     <span className="text-[var(--color-muted-foreground)]">-</span>
                   )}
                 </td>
                 <td className="px-4 py-3 text-center">
-                  {m.supports_reasoning ? (
+                  {m.reasoning ? (
                     <Check className="mx-auto h-4 w-4 text-purple-400" />
                   ) : (
                     <span className="text-[var(--color-muted-foreground)]">-</span>
                   )}
                 </td>
                 <td className="px-4 py-3 text-sm font-mono text-[var(--color-muted-foreground)]">
-                  {formatCost(m.input_cost_per_million)}
+                  {formatCost(m.cost_input)}
                 </td>
                 <td className="px-4 py-3 text-sm font-mono text-[var(--color-muted-foreground)]">
-                  {formatCost(m.output_cost_per_million)}
+                  {formatCost(m.cost_output)}
                 </td>
               </tr>
             ))}
@@ -793,7 +793,7 @@ function PreferencesSection({
 
   const { data: prefs } = useQuery({
     queryKey: ["preferences"],
-    queryFn: () => api.get<Preferences>("/preferences"),
+    queryFn: () => api.get<{ preferences: Record<string, { provider_id: string; model_id: string }> }>("/preferences"),
   });
 
   const [form, setForm] = useState<Preferences>({
@@ -811,8 +811,20 @@ function PreferencesSection({
 
   // Sync form when prefs data loads
   useEffect(() => {
-    if (prefs) {
-      setForm((prev) => ({ ...prev, ...prefs }));
+    if (prefs?.preferences) {
+      const p = prefs.preferences;
+      setForm({
+        default_provider: p.default?.provider_id || "",
+        default_model: p.default?.model_id || "",
+        planner_provider: p.planner?.provider_id || "",
+        planner_model: p.planner?.model_id || "",
+        executor_provider: p.executor?.provider_id || "",
+        executor_model: p.executor?.model_id || "",
+        reviewer_provider: p.reviewer?.provider_id || "",
+        reviewer_model: p.reviewer?.model_id || "",
+        embedding_provider: p.embedding?.provider_id || "",
+        embedding_model: p.embedding?.model_id || "",
+      });
     }
   }, [prefs]);
 
@@ -845,7 +857,7 @@ function PreferencesSection({
 
   const getModelsForProvider = (providerId: string) =>
     models.filter(
-      (m) => m.provider_id === providerId && m.supports_tool_calls !== false
+      (m) => m.provider_id === providerId && m.tool_call !== false
     );
 
   const AgentRow = ({
@@ -892,7 +904,7 @@ function PreferencesSection({
         <option value="">Select model...</option>
         {form[providerKey] &&
           getModelsForProvider(form[providerKey] as string).map((m) => (
-            <option key={m.id} value={m.model_id}>
+            <option key={m.id} value={m.id}>
               {m.name}
             </option>
           ))}

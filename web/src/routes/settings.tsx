@@ -9,7 +9,7 @@ interface NotificationChannel {
   type: string;
   name: string;
   enabled: boolean;
-  event_filters: string[];
+  events: string[];
 }
 
 export default function SettingsPage() {
@@ -263,9 +263,9 @@ export default function SettingsPage() {
                       {channel.enabled ? "Enabled" : "Disabled"}
                     </span>
                   </div>
-                  {channel.event_filters && channel.event_filters.length > 0 && (
+                  {channel.events && channel.events.length > 0 && (
                     <div className="mt-1 flex flex-wrap gap-1">
-                      {channel.event_filters.map((filter) => (
+                      {channel.events.map((filter) => (
                         <span
                           key={filter}
                           className="rounded bg-[var(--color-accent)] px-1.5 py-0.5 text-xs text-[var(--color-muted-foreground)]"

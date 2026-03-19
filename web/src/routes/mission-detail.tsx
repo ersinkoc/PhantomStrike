@@ -27,7 +27,6 @@ interface Report {
   title: string;
   format: string;
   status: string;
-  download_url?: string;
   created_at: string;
 }
 
@@ -313,11 +312,11 @@ function ToolExecutionsView({ missionId }: { missionId: string }) {
 
   const { data, isLoading } = useQuery({
     queryKey: ["mission-tools", missionId],
-    queryFn: () => api.get<{ tools: ToolExecution[] }>(`/missions/${missionId}/tools`),
+    queryFn: () => api.get<{ tool_executions: ToolExecution[] }>(`/missions/${missionId}/tools`),
     refetchInterval: 5000,
   });
 
-  const toolExecutions = data?.tools || [];
+  const toolExecutions = data?.tool_executions || [];
 
   if (isLoading) {
     return <div className="text-[var(--color-muted-foreground)]">Loading tool executions...</div>;
@@ -543,16 +542,14 @@ function ReportView({ missionId }: { missionId: string }) {
                   <span className={cn("rounded-full px-2 py-0.5 text-xs font-semibold uppercase", formatBadge(report.format))}>
                     {report.format}
                   </span>
-                  {report.download_url && (
-                    <a
-                      href={report.download_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-1 rounded-lg border border-[var(--color-border)] px-2.5 py-1 text-xs text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)] hover:bg-[var(--color-muted)]/30 transition-colors"
-                    >
-                      <Download className="h-3.5 w-3.5" /> Download
-                    </a>
-                  )}
+                  <a
+                    href={`/api/v1/reports/${report.id}/download`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1 rounded-lg border border-[var(--color-border)] px-2.5 py-1 text-xs text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)] hover:bg-[var(--color-muted)]/30 transition-colors"
+                  >
+                    <Download className="h-3.5 w-3.5" /> Download
+                  </a>
                 </div>
               </div>
             ))}
@@ -601,12 +598,12 @@ function AttackChainView({ missionId }: { missionId: string }) {
   const nodeMap = new Map(nodes.map(n => [n.id, n]));
   const children = new Map<string, string[]>();
   edges.forEach(e => {
-    if (!children.has(e.source_id)) children.set(e.source_id, []);
-    children.get(e.source_id)!.push(e.target_id);
+    if (!children.has(e.source)) children.set(e.source, []);
+    children.get(e.source)!.push(e.target);
   });
 
   // Find root nodes
-  const targets = new Set(edges.map(e => e.target_id));
+  const targets = new Set(edges.map(e => e.target));
   const roots = nodes.filter(n => !targets.has(n.id));
 
   function renderNode(nodeId: string, depth: number = 0): React.ReactNode {
