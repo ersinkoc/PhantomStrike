@@ -352,6 +352,104 @@ func (h *Handler) handleGetAttackChain(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{"nodes": nodes, "edges": edges})
 }
 
+func (h *Handler) handleGetMissionTools(w http.ResponseWriter, r *http.Request) {
+	id, err := parseUUID(r.PathValue("id"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid mission ID")
+		return
+	}
+
+	rows, err := h.db.Pool.Query(r.Context(),
+		`SELECT id, tool_name, parameters, status, execution_mode, container_id,
+			stdout, stderr, exit_code, duration_ms, started_at, completed_at, created_at
+		 FROM tool_executions WHERE mission_id = $1 ORDER BY created_at DESC`, id)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "query failed")
+		return
+	}
+	defer rows.Close()
+
+	var executions []map[string]any
+	for rows.Next() {
+		var execID uuid.UUID
+		var toolName, status, executionMode string
+		var parameters any
+		var containerID, stdout, stderr *string
+		var exitCode, durationMs *int
+		var startedAt, completedAt interface{}
+		var createdAt time.Time
+		if err := rows.Scan(&execID, &toolName, &parameters, &status, &executionMode, &containerID,
+			&stdout, &stderr, &exitCode, &durationMs, &startedAt, &completedAt, &createdAt); err != nil {
+			continue
+		}
+		executions = append(executions, map[string]any{
+			"id":             execID,
+			"tool_name":      toolName,
+			"parameters":     parameters,
+			"status":         status,
+			"execution_mode": executionMode,
+			"container_id":   containerID,
+			"stdout":         stdout,
+			"stderr":         stderr,
+			"exit_code":      exitCode,
+			"duration_ms":    durationMs,
+			"started_at":     startedAt,
+			"completed_at":   completedAt,
+			"created_at":     createdAt,
+		})
+	}
+
+	if executions == nil {
+		executions = []map[string]any{}
+	}
+
+	writeJSON(w, http.StatusOK, map[string]any{"tool_executions": executions})
+}
+
+func (h *Handler) handleGetMissionReports(w http.ResponseWriter, r *http.Request) {
+	id, err := parseUUID(r.PathValue("id"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid mission ID")
+		return
+	}
+
+	rows, err := h.db.Pool.Query(r.Context(),
+		`SELECT id, format, title, status, file_path, file_size, created_at
+		 FROM reports WHERE mission_id = $1 ORDER BY created_at DESC`, id)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "query failed")
+		return
+	}
+	defer rows.Close()
+
+	var reports []map[string]any
+	for rows.Next() {
+		var reportID string
+		var format, title, status string
+		var filePath interface{}
+		var fileSize int64
+		var createdAt string
+		if err := rows.Scan(&reportID, &format, &title, &status, &filePath, &fileSize, &createdAt); err != nil {
+			continue
+		}
+		reports = append(reports, map[string]any{
+			"id":        reportID,
+			"format":    format,
+			"title":     title,
+			"status":    status,
+			"file_path": filePath,
+			"file_size": fileSize,
+			"created_at": createdAt,
+		})
+	}
+
+	if reports == nil {
+		reports = []map[string]any{}
+	}
+
+	writeJSON(w, http.StatusOK, map[string]any{"reports": reports})
+}
+
 func (h *Handler) handleGetMissionVulns(w http.ResponseWriter, r *http.Request) {
 	id, err := parseUUID(r.PathValue("id"))
 	if err != nil {

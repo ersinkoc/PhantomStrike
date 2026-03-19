@@ -1,0 +1,86 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.26"
+          cache: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: web/package-lock.json
+
+      - name: Build frontend
+        working-directory: web
+        run: |
+          npm ci
+          npm run build
+
+      - name: Build release binaries
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/}
+          LDFLAGS="-s -w -X github.com/ersinkoc/phantomstrike/internal/pkg/version.Version=${VERSION}"
+
+          # Linux amd64
+          GOOS=linux GOARCH=amd64 go build -ldflags="$LDFLAGS" -o dist/phantomstrike-linux-amd64 ./cmd/server
+          GOOS=linux GOARCH=amd64 go build -ldflags="$LDFLAGS" -o dist/ps-cli-linux-amd64 ./cmd/cli
+
+          # Linux arm64
+          GOOS=linux GOARCH=arm64 go build -ldflags="$LDFLAGS" -o dist/phantomstrike-linux-arm64 ./cmd/server
+          GOOS=linux GOARCH=arm64 go build -ldflags="$LDFLAGS" -o dist/ps-cli-linux-arm64 ./cmd/cli
+
+          # macOS amd64
+          GOOS=darwin GOARCH=amd64 go build -ldflags="$LDFLAGS" -o dist/phantomstrike-darwin-amd64 ./cmd/server
+          GOOS=darwin GOARCH=amd64 go build -ldflags="$LDFLAGS" -o dist/ps-cli-darwin-amd64 ./cmd/cli
+
+          # macOS arm64
+          GOOS=darwin GOARCH=arm64 go build -ldflags="$LDFLAGS" -o dist/phantomstrike-darwin-arm64 ./cmd/server
+          GOOS=darwin GOARCH=arm64 go build -ldflags="$LDFLAGS" -o dist/ps-cli-darwin-arm64 ./cmd/cli
+
+          # Windows amd64
+          GOOS=windows GOARCH=amd64 go build -ldflags="$LDFLAGS" -o dist/phantomstrike-windows-amd64.exe ./cmd/server
+          GOOS=windows GOARCH=amd64 go build -ldflags="$LDFLAGS" -o dist/ps-cli-windows-amd64.exe ./cmd/cli
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: dist/*
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}:${{ github.ref_name }}
+            ghcr.io/${{ github.repository }}:latest

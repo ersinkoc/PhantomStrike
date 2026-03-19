@@ -126,8 +126,7 @@ Examples:
   pscli missions list
   pscli missions create
   pscli vulns list
-  pscli dashboard
-`)
+  pscli dashboard`)
 }
 
 // --- Config Management ---

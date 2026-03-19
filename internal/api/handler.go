@@ -8,7 +8,9 @@ import (
 
 	"github.com/ersinkoc/phantomstrike/internal/agent"
 	"github.com/ersinkoc/phantomstrike/internal/auth"
+	"github.com/ersinkoc/phantomstrike/internal/cache"
 	"github.com/ersinkoc/phantomstrike/internal/config"
+	"github.com/ersinkoc/phantomstrike/internal/storage"
 	"github.com/ersinkoc/phantomstrike/internal/store"
 	"github.com/ersinkoc/phantomstrike/internal/tool"
 )
@@ -21,6 +23,8 @@ type Handler struct {
 	swarm    *agent.Swarm
 	hub      *WSHub
 	registry *tool.Registry
+	cache    *cache.Cache
+	storage  storage.Provider
 }
 
 // NewHandler creates a new API handler.
@@ -34,6 +38,12 @@ func NewHandler(cfg *config.Config, db *store.DB, authSvc *auth.Service, swarm *
 		registry: registry,
 	}
 }
+
+// SetCache sets the Redis cache on the handler.
+func (h *Handler) SetCache(c *cache.Cache) { h.cache = c }
+
+// SetStorage sets the storage provider on the handler.
+func (h *Handler) SetStorage(s storage.Provider) { h.storage = s }
 
 // RegisterRoutes registers all API routes on the mux.
 func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
@@ -64,6 +74,8 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
 	mux.Handle("POST /api/v1/missions/{id}/cancel", protected(http.HandlerFunc(h.handleCancelMission)))
 	mux.Handle("GET /api/v1/missions/{id}/chain", protected(http.HandlerFunc(h.handleGetAttackChain)))
 	mux.Handle("GET /api/v1/missions/{id}/vulns", protected(http.HandlerFunc(h.handleGetMissionVulns)))
+	mux.Handle("GET /api/v1/missions/{id}/tools", protected(http.HandlerFunc(h.handleGetMissionTools)))
+	mux.Handle("GET /api/v1/missions/{id}/reports", protected(http.HandlerFunc(h.handleGetMissionReports)))
 
 	// Conversations
 	mux.Handle("GET /api/v1/missions/{id}/conversations", protected(http.HandlerFunc(h.handleListConversations)))
@@ -100,12 +112,18 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
 
 	// Scheduler
 	mux.Handle("GET /api/v1/scheduler", protected(http.HandlerFunc(h.handleListScheduler)))
+	mux.Handle("POST /api/v1/scheduler", protected(http.HandlerFunc(h.handleCreateScheduler)))
+	mux.Handle("PUT /api/v1/scheduler/{id}", protected(http.HandlerFunc(h.handleUpdateScheduler)))
 	mux.Handle("POST /api/v1/scheduler/{id}/trigger", protected(http.HandlerFunc(h.handleTriggerScheduler)))
 	mux.Handle("DELETE /api/v1/scheduler/{id}", protected(http.HandlerFunc(h.handleDeleteScheduler)))
 
 	// Roles & Skills
 	mux.Handle("GET /api/v1/roles", protected(http.HandlerFunc(h.handleListRoles)))
 	mux.Handle("GET /api/v1/skills", protected(http.HandlerFunc(h.handleListSkills)))
+
+	// Marketplace
+	mux.Handle("GET /api/v1/marketplace/tools", protected(http.HandlerFunc(h.handleListMarketplaceTools)))
+	mux.Handle("GET /api/v1/marketplace/skills", protected(http.HandlerFunc(h.handleListMarketplaceSkills)))
 }
 
 // --- Response helpers ---

@@ -3,31 +3,29 @@
 ## Test Strategy
 
 ### 1. Unit Tests (Go Backend)
-Location: `internal/*/*_test.go`
 
 ```bash
-cd /d/Codebox/PROJECTS/PhantomStrike
-go test ./... -v
-go test ./internal/api -v -run TestHandlers
-go test ./internal/agents -v
-go test ./internal/repository -v
+# Run all tests
+go test ./...
+
+# Run with verbose output
+go test -v ./...
+
+# Run specific packages
+go test ./internal/api/ -v
+go test ./internal/agent/ -v
+
+# Run with race detection
+go test -race ./...
 ```
 
-### 2. Integration Tests
-Location: `tests/integration/*_test.go`
-
-```bash
-go test ./tests/integration -v -tags=integration
-```
-
-### 3. Frontend Tests (React)
-Location: `web/src/**/*.test.ts*`
+### 2. Frontend Tests (React)
 
 ```bash
 cd web
 npm test
-npm run test:unit
-npm run test:e2e  # Playwright
+npm run test:ui        # Vitest UI mode
+npm run test:coverage  # With coverage report
 ```
 
 ## Running Tests
@@ -37,24 +35,42 @@ npm run test:e2e  # Playwright
 make test
 ```
 
-### With Coverage
+### With Verbose Output
 ```bash
-make test-coverage
+make test-verbose
 ```
 
-### Pre-commit
+### Build Verification
 ```bash
-make lint
-make test-short
+go build ./...         # All Go binaries
+cd web && npm run build  # Frontend
 ```
 
-## Test Data
+## Test Packages
 
-### Fixtures
-- `testdata/nmap.xml` - Sample scan output
-- `testdata/nuclei.json` - Sample vuln report
-- `testdata/sslscan.txt` - Sample SSL report
+| Package | Tests | Description |
+|---------|-------|-------------|
+| `internal/api/` | handler_test.go | API handler unit tests (JSON helpers, UUID parsing, WSHub) |
+| `internal/agent/` | swarm_test.go | Agent swarm, phases, ReAct loop, mock provider tests |
 
-### Mock Targets
-- `test-targets/vulnerable-app/` - Intentionally vulnerable app for testing
-- `test-targets/api-server/` - Mock API for testing
+## CI/CD
+
+Tests run automatically via GitHub Actions on:
+- Push to `main`
+- Pull requests to `main`
+
+The CI pipeline includes: lint, test (with Postgres + Redis), build, and web-build jobs.
+See `.github/workflows/ci.yml` for details.
+
+## Docker-Based Testing
+
+```bash
+# Start infrastructure for integration tests
+docker compose up -d postgres redis
+
+# Run tests against real DB
+DATABASE_URL=postgres://phantom:phantom123@localhost:5432/phantomstrike go test ./...
+
+# Cleanup
+docker compose down
+```

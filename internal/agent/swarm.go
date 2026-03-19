@@ -38,6 +38,8 @@ type Swarm struct {
 	executor *tool.Executor
 	registry *tool.Registry
 	mu       sync.Mutex
+	cancels  map[uuid.UUID]context.CancelFunc
+	cancelMu sync.Mutex
 }
 
 // NewSwarm creates a new agent swarm coordinator.
@@ -47,11 +49,37 @@ func NewSwarm(cfg config.AgentConfig, router *provider.Router, executor *tool.Ex
 		router:   router,
 		executor: executor,
 		registry: registry,
+		cancels:  make(map[uuid.UUID]context.CancelFunc),
+	}
+}
+
+// CancelMission cancels a running mission by its ID.
+func (s *Swarm) CancelMission(missionID uuid.UUID) {
+	s.cancelMu.Lock()
+	defer s.cancelMu.Unlock()
+	if cancel, ok := s.cancels[missionID]; ok {
+		cancel()
+		delete(s.cancels, missionID)
+		slog.Info("mission cancelled via swarm", "mission_id", missionID)
 	}
 }
 
 // RunMission starts autonomous execution of a mission.
 func (s *Swarm) RunMission(ctx context.Context, missionID uuid.UUID, target any, phases []Phase, events chan<- SwarmEvent) error {
+	// Create a cancellable context and register it
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	s.cancelMu.Lock()
+	s.cancels[missionID] = cancel
+	s.cancelMu.Unlock()
+
+	defer func() {
+		s.cancelMu.Lock()
+		delete(s.cancels, missionID)
+		s.cancelMu.Unlock()
+	}()
+
 	s.mu.Lock()
 	defer s.mu.Unlock()
 

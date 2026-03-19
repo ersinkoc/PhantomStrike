@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   Activity,
@@ -22,20 +22,77 @@ import { TerminalChat } from './terminal-chat';
 import { AttackChainFlow } from './attack-chain-flow';
 import { RealtimeDataStream } from './realtime-data-stream';
 import { useWebSocket } from '../../hooks/useWebSocket';
+import { api } from '../../lib/api';
+import type { Mission, VulnStats, Tool } from '../../types';
+
+interface MissionsResponse {
+  missions: Mission[];
+}
+
+interface ToolsResponse {
+  tools: Tool[];
+}
 
 export function HackerDashboard() {
   const [activeTab, setActiveTab] = useState<'overview' | 'attack-chain' | 'terminal' | 'logs'>('overview');
   const [chatOpen, setChatOpen] = useState(true);
   const [missionStatus, setMissionStatus] = useState<'idle' | 'running' | 'paused'>('idle');
-  const { connected, messages: _messages } = useWebSocket();
+  const { connected } = useWebSocket();
+
+  // Real API data
+  const [activeMissions, setActiveMissions] = useState(0);
+  const [vulnStats, setVulnStats] = useState<VulnStats | null>(null);
+  const [toolsCount, setToolsCount] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchData() {
+      setIsLoading(true);
+      try {
+        const [missionsRes, vulnStatsRes, toolsRes] = await Promise.allSettled([
+          api.get<MissionsResponse>('/missions'),
+          api.get<VulnStats>('/vulnerabilities/stats'),
+          api.get<ToolsResponse>('/tools'),
+        ]);
+
+        if (missionsRes.status === 'fulfilled') {
+          const missions = missionsRes.value.missions || [];
+          setActiveMissions(
+            missions.filter((m) =>
+              ['running', 'scanning', 'exploitation', 'recon', 'planning'].includes(m.status)
+            ).length
+          );
+        }
+
+        if (vulnStatsRes.status === 'fulfilled') {
+          setVulnStats(vulnStatsRes.value);
+        }
+
+        if (toolsRes.status === 'fulfilled') {
+          const tools = toolsRes.value.tools || [];
+          setToolsCount(tools.filter((t) => t.enabled).length);
+        }
+      } catch {
+        // Silently handle fetch errors; stats will show 0
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    fetchData();
+
+    // Refresh every 30 seconds
+    const interval = setInterval(fetchData, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   const stats = [
-    { label: 'Active Scans', value: 12, icon: Search, color: 'text-blue-400' },
-    { label: 'Vulnerabilities', value: 47, icon: AlertTriangle, color: 'text-red-400' },
-    { label: 'Tools Running', value: 8, icon: Zap, color: 'text-yellow-400' },
-    { label: 'Agents Online', value: 5, icon: Cpu, color: 'text-green-400' },
-    { label: 'Targets', value: 3, icon: Target, color: 'text-purple-400' },
-    { label: 'Exploits Ready', value: 15, icon: Lock, color: 'text-orange-400' },
+    { label: 'Active Scans', value: isLoading ? '-' : activeMissions, icon: Search, color: 'text-blue-400' },
+    { label: 'Vulnerabilities', value: isLoading ? '-' : (vulnStats?.total ?? 0), icon: AlertTriangle, color: 'text-red-400' },
+    { label: 'Tools Enabled', value: isLoading ? '-' : toolsCount, icon: Zap, color: 'text-yellow-400' },
+    { label: 'Critical', value: isLoading ? '-' : (vulnStats?.critical ?? 0), icon: Cpu, color: 'text-green-400' },
+    { label: 'High', value: isLoading ? '-' : (vulnStats?.high ?? 0), icon: Target, color: 'text-purple-400' },
+    { label: 'Medium', value: isLoading ? '-' : (vulnStats?.medium ?? 0), icon: Lock, color: 'text-orange-400' },
   ];
 
   return (
@@ -242,7 +299,7 @@ export function HackerDashboard() {
           <div className="flex items-center gap-4">
             <span>PhantomStrike v2.0</span>
             <span>|</span>
-            <span>151+ Tools Available</span>
+            <span>{toolsCount}+ Tools Available</span>
             <span>|</span>
             <span className="text-green-500">System Operational</span>
           </div>

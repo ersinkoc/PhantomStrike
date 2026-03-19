@@ -12,8 +12,10 @@ import (
 	"github.com/ersinkoc/phantomstrike/internal/agent"
 	"github.com/ersinkoc/phantomstrike/internal/api"
 	"github.com/ersinkoc/phantomstrike/internal/auth"
+	"github.com/ersinkoc/phantomstrike/internal/cache"
 	"github.com/ersinkoc/phantomstrike/internal/config"
 	"github.com/ersinkoc/phantomstrike/internal/provider"
+	"github.com/ersinkoc/phantomstrike/internal/storage"
 	"github.com/ersinkoc/phantomstrike/internal/store"
 	"github.com/ersinkoc/phantomstrike/internal/tool"
 )
@@ -58,6 +60,25 @@ func New(cfg *config.Config, db *store.DB) (*Server, error) {
 
 	// Register API routes
 	apiHandler := api.NewHandler(cfg, db, authSvc, swarm, hub, registry)
+
+	// Initialize Redis cache (optional — degrade gracefully)
+	if cfg.Redis.URL != "" {
+		c, err := cache.New(cfg.Redis.URL)
+		if err != nil {
+			slog.Warn("redis cache unavailable, running without cache", "error", err)
+		} else {
+			apiHandler.SetCache(c)
+		}
+	}
+
+	// Initialize storage provider
+	storageProv, err := storage.NewProvider(cfg.Storage)
+	if err != nil {
+		slog.Warn("storage init failed, using local fallback", "error", err)
+	} else {
+		apiHandler.SetStorage(storageProv)
+	}
+
 	apiHandler.RegisterRoutes(mux)
 
 	// WebSocket endpoint

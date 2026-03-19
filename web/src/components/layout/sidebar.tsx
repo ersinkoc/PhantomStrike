@@ -1,18 +1,24 @@
 import { NavLink } from "react-router-dom";
 import {
   LayoutDashboard, Crosshair, Shield, Wrench,
-  BookOpen, FileText, Settings, LogOut, Bug
+  BookOpen, FileText, Settings, LogOut, Bug,
+  Terminal, UserCog, Zap, Clock, Store
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/auth";
 
 const navItems = [
   { to: "/", icon: LayoutDashboard, label: "Dashboard" },
+  { to: "/hacker", icon: Terminal, label: "Hacker Mode" },
   { to: "/missions", icon: Crosshair, label: "Missions" },
   { to: "/vulnerabilities", icon: Bug, label: "Vulnerabilities" },
   { to: "/tools", icon: Wrench, label: "Tools" },
+  { to: "/roles", icon: UserCog, label: "Roles" },
+  { to: "/skills", icon: Zap, label: "Skills" },
   { to: "/knowledge", icon: BookOpen, label: "Knowledge" },
   { to: "/reports", icon: FileText, label: "Reports" },
+  { to: "/scheduler", icon: Clock, label: "Scheduler" },
+  { to: "/marketplace", icon: Store, label: "Marketplace" },
   { to: "/settings", icon: Settings, label: "Settings" },
 ];
 

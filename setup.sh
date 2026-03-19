@@ -80,7 +80,7 @@ install_go() {
 
     log_step "Installing Go..."
 
-    local GO_VERSION="1.23.4"
+    local GO_VERSION="1.26.1"
     local GO_URL
 
     case $OS in
@@ -294,7 +294,7 @@ build_application() {
 
     # Build backend
     log_info "Building backend..."
-    go build -o bin/phantomstrike ./cmd/api
+    go build -o bin/phantomstrike ./cmd/server
     go build -o bin/phantomstrike-cli ./cmd/cli
     go build -o bin/phantomstrike-worker ./cmd/worker
 

@@ -1,6 +1,7 @@
 package mcp
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -14,6 +15,7 @@ import (
 // Server implements the MCP (Model Context Protocol) 2025 spec with Streamable HTTP transport.
 type Server struct {
 	registry *tool.Registry
+	executor *tool.Executor
 	handlers map[string]MethodHandler
 	mu       sync.RWMutex
 	reqID    atomic.Int64
@@ -23,10 +25,13 @@ type Server struct {
 type MethodHandler func(params json.RawMessage) (any, error)
 
 // NewServer creates a new MCP server.
-func NewServer(registry *tool.Registry) *Server {
+func NewServer(registry *tool.Registry, executor ...*tool.Executor) *Server {
 	s := &Server{
 		registry: registry,
 		handlers: make(map[string]MethodHandler),
+	}
+	if len(executor) > 0 {
+		s.executor = executor[0]
 	}
 
 	// Register MCP methods
@@ -104,12 +109,39 @@ func (s *Server) handleToolsCall(params json.RawMessage) (any, error) {
 		return nil, fmt.Errorf("invalid tool call params: %w", err)
 	}
 
-	// For now, return a stub — actual execution goes through the tool.Executor
+	// Execute through the real tool executor if available
+	if s.executor != nil {
+		ctx := context.Background()
+		result, err := s.executor.Execute(ctx, req.Name, req.Arguments, nil, nil)
+		if err != nil {
+			return map[string]any{
+				"content": []map[string]any{{
+					"type": "text",
+					"text": fmt.Sprintf("Error executing %s: %v", req.Name, err),
+				}},
+				"isError": true,
+			}, nil
+		}
+
+		output := result.Stdout
+		if result.Stderr != "" {
+			output += "\n--- STDERR ---\n" + result.Stderr
+		}
+
+		return map[string]any{
+			"content": []map[string]any{{
+				"type": "text",
+				"text": output,
+			}},
+		}, nil
+	}
+
 	return map[string]any{
 		"content": []map[string]any{{
 			"type": "text",
-			"text": fmt.Sprintf("Tool %s called with params: %v (execution pending)", req.Name, req.Arguments),
+			"text": fmt.Sprintf("Tool %s: executor not configured", req.Name),
 		}},
+		"isError": true,
 	}, nil
 }
 

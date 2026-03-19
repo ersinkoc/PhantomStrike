@@ -1,73 +1,102 @@
-import { useEffect, useState, useCallback } from 'react';
-import { io, Socket } from 'socket.io-client';
+import { useEffect, useState, useCallback, useRef } from 'react';
 
-interface RealtimeMessage {
-  type: 'scan' | 'vuln' | 'agent' | 'tool' | 'system';
-  data: any;
-  timestamp: string;
+const WS_BASE = import.meta.env.VITE_WS_URL || 'ws://localhost:8080';
+
+interface WSMessage {
+  type: string;
+  data?: unknown;
 }
 
 export function useWebSocket() {
-  const [socket, setSocket] = useState<Socket | null>(null);
   const [connected, setConnected] = useState(false);
-  const [messages, setMessages] = useState<RealtimeMessage[]>([]);
+  const wsRef = useRef<WebSocket | null>(null);
+  const reconnectTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const subscriptionsRef = useRef<Set<string>>(new Set());
 
-  useEffect(() => {
-    const newSocket = io('ws://localhost:8080', {
-      transports: ['websocket'],
-      autoConnect: true,
-    });
+  const connect = useCallback(() => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
 
-    newSocket.on('connect', () => {
+    const ws = new WebSocket(`${WS_BASE}/ws?token=${token}`);
+
+    ws.onopen = () => {
       setConnected(true);
       console.log('Connected to PhantomStrike realtime feed');
-    });
 
-    newSocket.on('disconnect', () => {
+      // Re-subscribe to any active subscriptions
+      subscriptionsRef.current.forEach((topic) => {
+        ws.send(JSON.stringify({ type: 'subscribe', data: { topic } }));
+      });
+    };
+
+    ws.onclose = () => {
       setConnected(false);
       console.log('Disconnected from realtime feed');
-    });
+      wsRef.current = null;
 
-    newSocket.on('scan.update', (data) => {
-      setMessages(prev => [...prev, { type: 'scan', data, timestamp: new Date().toISOString() }]);
-    });
+      // Auto-reconnect after 3 seconds
+      reconnectTimer.current = setTimeout(() => {
+        connect();
+      }, 3000);
+    };
 
-    newSocket.on('vuln.found', (data) => {
-      setMessages(prev => [...prev, { type: 'vuln', data, timestamp: new Date().toISOString() }]);
-    });
+    ws.onerror = () => {
+      // onclose will fire after this, triggering reconnect
+    };
 
-    newSocket.on('agent.status', (data) => {
-      setMessages(prev => [...prev, { type: 'agent', data, timestamp: new Date().toISOString() }]);
-    });
+    wsRef.current = ws;
+  }, []);
 
-    newSocket.on('tool.output', (data) => {
-      setMessages(prev => [...prev, { type: 'tool', data, timestamp: new Date().toISOString() }]);
-    });
-
-    setSocket(newSocket);
+  useEffect(() => {
+    connect();
 
     return () => {
-      newSocket.close();
+      clearTimeout(reconnectTimer.current);
+      if (wsRef.current) {
+        wsRef.current.close();
+        wsRef.current = null;
+      }
+    };
+  }, [connect]);
+
+  const send = useCallback((message: WSMessage) => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify(message));
+    }
+  }, []);
+
+  const subscribe = useCallback((topic: string, handler: (msg: WSMessage) => void) => {
+    subscriptionsRef.current.add(topic);
+
+    // Send subscribe message if already connected
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({ type: 'subscribe', data: { topic } }));
+    }
+
+    const listener = (event: MessageEvent) => {
+      try {
+        const msg = JSON.parse(event.data) as WSMessage;
+        handler(msg);
+      } catch {
+        // ignore invalid messages
+      }
+    };
+
+    wsRef.current?.addEventListener('message', listener);
+
+    // Return unsubscribe function
+    return () => {
+      subscriptionsRef.current.delete(topic);
+      wsRef.current?.removeEventListener('message', listener);
+      if (wsRef.current?.readyState === WebSocket.OPEN) {
+        wsRef.current.send(JSON.stringify({ type: 'unsubscribe', data: { topic } }));
+      }
     };
   }, []);
 
-  const sendCommand = useCallback((command: string, payload?: any) => {
-    if (socket?.connected) {
-      socket.emit('command', { command, payload });
-    }
-  }, [socket]);
-
-  const subscribeToMission = useCallback((missionId: string) => {
-    if (socket?.connected) {
-      socket.emit('mission.subscribe', { missionId });
-    }
-  }, [socket]);
-
   return {
-    socket,
     connected,
-    messages,
-    sendCommand,
-    subscribeToMission,
+    send,
+    subscribe,
   };
 }

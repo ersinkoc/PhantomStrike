@@ -20,6 +20,7 @@ import Reports from "@/routes/reports";
 import Roles from "@/routes/roles";
 import Skills from "@/routes/skills";
 import Scheduler from "@/routes/scheduler";
+import Marketplace from "@/routes/marketplace";
 
 import "./index.css";
 
@@ -59,6 +60,7 @@ function App() {
             <Route path="roles" element={<Roles />} />
             <Route path="skills" element={<Skills />} />
             <Route path="scheduler" element={<Scheduler />} />
+            <Route path="marketplace" element={<Marketplace />} />
             <Route path="settings" element={<SettingsPage />} />
           </Route>
         </Routes>

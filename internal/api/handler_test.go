@@ -1,67 +1,73 @@
 package api
 
 import (
-	"bytes"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 )
 
-// Mock Services
-type MockMissionRepo struct {
-	mock.Mock
-}
-
-func (m *MockMissionRepo) Create(mission *Mission) error {
-	args := m.Called(mission)
-	return args.Error(0)
-}
-
-func (m *MockMissionRepo) GetByID(id string) (*Mission, error) {
-	args := m.Called(id)
-	return args.Get(0).(*Mission), args.Error(1)
-}
-
-func TestHealthCheck(t *testing.T) {
-	handler := NewHandler(nil, nil, nil)
-
-	req := httptest.NewRequest("GET", "/api/v1/health", nil)
+func TestWriteJSON(t *testing.T) {
 	w := httptest.NewRecorder()
-
-	handler.handleHealth(w, req)
-
-	assert.Equal(t, http.StatusOK, w.Code)
-
-	var resp map[string]string
-	json.NewDecoder(w.Body).Decode(&resp)
-	assert.Equal(t, "healthy", resp["status"])
-}
-
-func TestCreateMission(t *testing.T) {
-	mockRepo := new(MockMissionRepo)
-	handler := NewHandler(nil, mockRepo, nil)
-
-	payload := map[string]interface{}{
-		"name":   "Test Mission",
-		"target": "http://test.com",
-		"mode":   "passive",
-		"depth":  "quick",
-	}
-	body, _ := json.Marshal(payload)
-
-	req := httptest.NewRequest("POST", "/api/v1/missions", bytes.NewReader(body))
-	req.Header.Set("Content-Type", "application/json")
-	w := httptest.NewRecorder()
-
-	// Mock expectations
-	mockRepo.On("Create", mock.AnythingOfType("*Mission")).Return(nil)
-
-	handler.handleCreateMission(w, req)
+	writeJSON(w, http.StatusCreated, map[string]string{"msg": "hello"})
 
 	assert.Equal(t, http.StatusCreated, w.Code)
-	mockRepo.AssertExpectations(t)
+	assert.Contains(t, w.Header().Get("Content-Type"), "application/json")
+
+	var resp map[string]string
+	err := json.NewDecoder(w.Body).Decode(&resp)
+	assert.NoError(t, err)
+	assert.Equal(t, "hello", resp["msg"])
+}
+
+func TestWriteError(t *testing.T) {
+	w := httptest.NewRecorder()
+	writeError(w, http.StatusBadRequest, "bad input")
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+
+	var resp map[string]string
+	err := json.NewDecoder(w.Body).Decode(&resp)
+	assert.NoError(t, err)
+	assert.Equal(t, "bad input", resp["error"])
+}
+
+func TestParseUUID(t *testing.T) {
+	// Valid UUID
+	id, err := parseUUID("550e8400-e29b-41d4-a716-446655440000")
+	assert.NoError(t, err)
+	assert.Equal(t, "550e8400-e29b-41d4-a716-446655440000", id.String())
+
+	// Invalid UUID
+	_, err = parseUUID("not-a-uuid")
+	assert.Error(t, err)
+}
+
+func TestNewHandler(t *testing.T) {
+	h := NewHandler(nil, nil, nil, nil, nil, nil)
+	assert.NotNil(t, h)
+}
+
+func TestNewWSHub(t *testing.T) {
+	hub := NewWSHub()
+	assert.NotNil(t, hub)
+	assert.NotNil(t, hub.connections)
+	assert.Empty(t, hub.connections)
+}
+
+func TestDecodeJSON(t *testing.T) {
+	body := `{"name":"test","value":42}`
+	req := httptest.NewRequest("POST", "/test", strings.NewReader(body))
+
+	var result struct {
+		Name  string `json:"name"`
+		Value int    `json:"value"`
+	}
+	err := decodeJSON(req, &result)
+	assert.NoError(t, err)
+	assert.Equal(t, "test", result.Name)
+	assert.Equal(t, 42, result.Value)
 }
