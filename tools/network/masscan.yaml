@@ -1,85 +1,49 @@
-name: "masscan"
-version: "1.0.0"
-category: "network/scanning"
-tags: ["port-scan", "high-speed", "network", "mass-scan"]
-command: "masscan"
-args: ["--output-format", "json"]
+name: masscan
+version: "1.0"
+category: network/port-scanning
+phase: reconnaissance
+command: masscan
 docker:
-  image: "phantomstrike/masscan:latest"
-  network: "isolated"
+  image: adamlamar/masscan:latest
+  args:
+    - "${target}"
+    - "-p${ports}"
+    - "--rate"
+    - "${rate}"
+    - "-oJ"
+    - "/output/masscan-results.json"
   memory_limit: "512m"
-  cpu_limit: "2.0"
   timeout: "600s"
-short_description: "High-speed asynchronous port scanner capable of scanning the entire Internet in under 6 minutes."
+  privileged: true
+
+short_description: Internet-scale port scanner
 description: |
-  Masscan is the fastest Internet port scanner. It can scan the entire Internet
-  in under 6 minutes, transmitting 10 million packets per second from a single
-  machine. It uses asynchronous transmission, producing results similar to nmap
-  but operating fundamentally differently internally. Masscan is ideal for
-  initial large-scale reconnaissance to identify open ports before handing off
-  to nmap for detailed service enumeration. It supports TCP SYN scanning,
-  banner grabbing, and can output in binary, JSON, XML, grepable, and list formats.
-notes: |
-  - Masscan requires root/admin privileges for raw packet crafting.
-  - Use --rate carefully; values above 100000 can saturate network links or trigger upstream filtering.
-  - For accurate results on unreliable networks, lower the rate and increase --retries.
-  - Masscan does NOT do service detection by default; use --banners for basic banner grabbing.
-  - Always exclude sensitive ranges with --excludefile to avoid scanning critical infrastructure.
-  - Results are best used as input to nmap for detailed service/version scanning.
-  - The --adapter option may be needed to specify the correct network interface.
+  Masscan is an Internet-scale port scanner. It can scan the entire Internet
+  in under 6 minutes, transmitting 10 million packets per second.
+
 parameters:
-  - name: "target"
-    type: "string"
-    description: "Target IP address or CIDR range. Examples: 192.168.1.0/24, 10.0.0.0/8. Supports multiple ranges space-separated."
+  - name: target
+    type: string
     required: true
-    flag: ""
-  - name: "ports"
-    type: "string"
-    description: "Port specification. Ranges (0-65535), comma-separated (80,443,8080), or combined. Use 0-65535 for all ports."
-    required: true
-    flag: "-p"
-  - name: "rate"
-    type: "integer"
-    description: "Packet transmission rate in packets per second. Safe default: 1000. Aggressive: 10000-100000. Maximum: 10000000."
+    description: Target IP or CIDR range
+  - name: ports
+    type: string
     required: false
-    flag: "--rate"
-  - name: "banners"
-    type: "boolean"
-    description: "Enable banner grabbing to capture service responses on open ports. Adds overhead but provides service context."
+    default: "1-65535"
+    description: Ports to scan
+  - name: rate
+    type: integer
     required: false
-    flag: "--banners"
+    default: 10000
+    description: Packets per second rate
+
 output:
-  format: "json"
+  format: json
   success_patterns:
-    - "\"status\": \"open\""
-    - "\"ip\":"
-    - "rate:"
-  failure_patterns:
-    - "FAIL"
-    - "errno"
-    - "could not initialize adapter"
-  severity_indicators:
-    critical:
-      - "\"port\": 23"
-      - "\"port\": 3389"
-    high:
-      - "\"port\": 21"
-      - "\"port\": 445"
-      - "\"port\": 1433"
-      - "\"port\": 3306"
-    medium:
-      - "\"port\": 25"
-      - "\"port\": 161"
-    low:
-      - "\"port\": 80"
-      - "\"port\": 443"
+    - "ports"
+
 chain_suggestions:
-  before:
-    - "subfinder"
-    - "amass"
   after:
-    - "nmap"
-    - "nuclei"
-    - "httpx"
-    - "whatweb"
+    - nmap
+
 enabled: true

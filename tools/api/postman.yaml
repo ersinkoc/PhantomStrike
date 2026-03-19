@@ -1,0 +1,47 @@
+name: postman
+version: "1.0"
+category: api/testing
+phase: scanning
+command: newman
+docker:
+  image: postman/newman:latest
+  args:
+    - "run"
+    - "/input/collection.json"
+    - "-e"
+    - "/input/environment.json"
+    - "--reporters"
+    - "cli,json"
+    - "--reporter-json-export"
+    - "/output/postman-results.json"
+  memory_limit: "1g"
+  timeout: "600s"
+
+short_description: API testing with Postman collections
+description: |
+  Newman is the command-line collection runner for Postman. It allows you to
+  run and test Postman collections directly from the command line.
+
+parameters:
+  - name: collection
+    type: string
+    required: true
+    description: Postman collection file path
+  - name: environment
+    type: string
+    required: false
+    description: Postman environment file path
+  - name: iteration-count
+    type: integer
+    required: false
+    default: 1
+    description: Number of iterations
+
+output:
+  format: json
+  success_patterns:
+    - "passed"
+  failure_patterns:
+    - "failed"
+
+enabled: true

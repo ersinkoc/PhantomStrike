@@ -6,15 +6,6 @@ import (
 	"log/slog"
 )
 
-// Channel represents a notification channel configuration.
-type Channel struct {
-	Type    string         `json:"type"` // slack, discord, telegram, email, webhook
-	Name    string         `json:"name"`
-	Config  map[string]any `json:"config"`
-	Events  []string       `json:"events"`
-	Enabled bool           `json:"enabled"`
-}
-
 // Event represents a notification event.
 type Event struct {
 	Type      string `json:"type"` // critical_vuln, high_vuln, mission_complete, mission_failed, phase_change
@@ -32,8 +23,17 @@ type Sender interface {
 
 // Dispatcher manages notification channels and routes events.
 type Dispatcher struct {
-	channels []Channel
+	channels []ChannelConfig
 	senders  map[string]Sender
+}
+
+// ChannelConfig represents a notification channel configuration.
+type ChannelConfig struct {
+	Type    string         `json:"type"` // slack, discord, telegram, email, webhook
+	Name    string         `json:"name"`
+	Config  map[string]any `json:"config"`
+	Events  []string       `json:"events"`
+	Enabled bool           `json:"enabled"`
 }
 
 // NewDispatcher creates a new notification dispatcher.
@@ -44,7 +44,7 @@ func NewDispatcher() *Dispatcher {
 }
 
 // RegisterChannel adds a notification channel.
-func (d *Dispatcher) RegisterChannel(ch Channel) {
+func (d *Dispatcher) RegisterChannel(ch ChannelConfig) {
 	d.channels = append(d.channels, ch)
 	slog.Info("registered notification channel", "type", ch.Type, "name", ch.Name)
 }

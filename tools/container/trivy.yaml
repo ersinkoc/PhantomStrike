@@ -1,0 +1,61 @@
+name: trivy
+version: "1.0"
+category: container/vulnerability-scanning
+phase: scanning
+command: trivy
+args:
+  - "image"
+  - "--format"
+  - "json"
+  - "--output"
+  - "/output/trivy-report.json"
+  - "${image}"
+
+docker:
+  image: aquasec/trivy:latest
+  memory_limit: "1g"
+  timeout: "600s"
+
+short_description: Container vulnerability scanner
+description: |
+  Trivy is a comprehensive and versatile security scanner.
+  It finds vulnerabilities, IaC misconfigurations, secrets and SBOM in containers and more.
+
+parameters:
+  - name: image
+    type: string
+    required: true
+    description: Container image to scan
+  - name: severity
+    type: string
+    required: false
+    default: "UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL"
+    description: Severities to include
+  - name: ignore-unfixed
+    type: boolean
+    required: false
+    default: false
+    description: Ignore unfixed vulnerabilities
+
+output:
+  format: json
+  success_patterns:
+    - "Scanned"
+  failure_patterns:
+    - "FATAL"
+    - "ERROR"
+  severity_indicators:
+    CRITICAL:
+      - "Severity: \"CRITICAL\""
+    HIGH:
+      - "Severity: \"HIGH\""
+
+chain_suggestions:
+  after:
+    - clamav
+    - docker-slim
+
+requirements:
+  docker_available: true
+
+enabled: true

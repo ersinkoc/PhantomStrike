@@ -1,0 +1,57 @@
+name: scoutsuite
+version: "1.0"
+category: cloud/security-audit
+phase: scanning
+command: scout
+docker:
+  image: rossja/scoutsuite:latest
+  args:
+    - "aws"
+    - "--report-dir"
+    - "/output/scoutsuite"
+    - "--no-browser"
+  memory_limit: "2g"
+  timeout: "1800s"
+
+short_description: Multi-cloud security auditing tool
+description: |
+  ScoutSuite is an open source multi-cloud security-auditing tool,
+  which enables security posture assessment of cloud environments.
+  Supports AWS, Azure, GCP, and Alibaba Cloud.
+
+parameters:
+  - name: provider
+    type: string
+    required: true
+    enum: [aws, azure, gcp, aliyun]
+    description: Cloud provider to scan
+  - name: profile
+    type: string
+    required: false
+    description: AWS profile to use
+  - name: regions
+    type: string
+    required: false
+    description: Comma-separated list of regions
+  - name: services
+    type: string
+    required: false
+    description: Comma-separated services to scan
+
+output:
+  format: json
+  path: /output/scoutsuite/scoutsuite-results.json
+  success_patterns:
+    - "results"
+    - "completed"
+  failure_patterns:
+    - "error"
+    - "exception"
+
+chain_suggestions:
+  before:
+    - aws-configure
+  after:
+    - prowler
+
+enabled: true

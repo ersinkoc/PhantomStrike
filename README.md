@@ -23,18 +23,18 @@ PhantomStrike is a next-generation security testing platform that leverages AI a
 └──────────────────────┬──────────────────────────────────────┘
                        │
 ┌──────────────────────▼──────────────────────────────────────┐
-│                    API Gateway                               │
+│                    API Gateway                              │
 ├─────────────────────────────────────────────────────────────┤
-│  ┌─────────┐  ┌─────────┐  ┌─────────┐  ┌───────────────┐  │
-│  │  Auth   │  │Missions │  │   WS    │  │     MCP       │  │
-│  └─────────┘  └─────────┘  └─────────┘  └───────────────┘  │
+│  ┌─────────┐  ┌─────────┐  ┌─────────┐  ┌───────────────┐   │
+│  │  Auth   │  │Missions │  │   WS    │  │     MCP       │   │
+│  └─────────┘  └─────────┘  └─────────┘  └───────────────┘   │
 └──────────────────────┬──────────────────────────────────────┘
                        │
 ┌──────────────────────▼──────────────────────────────────────┐
-│                   Agent Swarm                                │
-│  ┌─────────┐    ┌─────────┐    ┌─────────┐                 │
-│  │ Planner │───▶│ Executor│───▶│ Reviewer│                 │
-│  └─────────┘    └─────────┘    └─────────┘                 │
+│                   Agent Swarm                               │
+│  ┌─────────┐     ┌─────────┐      ┌─────────┐               │
+│  │ Planner │───▶│ Executor │───▶│ Reviewer │               │
+│  └─────────┘     └─────────┘      └─────────┘               │
 └──────────────────────┬──────────────────────────────────────┘
                        │
 ┌──────────────────────▼──────────────────────────────────────┐
@@ -42,7 +42,7 @@ PhantomStrike is a next-generation security testing platform that leverages AI a
 └──────────────────────┬──────────────────────────────────────┘
                        │
 ┌──────────────────────▼──────────────────────────────────────┐
-│  PostgreSQL + pgvector  │  Redis  │  Storage (Local/S3)      │
+│  PostgreSQL + pgvector  │  Redis  │  Storage (Local/S3)     │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -97,9 +97,199 @@ cd web && npm run dev
 
 Access the application at http://localhost:5173
 
-## Configuration
+## Screenshots
 
+*Coming soon - Screenshots of the dashboard, mission view, and attack chain visualization*
+
+## Development Guide
+
+### Hot Reload Development
+
+For backend development with hot reload:
+
+```bash
+# Install air (hot reload for Go)
+go install github.com/air-verse/air@latest
+
+# Run with hot reload
+air
+```
+
+### Database Migrations
+
+Manual migration commands:
+
+```bash
+# Run migrations
+make migrate
+
+# Check migration status
+go run ./cmd/server -migration-status
+```
+
+### Testing
+
+```bash
+# Run all tests
+make test
+
+# Run with coverage
+make test-verbose
+
+# Run specific package tests
+go test -v ./internal/agent/...
+```
+
+### Code Quality
+
+```bash
+# Format Go code
+gofmt -s -w .
+
+# Run linter
+make lint
+```
+
+### Frontend Development
+
+```bash
+cd web
+
+# Install dependencies
+npm install
+
+# Run dev server
+npm run dev
+
+# Build for production
+npm run build
+
+# Preview production build
+npm run preview
+```
+
+## Deployment
+
+### Docker Production Deployment
+
+```bash
+# Build all images
+docker-compose build
+
+# Start all services
+docker-compose up -d
+
+# Scale workers (optional)
+docker-compose up -d --scale worker=3
+
+# View logs
+docker-compose logs -f
+
+# Stop all services
+docker-compose down
+```
+
+### Environment Variables
+
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `DATABASE_URL` | PostgreSQL connection string | Yes |
+| `REDIS_URL` | Redis connection string | Yes |
+| `JWT_SECRET` | JWT signing secret | Yes |
+| `ADMIN_PASSWORD` | Default admin password | Yes |
+| `ANTHROPIC_API_KEY` | Anthropic API key | No |
+| `OPENAI_API_KEY` | OpenAI API key | No |
+| `GROQ_API_KEY` | Groq API key | No |
+
+## Troubleshooting
+
+### Common Issues
+
+**PostgreSQL connection failed**
+```bash
+# Check if PostgreSQL is running
+docker-compose ps postgres
+
+# Check logs
+docker-compose logs postgres
+
+# Reset database (WARNING: deletes all data)
+docker-compose down -v postgres
+docker-compose up -d postgres
+```
+
+**Redis connection failed**
+```bash
+# Check Redis status
+docker-compose ps redis
+docker-compose logs redis
+```
+
+**Docker not available for tools**
+```bash
+# Run in process mode instead
+# Edit config.yaml:
+tools:
+  docker:
+    enabled: false
+  process:
+    enabled: true
+```
+
+**Port conflicts**
+```bash
+# Change ports in docker-compose.yml
+# Server: 8080
+# MCP Server: 8081
+# Frontend: 5173
+# PostgreSQL: 5432
+# Redis: 6379
+```
+
+### Health Checks
+
+```bash
+# API health check
+curl http://localhost:8080/health
+
+# MCP health check
+curl http://localhost:8081/health
+```
+
+### Getting Help
+
+- GitHub Issues: [github.com/ersinkoc/phantomstrike/issues](https://github.com/ersinkoc/phantomstrike/issues)
+- Documentation: See [api/openapi.yaml](./api/openapi.yaml)
+- CLI Help: `./bin/ps-cli help`
+
+## Configuration
+n
 Create a `config.yaml` file:
+
+```yaml
+database:
+  url: "${DATABASE_URL}"
+
+auth:
+  jwt_secret: "${JWT_SECRET}"
+  default_admin:
+    email: "admin@phantomstrike.local"
+    password: "${ADMIN_PASSWORD}"
+
+providers:
+  default: "anthropic"
+  anthropic:
+    api_key: "${ANTHROPIC_API_KEY}"
+    model: "claude-sonnet-4-20250514"
+  openai:
+    api_key: "${OPENAI_API_KEY}"
+    model: "gpt-4o"
+
+tools:
+  dir: "./tools"
+  docker:
+    enabled: true
+```
 
 ```yaml
 database:

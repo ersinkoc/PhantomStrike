@@ -1,0 +1,63 @@
+name: checkov
+version: "1.0"
+category: iac/security
+phase: scanning
+command: checkov
+docker:
+  image: bridgecrew/checkov:latest
+  args:
+    - "-d"
+    - "."
+    - "-o"
+    - "json"
+    - "--quiet"
+  memory_limit: "1g"
+  timeout: "600s"
+
+short_description: Infrastructure as Code security scanner
+description: |
+  Checkov scans Terraform, CloudFormation, Kubernetes, Dockerfile, and ARM templates
+  for security and compliance misconfigurations. Includes 750+ built-in policies.
+
+parameters:
+  - name: directory
+    type: string
+    required: true
+    description: Directory containing IaC files
+  - name: framework
+    type: string
+    required: false
+    enum: [terraform, cloudformation, kubernetes, dockerfile, arm, serverless, ansible, helm]
+    description: IaC framework type
+  - name: skip-check
+    type: string
+    required: false
+    description: Checks to skip (comma-separated)
+  - name: severity
+    type: string
+    required: false
+    default: "HIGH,CRITICAL"
+    enum: [LOW, MEDIUM, HIGH, CRITICAL]
+    description: Minimum severity to report
+
+output:
+  format: json
+  success_patterns:
+    - "passed"
+  failure_patterns:
+    - "failed"
+    - "ERROR"
+  severity_indicators:
+    CRITICAL:
+      - "\"severity\": \"CRITICAL\""
+    HIGH:
+      - "\"severity\": \"HIGH\""
+
+chain_suggestions:
+  before:
+    - terraform-plan
+  after:
+    - tfsec
+    - terrascan
+
+enabled: true

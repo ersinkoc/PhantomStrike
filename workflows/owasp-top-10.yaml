@@ -1,0 +1,189 @@
+id: owasp-top-10
+name: OWASP Top 10 Assessment
+version: "1.0"
+category: compliance
+description: Comprehensive assessment covering all OWASP Top 10 vulnerabilities
+tags:
+  - owasp
+  - compliance
+  - web-security
+  - comprehensive
+
+variables:
+  target: ""
+  depth: standard
+  rate_limit: 100
+
+steps:
+  - id: recon
+    name: Reconnaissance
+    type: parallel
+    parallel:
+      - id: subdomain-enum
+        name: Subdomain Enumeration
+        type: tool
+        tool: subfinder
+        inputs:
+          domain: ${target}
+          output: subdomains.txt
+
+      - id: port-scan
+        name: Port Scanning
+        type: tool
+        tool: nmap
+        inputs:
+          target: ${target}
+          ports: "80,443,8080,8443"
+          rate: ${rate_limit}
+
+    outputs:
+      subdomains: subdomain-enum.stdout
+      open_ports: port-scan.stdout
+
+  - id: web-discovery
+    name: Web Service Discovery
+    type: tool
+    tool: httpx
+    depends_on:
+      - recon
+    inputs:
+      targets: ${subdomains}
+      threads: 50
+    outputs:
+      live_urls: stdout
+
+  # OWASP A01: Broken Access Control
+  - id: access-control-scan
+    name: Access Control Testing
+    type: tool
+    tool: nuclei
+    depends_on:
+      - web-discovery
+    inputs:
+      targets: ${live_urls}
+      templates: "cves,exposures,misconfig"
+      severity: critical,high
+
+  # OWASP A02: Cryptographic Failures
+  - id: ssl-scan
+    name: SSL/TLS Configuration
+    type: tool
+    tool: testssl
+    depends_on:
+      - port-scan
+    inputs:
+      target: ${target}
+      mode: full
+
+  # OWASP A03: Injection
+  - id: sql-injection-scan
+    name: SQL Injection Testing
+    type: tool
+    tool: sqlmap
+    depends_on:
+      - web-discovery
+    condition: ${depth} == "deep" || ${depth} == "exhaustive"
+    inputs:
+      url: ${live_urls}
+      level: 3
+      risk: 2
+    retry:
+      max_attempts: 2
+      delay: 30s
+
+  # OWASP A04: Insecure Design
+  - id: iis-shortname
+    name: IIS Shortname Scanner
+    type: tool
+    tool: ffuf
+    depends_on:
+      - web-discovery
+    condition: ${depth} != "quick"
+    inputs:
+      url: ${target}/FUZZ
+      wordlist: iis-shortnames.txt
+
+  # OWASP A05: Security Misconfiguration
+  - id: misconfig-scan
+    name: Security Misconfiguration
+    type: tool
+    tool: nuclei
+    depends_on:
+      - web-discovery
+    inputs:
+      targets: ${live_urls}
+      templates: "misconfig"
+
+  # OWASP A06: Vulnerable Components
+  - id: version-detection
+    name: Technology Fingerprinting
+    type: tool
+    tool: whatweb
+    depends_on:
+      - web-discovery
+    inputs:
+      url: ${live_urls}
+      aggressive: true
+
+  # OWASP A07: Auth Failures
+  - id: auth-testing
+    name: Authentication Testing
+    type: workflow
+    workflow: auth-testing-suite
+    depends_on:
+      - web-discovery
+    condition: ${depth} == "deep" || ${depth} == "exhaustive"
+    inputs:
+      targets: ${live_urls}
+
+  # OWASP A08: Integrity Failures
+  - id: sri-check
+    name: Subresource Integrity
+    type: tool
+    tool: nuclei
+    depends_on:
+      - web-discovery
+    inputs:
+      targets: ${live_urls}
+      templates: "headless/subresource-integrity.yaml"
+
+  # OWASP A09: Logging Failures
+  - id: log-analysis
+    name: Security Log Review
+    type: script
+    depends_on:
+      - access-control-scan
+    inputs:
+      action: analyze_logs
+      source: access-control-scan
+
+  # OWASP A10: SSRF
+  - id: ssrf-scan
+    name: SSRF Testing
+    type: tool
+    tool: dalfox
+    depends_on:
+      - web-discovery
+    condition: ${depth} == "exhaustive"
+    inputs:
+      url: ${live_urls}
+      method: GET,POST
+
+  # Reporting
+  - id: generate-report
+    name: Generate OWASP Report
+    type: notify
+    depends_on:
+      - access-control-scan
+      - ssl-scan
+      - sql-injection-scan
+      - misconfig-scan
+      - version-detection
+      - ssrf-scan
+    on_error: continue
+    inputs:
+      message: "OWASP Top 10 assessment completed for ${target}"
+      report_type: compliance
+      framework: owasp-top-10
+
+on_error: continue

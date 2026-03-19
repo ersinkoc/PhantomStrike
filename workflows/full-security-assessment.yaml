@@ -1,0 +1,214 @@
+name: Full Security Assessment
+version: "1.0"
+description: |
+  Comprehensive security assessment workflow covering reconnaissance,
+  discovery, vulnerability scanning, and exploitation phases.
+  
+  Phases:
+    1. Reconnaissance - Asset discovery and enumeration
+    2. Discovery - Service identification and technology detection
+    3. Scanning - Vulnerability identification
+    4. Exploitation - Automated exploitation of confirmed vulnerabilities
+
+triggers:
+  - type: manual
+  - type: scheduled
+    cron: "0 2 * * 0"  # Weekly on Sunday at 2 AM
+
+steps:
+  # Phase 1: Reconnaissance - Asset Discovery
+  - id: subdomain-enum
+    name: Subdomain Enumeration
+    tool: subfinder
+    parameters:
+      domain: "${target.domain}"
+    timeout: 300s
+    
+  - id: port-scan
+    name: Port Scanning
+    tool: masscan
+    parameters:
+      target: "${target.domain}"
+      ports: "1-65535"
+      rate: 10000
+    timeout: 600s
+    
+  - id: dns-resolution
+    name: DNS Resolution
+    tool: dnsx
+    parameters:
+      domain: "${target.domain}"
+    timeout: 120s
+    
+  # Phase 2: Discovery - Web Asset Probing
+  - id: web-probe
+    name: Web Service Probing
+    tool: httpx
+    parameters:
+      target: "${target.domain}"
+    timeout: 300s
+    dependencies:
+      - subdomain-enum
+    condition: on_success
+    
+  - id: screenshot
+    name: Web Screenshot
+    tool: aquatone
+    parameters:
+      target: "${target.domain}"
+    timeout: 300s
+    dependencies:
+      - web-probe
+    condition: on_success
+    
+  # Phase 3: Discovery - Content Discovery
+  - id: directory-fuzz
+    name: Directory Fuzzing
+    tool: ffuf
+    parameters:
+      target: "${target.url}"
+    timeout: 600s
+    dependencies:
+      - web-probe
+    condition: on_success
+    
+  - id: js-discovery
+    name: JavaScript Analysis
+    tool: nuclei
+    parameters:
+      target: "${target.url}"
+      templates: "exposures"
+    timeout: 300s
+    dependencies:
+      - web-probe
+    condition: on_success
+    
+  # Phase 4: Scanning - Vulnerability Assessment
+  - id: vuln-scan
+    name: Vulnerability Scanning
+    tool: nuclei
+    parameters:
+      target: "${target.url}"
+      severity: "critical,high,medium"
+    timeout: 1800s
+    dependencies:
+      - web-probe
+    condition: on_success
+    
+  - id: owasp-scan
+    name: OWASP Top 10 Scan
+    tool: zap
+    parameters:
+      target: "${target.url}"
+    timeout: 1800s
+    dependencies:
+      - web-probe
+    condition: on_success
+    
+  - id: ssl-scan
+    name: SSL/TLS Scan
+    tool: sslyze
+    parameters:
+      target: "${target.domain}"
+    timeout: 300s
+    
+  - id: header-scan
+    name: Security Header Scan
+    tool: nuclei
+    parameters:
+      target: "${target.url}"
+      templates: "misconfiguration/http-misconfiguration"
+    timeout: 300s
+    dependencies:
+      - web-probe
+    condition: on_success
+    
+  # Phase 5: Scanning - Specialized Scans
+  - id: sql-injection-check
+    name: SQL Injection Check
+    tool: sqlmap
+    parameters:
+      target: "${target.url}"
+      level: 2
+    timeout: 1800s
+    dependencies:
+      - directory-fuzz
+    condition: on_success
+    
+  - id: secrets-scan
+    name: Secrets Scanning
+    tool: trufflehog
+    parameters:
+      path: "/output"
+    timeout: 300s
+    dependencies:
+      - js-discovery
+    condition: on_success
+    
+  # Phase 6: Exploitation - If critical findings
+  - id: exploit-critical
+    name: Exploit Critical Findings
+    tool: metasploit
+    parameters:
+      target: "${target.ip}"
+    timeout: 1800s
+    condition: "if"
+    condition_expr: "${vuln.critical_count} > 0"
+    
+  # Phase 7: Compliance
+  - id: compliance-check
+    name: Compliance Validation
+    tool: scoutsuite
+    parameters:
+      provider: "aws"
+    timeout: 1800s
+    
+  # Phase 8: Reporting
+  - id: generate-report
+    name: Generate Report
+    tool: report-generator
+    parameters:
+      format: "pdf"
+      include_evidence: true
+    dependencies:
+      - vuln-scan
+      - owasp-scan
+      - ssl-scan
+      - secrets-scan
+    condition: on_success
+    
+  - id: notify-results
+    name: Notify Results
+    tool: notification
+    parameters:
+      channels: ["slack", "email"]
+      severity_threshold: "high"
+    dependencies:
+      - generate-report
+    condition: on_success
+
+# Parallel execution groups
+parallel:
+  discovery_phase:
+    - subdomain-enum
+    - port-scan
+    - dns-resolution
+  web_phase:
+    - web-probe
+    - screenshot
+  scanning_phase:
+    - vuln-scan
+    - owasp-scan
+    - ssl-scan
+    - header-scan
+
+# Error handling
+on_failure:
+  action: continue
+  notify: true
+  fallback:
+    - id: minimal-scan
+      tool: nuclei
+      parameters:
+        target: "${target.url}"
+        templates: "critical"

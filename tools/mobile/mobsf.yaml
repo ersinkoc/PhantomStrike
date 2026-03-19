@@ -1,0 +1,39 @@
+name: mobsf
+version: "1.0"
+category: mobile/security-scanning
+phase: scanning
+command: mobsf
+docker:
+  image: opensecurity/mobile-security-framework-mobsf:latest
+  args: []
+  memory_limit: "4g"
+  timeout: "1800s"
+  ports:
+    - "8000:8000"
+
+short_description: Mobile Security Framework for Android/iOS
+description: |
+  MobSF is an automated, all-in-one mobile application penetration testing
+  framework capable of performing static and dynamic analysis for Android,
+  iOS, and Windows mobile applications.
+
+parameters:
+  - name: app
+    type: string
+    required: true
+    description: Mobile app file path (APK, IPA)
+  - name: scan-type
+    type: string
+    required: false
+    default: "static"
+    enum: [static, dynamic]
+    description: Type of scan to perform
+
+output:
+  format: json
+  success_patterns:
+    - "score"
+  failure_patterns:
+    - "error"
+
+enabled: true
