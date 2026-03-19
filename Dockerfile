@@ -35,7 +35,7 @@ COPY --from=builder /build/knowledge /app/knowledge
 
 RUN mkdir -p /data/artifacts && chown -R phantom:phantom /data
 
-EXPOSE 8080 8081
+EXPOSE 18090 18091
 
 USER phantom
 

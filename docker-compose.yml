@@ -1,11 +1,62 @@
 services:
-  # --- Data ---
+  # ─── PhantomStrike API Server ─────────────────────────
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "18090:18090"
+      - "18091:18091"
+    environment:
+      - DATABASE_URL=postgresql://phantom:phantom123@postgres:5432/phantomstrike
+      - REDIS_URL=redis://redis:6379
+      - SERVER_PORT=18090
+      - STORAGE_PATH=/data/artifacts
+      - JWT_SECRET=${JWT_SECRET:-phantomstrike-jwt-secret-change-me}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin123}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - MCP_AUTH_TOKEN=${MCP_AUTH_TOKEN:-phantomstrike-mcp-token}
+    volumes:
+      - ./tools:/app/tools:ro
+      - ./roles:/app/roles:ro
+      - ./skills:/app/skills:ro
+      - ./knowledge:/app/knowledge:ro
+      - artifacts:/data/artifacts
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ─── Frontend (React SPA) ────────────────────────────
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile.dev
+    ports:
+      - "15173:15173"
+    environment:
+      - VITE_API_URL=http://server:18090
+    volumes:
+      - ./web/src:/app/src
+      - ./web/public:/app/public
+      - ./web/index.html:/app/index.html
+      - ./web/vite.config.ts:/app/vite.config.ts
+      - ./web/tsconfig.json:/app/tsconfig.json
+      - ./web/tsconfig.app.json:/app/tsconfig.app.json
+    depends_on:
+      - server
+    restart: unless-stopped
+
+  # ─── PostgreSQL + pgvector ───────────────────────────
   postgres:
     image: pgvector/pgvector:pg17
     environment:
       POSTGRES_DB: phantomstrike
       POSTGRES_USER: phantom
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-phantom123}
+      POSTGRES_PASSWORD: phantom123
     volumes:
       - pgdata:/var/lib/postgresql/data
     ports:
@@ -17,6 +68,7 @@ services:
       retries: 5
     restart: unless-stopped
 
+  # ─── Redis ──────────────────────────────────────────
   redis:
     image: redis:7-alpine
     volumes:
@@ -30,22 +82,7 @@ services:
       retries: 5
     restart: unless-stopped
 
-  # --- Optional: MinIO ---
-  minio:
-    image: minio/minio:latest
-    command: server /data --console-address ":9001"
-    environment:
-      MINIO_ROOT_USER: phantom
-      MINIO_ROOT_PASSWORD: ${MINIO_PASSWORD:-minio123}
-    volumes:
-      - miniodata:/data
-    ports:
-      - "19000:9000"
-      - "19001:9001"
-    profiles: ["full"]
-    restart: unless-stopped
-
 volumes:
   pgdata:
   redisdata:
-  miniodata:
+  artifacts:

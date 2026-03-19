@@ -39,11 +39,11 @@ export default defineConfig({
     port: 15173,
     proxy: {
       "/api": {
-        target: "http://localhost:18090",
+        target: process.env.VITE_API_URL || "http://localhost:18090",
         changeOrigin: true,
       },
       "/ws": {
-        target: "ws://localhost:18090",
+        target: (process.env.VITE_API_URL || "http://localhost:18090").replace("http", "ws"),
         ws: true,
       },
     },
