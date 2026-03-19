@@ -1,14 +1,35 @@
 import { useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Play, Pause, XCircle, Terminal, Bug, GitBranch, Loader2 } from "lucide-react";
+import { Play, Pause, XCircle, Terminal, Bug, GitBranch, Loader2, Wrench, FileText, Download, ChevronDown, ChevronRight, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
-import { cn, statusColor, severityColor, formatDate } from "@/lib/utils";
+import { cn, statusColor, severityColor, formatDate, formatDuration } from "@/lib/utils";
 import type { Mission, Vulnerability } from "@/types";
 import { useState, useEffect, useRef } from "react";
 import { useAuthStore } from "@/stores/auth";
 
-type Tab = "overview" | "console" | "findings" | "chain";
+type Tab = "overview" | "console" | "findings" | "chain" | "tools" | "report";
+
+interface ToolExecution {
+  id: string;
+  tool_name: string;
+  status: string;
+  exit_code: number;
+  duration_ms: number;
+  started_at: string;
+  stdout?: string;
+  stderr?: string;
+}
+
+interface Report {
+  id: string;
+  mission_id: string;
+  title: string;
+  format: string;
+  status: string;
+  download_url?: string;
+  created_at: string;
+}
 
 interface LogEntry {
   id: string;
@@ -120,6 +141,8 @@ export default function MissionDetail() {
     { id: "console" as const, label: "Console", icon: Terminal },
     { id: "findings" as const, label: `Findings (${vulns?.vulnerabilities?.length ?? 0})`, icon: Bug },
     { id: "chain" as const, label: "Attack Chain", icon: GitBranch },
+    { id: "tools" as const, label: "Tools", icon: Wrench },
+    { id: "report" as const, label: "Report", icon: FileText },
   ];
 
   return (
@@ -244,6 +267,10 @@ export default function MissionDetail() {
       )}
 
       {activeTab === "chain" && <AttackChainView missionId={id!} />}
+
+      {activeTab === "tools" && <ToolExecutionsView missionId={id!} />}
+
+      {activeTab === "report" && <ReportView missionId={id!} />}
     </div>
   );
 }
@@ -277,6 +304,271 @@ function getLogColor(type: LogEntry["type"]): string {
     case "phase_change": return "text-[var(--color-primary)]";
     default: return "text-zinc-500";
   }
+}
+
+// Tool Executions View Component
+function ToolExecutionsView({ missionId }: { missionId: string }) {
+  const [expandedRow, setExpandedRow] = useState<string | null>(null);
+  const [showFullOutput, setShowFullOutput] = useState<Record<string, boolean>>({});
+
+  const { data, isLoading } = useQuery({
+    queryKey: ["mission-tools", missionId],
+    queryFn: () => api.get<{ tools: ToolExecution[] }>(`/missions/${missionId}/tools`),
+    refetchInterval: 5000,
+  });
+
+  const toolExecutions = data?.tools || [];
+
+  if (isLoading) {
+    return <div className="text-[var(--color-muted-foreground)]">Loading tool executions...</div>;
+  }
+
+  if (toolExecutions.length === 0) {
+    return (
+      <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-card)] p-12 text-center">
+        <Wrench className="mx-auto h-12 w-12 opacity-30 text-[var(--color-muted-foreground)]" />
+        <p className="mt-4 text-[var(--color-muted-foreground)]">No tool executions yet</p>
+        <p className="text-xs text-[var(--color-muted-foreground)] mt-1">
+          Tools will appear here as the mission runs
+        </p>
+      </div>
+    );
+  }
+
+  function toolStatusColor(status: string): string {
+    switch (status.toLowerCase()) {
+      case "success": case "completed": return "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30";
+      case "running": return "bg-blue-500/15 text-blue-400 border border-blue-500/30";
+      case "failed": case "error": return "bg-[#FF3366]/15 text-[#FF3366] border border-[#FF3366]/30";
+      case "timeout": return "bg-amber-500/15 text-amber-400 border border-amber-500/30";
+      default: return "bg-zinc-500/15 text-zinc-400 border border-zinc-500/30";
+    }
+  }
+
+  const TRUNCATE_LENGTH = 500;
+
+  function renderOutput(label: string, content: string | undefined, toolId: string, field: string) {
+    if (!content) return null;
+    const key = `${toolId}-${field}`;
+    const isLong = content.length > TRUNCATE_LENGTH;
+    const expanded = showFullOutput[key];
+    const displayContent = isLong && !expanded ? content.slice(0, TRUNCATE_LENGTH) + "..." : content;
+
+    return (
+      <div className="mt-2">
+        <p className="text-xs font-semibold text-[var(--color-muted-foreground)] mb-1">{label}</p>
+        <pre className="whitespace-pre-wrap break-all rounded-lg bg-[#0D0D12] p-3 text-xs font-mono text-zinc-300">
+          {displayContent}
+        </pre>
+        {isLong && (
+          <button
+            onClick={() => setShowFullOutput(prev => ({ ...prev, [key]: !expanded }))}
+            className="mt-1 text-xs text-[var(--color-primary)] hover:underline"
+          >
+            {expanded ? "Show less" : "Show more"}
+          </button>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-card)]">
+      {/* Table Header */}
+      <div className="grid grid-cols-[1fr_100px_80px_100px_140px_32px] gap-3 px-5 py-3 border-b border-[var(--color-border)] text-xs font-semibold text-[var(--color-muted-foreground)] uppercase tracking-wider">
+        <span>Tool</span>
+        <span>Status</span>
+        <span>Exit Code</span>
+        <span>Duration</span>
+        <span>Started</span>
+        <span></span>
+      </div>
+
+      {/* Rows */}
+      <div className="divide-y divide-[var(--color-border)]">
+        {toolExecutions.map((tool) => (
+          <div key={tool.id}>
+            <div
+              className="grid grid-cols-[1fr_100px_80px_100px_140px_32px] gap-3 px-5 py-3 items-center cursor-pointer hover:bg-[var(--color-muted)]/30 transition-colors"
+              onClick={() => setExpandedRow(expandedRow === tool.id ? null : tool.id)}
+            >
+              <span className="font-medium text-sm truncate">{tool.tool_name}</span>
+              <span>
+                <span className={cn("rounded-full px-2 py-0.5 text-xs font-semibold capitalize", toolStatusColor(tool.status))}>
+                  {tool.status}
+                </span>
+              </span>
+              <span className="font-mono text-sm text-[var(--color-muted-foreground)]">{tool.exit_code}</span>
+              <span className="text-sm text-[var(--color-muted-foreground)]">{formatDuration(tool.duration_ms)}</span>
+              <span className="text-xs text-[var(--color-muted-foreground)]">{formatDate(tool.started_at)}</span>
+              <span className="text-[var(--color-muted-foreground)]">
+                {expandedRow === tool.id ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+              </span>
+            </div>
+
+            {expandedRow === tool.id && (
+              <div className="px-5 pb-4">
+                {renderOutput("stdout", tool.stdout, tool.id, "stdout")}
+                {renderOutput("stderr", tool.stderr, tool.id, "stderr")}
+                {!tool.stdout && !tool.stderr && (
+                  <p className="text-xs text-[var(--color-muted-foreground)] italic">No output captured</p>
+                )}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// Report View Component
+function ReportView({ missionId }: { missionId: string }) {
+  const queryClient = useQueryClient();
+  const [showForm, setShowForm] = useState(false);
+  const [reportTitle, setReportTitle] = useState("");
+  const [reportFormat, setReportFormat] = useState<"json" | "md" | "html">("html");
+
+  const { data, isLoading } = useQuery({
+    queryKey: ["mission-reports", missionId],
+    queryFn: () => api.get<{ reports: Report[] }>(`/missions/${missionId}/reports`),
+  });
+
+  const generateMutation = useMutation({
+    mutationFn: () =>
+      api.post("/reports", {
+        mission_id: missionId,
+        format: reportFormat,
+        title: reportTitle || `Mission Report - ${new Date().toLocaleDateString()}`,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["mission-reports", missionId] });
+      toast.success("Report generated successfully");
+      setShowForm(false);
+      setReportTitle("");
+    },
+    onError: (err: Error) => {
+      toast.error(err.message || "Failed to generate report");
+    },
+  });
+
+  const reports = data?.reports || [];
+
+  if (isLoading) {
+    return <div className="text-[var(--color-muted-foreground)]">Loading reports...</div>;
+  }
+
+  function formatBadge(format: string): string {
+    switch (format.toLowerCase()) {
+      case "html": return "bg-blue-500/15 text-blue-400 border border-blue-500/30";
+      case "json": return "bg-amber-500/15 text-amber-400 border border-amber-500/30";
+      case "md": case "markdown": return "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30";
+      default: return "bg-zinc-500/15 text-zinc-400 border border-zinc-500/30";
+    }
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Generate Report Button */}
+      <div className="flex justify-end">
+        <button
+          onClick={() => setShowForm(!showForm)}
+          className="flex items-center gap-1.5 rounded-lg bg-[var(--color-primary)] px-3 py-1.5 text-sm font-semibold text-[var(--color-primary-foreground)] hover:opacity-90"
+        >
+          <Plus className="h-4 w-4" /> Generate Report
+        </button>
+      </div>
+
+      {/* Generate Report Form */}
+      {showForm && (
+        <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-card)] p-5">
+          <h3 className="text-sm font-semibold mb-4">Generate New Report</h3>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-medium text-[var(--color-muted-foreground)] mb-1.5">Title</label>
+              <input
+                type="text"
+                value={reportTitle}
+                onChange={(e) => setReportTitle(e.target.value)}
+                placeholder="Mission Report"
+                className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2 text-sm placeholder:text-[var(--color-muted-foreground)] focus:border-[var(--color-primary)] focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-[var(--color-muted-foreground)] mb-1.5">Format</label>
+              <select
+                value={reportFormat}
+                onChange={(e) => setReportFormat(e.target.value as "json" | "md" | "html")}
+                className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2 text-sm focus:border-[var(--color-primary)] focus:outline-none"
+              >
+                <option value="html">HTML</option>
+                <option value="json">JSON</option>
+                <option value="md">Markdown</option>
+              </select>
+            </div>
+          </div>
+          <div className="mt-4 flex gap-2 justify-end">
+            <button
+              onClick={() => setShowForm(false)}
+              className="rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-sm text-[var(--color-muted-foreground)] hover:bg-[var(--color-muted)]/30"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => generateMutation.mutate()}
+              disabled={generateMutation.isPending}
+              className="flex items-center gap-1.5 rounded-lg bg-[var(--color-primary)] px-3 py-1.5 text-sm font-semibold text-[var(--color-primary-foreground)] hover:opacity-90 disabled:opacity-50"
+            >
+              {generateMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
+              Generate
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Reports List */}
+      <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-card)]">
+        {reports.length > 0 ? (
+          <div className="divide-y divide-[var(--color-border)]">
+            {reports.map((report) => (
+              <div key={report.id} className="flex items-center justify-between px-5 py-3">
+                <div className="flex items-center gap-3">
+                  <FileText className="h-5 w-5 text-[var(--color-muted-foreground)]" />
+                  <div>
+                    <p className="font-medium text-sm">{report.title}</p>
+                    <p className="text-xs text-[var(--color-muted-foreground)]">{formatDate(report.created_at)}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className={cn("rounded-full px-2 py-0.5 text-xs font-semibold uppercase", formatBadge(report.format))}>
+                    {report.format}
+                  </span>
+                  {report.download_url && (
+                    <a
+                      href={report.download_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1 rounded-lg border border-[var(--color-border)] px-2.5 py-1 text-xs text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)] hover:bg-[var(--color-muted)]/30 transition-colors"
+                    >
+                      <Download className="h-3.5 w-3.5" /> Download
+                    </a>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="p-12 text-center">
+            <FileText className="mx-auto h-12 w-12 opacity-30 text-[var(--color-muted-foreground)]" />
+            <p className="mt-4 text-[var(--color-muted-foreground)]">No reports generated yet</p>
+            <p className="text-xs text-[var(--color-muted-foreground)] mt-1">
+              Click "Generate Report" to create one
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }
 
 // Attack Chain View Component

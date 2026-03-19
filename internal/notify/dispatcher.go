@@ -1,9 +1,12 @@
 package notify
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"log/slog"
+	"net/http"
 )
 
 // Event represents a notification event.
@@ -106,7 +109,26 @@ func NewWebhookSender(url string) *WebhookSender {
 
 func (w *WebhookSender) Type() string { return "webhook" }
 func (w *WebhookSender) Send(ctx context.Context, event Event) error {
-	// TODO: Implement HTTP POST to webhook URL
-	_ = fmt.Sprintf("POST %s: %s", w.url, event.Title)
+	body, err := json.Marshal(event)
+	if err != nil {
+		return fmt.Errorf("marshaling event: %w", err)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, w.url, bytes.NewReader(body))
+	if err != nil {
+		return fmt.Errorf("creating request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("sending webhook: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= 400 {
+		return fmt.Errorf("webhook returned status %d", resp.StatusCode)
+	}
+
 	return nil
 }

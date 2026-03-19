@@ -11,7 +11,11 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/ersinkoc/phantomstrike/internal/agent"
 	"github.com/ersinkoc/phantomstrike/internal/config"
+	"github.com/ersinkoc/phantomstrike/internal/notify"
+	"github.com/ersinkoc/phantomstrike/internal/provider"
+	"github.com/ersinkoc/phantomstrike/internal/tool"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -242,7 +246,9 @@ func (w *Worker) executeJob(ctx context.Context, job *Job) (json.RawMessage, err
 	}
 }
 
-// executeMissionJob processes a mission execution job
+// executeMissionJob processes a mission execution job by initializing the
+// provider router, tool registry, tool executor, and agent swarm, then
+// running the mission through the swarm while processing events.
 func (w *Worker) executeMissionJob(ctx context.Context, job *Job) (json.RawMessage, error) {
 	var payload struct {
 		MissionID uuid.UUID       `json:"mission_id"`
@@ -254,6 +260,11 @@ func (w *Worker) executeMissionJob(ctx context.Context, job *Job) (json.RawMessa
 		return nil, fmt.Errorf("invalid mission payload: %w", err)
 	}
 
+	slog.Info("executing mission job",
+		"mission_id", payload.MissionID,
+		"phases", payload.Phases,
+	)
+
 	// Update mission status to running
 	_, err := w.db.Exec(ctx,
 		"UPDATE missions SET status = 'running', started_at = NOW() WHERE id = $1",
@@ -262,14 +273,152 @@ func (w *Worker) executeMissionJob(ctx context.Context, job *Job) (json.RawMessa
 		return nil, fmt.Errorf("failed to update mission status: %w", err)
 	}
 
-	// Mission execution is handled by the agent swarm through WebSocket events
-	// The worker just marks it as started; the actual execution is async
-	// For now, this is a placeholder that would integrate with the agent system
+	// Initialize provider router from config
+	router := provider.SetupRouter(w.config.Providers)
+
+	// Initialize tool registry and load definitions
+	registry := tool.NewRegistry(w.config.Tools.Dir, nil)
+	if err := registry.LoadAll(); err != nil {
+		slog.Warn("failed to load tools in worker", "error", err)
+	}
+
+	// Initialize tool executor
+	executor := tool.NewExecutor(registry, w.db, w.config.Tools.Docker.Enabled)
+
+	// Create agent swarm
+	swarm := agent.NewSwarm(w.config.Agent, router, executor, registry)
+
+	// Set up notification dispatcher for mission events
+	dispatcher := notify.NewDispatcher()
+	dispatcher.RegisterSender(notify.NewConsoleSender())
+
+	// Convert string phases to agent.Phase
+	var phases []agent.Phase
+	for _, p := range payload.Phases {
+		phases = append(phases, agent.Phase(p))
+	}
+
+	// Parse the target from JSON payload
+	var target any
+	if err := json.Unmarshal(payload.Target, &target); err != nil {
+		target = string(payload.Target)
+	}
+
+	// Create events channel for processing swarm events
+	events := make(chan agent.SwarmEvent, 100)
+
+	// Start goroutine to process swarm events
+	done := make(chan struct{})
+	var vulnCount int
+	go func() {
+		defer close(done)
+		for evt := range events {
+			slog.Info("swarm event",
+				"type", evt.Type,
+				"agent", evt.Agent,
+				"mission_id", payload.MissionID,
+			)
+
+			switch evt.Type {
+			case "phase_change":
+				// Update mission current phase in the database
+				if data, ok := evt.Data.(map[string]any); ok {
+					if phase, ok := data["phase"]; ok {
+						_, _ = w.db.Exec(ctx,
+							"UPDATE missions SET current_phase = $1 WHERE id = $2",
+							fmt.Sprint(phase), payload.MissionID)
+					}
+				}
+
+				// Dispatch phase change notification
+				dispatcher.Dispatch(ctx, notify.Event{
+					Type:      "phase_change",
+					MissionID: payload.MissionID.String(),
+					Title:     "Phase Changed",
+					Message:   fmt.Sprintf("Mission entered phase: %v", evt.Data),
+				})
+
+			case "vuln_found":
+				vulnCount++
+				dispatcher.Dispatch(ctx, notify.Event{
+					Type:      "critical_vuln",
+					MissionID: payload.MissionID.String(),
+					Title:     "Vulnerability Found",
+					Message:   fmt.Sprintf("Vulnerability discovered: %v", evt.Data),
+					Severity:  "high",
+				})
+
+			case "tool_start":
+				// Record tool start in the database
+				if data, ok := evt.Data.(map[string]any); ok {
+					_, _ = w.db.Exec(ctx,
+						`INSERT INTO mission_events (mission_id, event_type, data, created_at)
+						 VALUES ($1, $2, $3, NOW())
+						 ON CONFLICT DO NOTHING`,
+						payload.MissionID, "tool_start", data)
+				}
+
+			case "tool_complete":
+				// Record tool completion in the database
+				if data, ok := evt.Data.(map[string]any); ok {
+					_, _ = w.db.Exec(ctx,
+						`INSERT INTO mission_events (mission_id, event_type, data, created_at)
+						 VALUES ($1, $2, $3, NOW())
+						 ON CONFLICT DO NOTHING`,
+						payload.MissionID, "tool_complete", data)
+				}
+
+			case "done":
+				slog.Info("mission swarm execution completed", "mission_id", payload.MissionID)
+			}
+		}
+	}()
+
+	// Run the mission through the swarm
+	swarmErr := swarm.RunMission(ctx, payload.MissionID, target, phases, events)
+	close(events)
+
+	// Wait for event processing to finish
+	<-done
+
+	// Update mission status based on outcome
+	if swarmErr != nil {
+		_, _ = w.db.Exec(ctx,
+			"UPDATE missions SET status = 'failed', completed_at = NOW() WHERE id = $1",
+			payload.MissionID)
+
+		dispatcher.Dispatch(ctx, notify.Event{
+			Type:      "mission_failed",
+			MissionID: payload.MissionID.String(),
+			Title:     "Mission Failed",
+			Message:   fmt.Sprintf("Mission failed: %v", swarmErr),
+			Severity:  "critical",
+		})
+
+		return nil, fmt.Errorf("mission execution failed: %w", swarmErr)
+	}
+
+	// Mark mission as completed
+	_, err = w.db.Exec(ctx,
+		"UPDATE missions SET status = 'completed', completed_at = NOW() WHERE id = $1",
+		payload.MissionID)
+	if err != nil {
+		slog.Error("failed to mark mission completed", "mission_id", payload.MissionID, "error", err)
+	}
+
+	dispatcher.Dispatch(ctx, notify.Event{
+		Type:      "mission_complete",
+		MissionID: payload.MissionID.String(),
+		Title:     "Mission Completed",
+		Message:   fmt.Sprintf("Mission completed successfully. Vulnerabilities found: %d", vulnCount),
+		Severity:  "info",
+	})
 
 	result := map[string]interface{}{
-		"mission_id": payload.MissionID,
-		"status":     "started",
-		"started_at": time.Now(),
+		"mission_id":      payload.MissionID,
+		"status":          "completed",
+		"started_at":      time.Now(),
+		"vulnerabilities":  vulnCount,
 	}
 
 	return json.Marshal(result)

@@ -11,6 +11,7 @@ import (
 
 	"github.com/ersinkoc/phantomstrike/internal/agent"
 	"github.com/ersinkoc/phantomstrike/internal/api"
+	"github.com/ersinkoc/phantomstrike/internal/audit"
 	"github.com/ersinkoc/phantomstrike/internal/auth"
 	"github.com/ersinkoc/phantomstrike/internal/cache"
 	"github.com/ersinkoc/phantomstrike/internal/config"
@@ -55,6 +56,12 @@ func New(cfg *config.Config, db *store.DB) (*Server, error) {
 	// Initialize WebSocket hub
 	hub := api.NewWSHub()
 
+	// Initialize audit logger
+	auditLogger := audit.NewLogger(db.Pool)
+	if err := auditLogger.EnsureTable(context.Background()); err != nil {
+		slog.Warn("failed to ensure audit_log table", "error", err)
+	}
+
 	// Build router
 	mux := http.NewServeMux()
 
@@ -84,8 +91,8 @@ func New(cfg *config.Config, db *store.DB) (*Server, error) {
 	// WebSocket endpoint
 	mux.Handle("/ws", apiHandler.HandleWebSocket(hub))
 
-	// Apply global middleware
-	handler := applyMiddleware(mux, cfg)
+	// Apply global middleware (audit sits after auth, before logging)
+	handler := applyMiddleware(mux, cfg, auditLogger)
 
 	httpSrv := &http.Server{
 		Addr:         fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port),
@@ -137,8 +144,10 @@ func (s *Server) Run(ctx context.Context) error {
 }
 
 // applyMiddleware wraps the handler with global middleware.
-func applyMiddleware(h http.Handler, cfg *config.Config) http.Handler {
-	// Order: outermost runs first
+func applyMiddleware(h http.Handler, cfg *config.Config, auditLogger *audit.Logger) http.Handler {
+	// Order: outermost runs first, innermost runs closest to the handler.
+	// audit runs after auth (claims are in context) but before logging.
+	h = auditLogger.Middleware(h)
 	h = recoveryMiddleware(h)
 	h = requestIDMiddleware(h)
 	h = loggingMiddleware(h)
