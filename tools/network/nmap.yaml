@@ -1,0 +1,118 @@
+name: "nmap"
+version: "1.0.0"
+category: "network/scanning"
+tags: ["port-scan", "service-detection", "os-fingerprint", "host-discovery", "nse", "network"]
+command: "nmap"
+args: ["-oX", "-"]
+docker:
+  image: "phantomstrike/nmap:latest"
+  network: "isolated"
+  memory_limit: "1024m"
+  cpu_limit: "2.0"
+  timeout: "900s"
+short_description: "Comprehensive network scanner for host discovery, port scanning, service/OS detection, and NSE scripting."
+description: |
+  Nmap (Network Mapper) is the industry-standard network scanning and reconnaissance tool.
+  It performs host discovery, port scanning, service version detection, OS fingerprinting,
+  and scriptable interaction with target services via the Nmap Scripting Engine (NSE).
+  Nmap supports a wide range of scan techniques including TCP SYN, TCP connect, UDP,
+  SCTP INIT, NULL, FIN, Xmas, ACK, IP protocol, and idle scans. It is suitable for
+  scanning single hosts, subnets, and large networks. Output can be produced in normal,
+  XML, grepable, and JSON formats.
+notes: |
+  - SYN scan (-sS) requires root/admin privileges; fall back to TCP connect (-sT) if unprivileged.
+  - Aggressive timing (-T4, -T5) may trigger IDS/IPS alerts or cause packet loss on congested networks.
+  - NSE scripts can be category-based (e.g., "vuln", "safe", "discovery") or specified individually.
+  - OS detection (-O) requires at least one open and one closed port on the target to be reliable.
+  - For large scans, consider using --min-rate and --max-retries to balance speed and accuracy.
+  - XML output (-oX -) is preferred for machine parsing by downstream tools.
+  - When scanning internal networks, ensure you have proper authorization.
+parameters:
+  - name: "target"
+    type: "string"
+    description: "Target host, IP address, CIDR range, or file with targets (-iL). Examples: 192.168.1.1, 10.0.0.0/24, scanme.nmap.org"
+    required: true
+    flag: ""
+  - name: "ports"
+    type: "string"
+    description: "Port specification. Ranges (1-1024), comma-separated (22,80,443), or combined (22,80,100-200). Use '-' for all 65535 ports."
+    required: false
+    flag: "-p"
+  - name: "scan_type"
+    type: "string"
+    description: "Scan technique: -sS (SYN stealth), -sT (TCP connect), -sU (UDP), -sV (version), -sA (ACK), -sN (NULL), -sF (FIN), -sX (Xmas)"
+    required: false
+    flag: ""
+  - name: "scripts"
+    type: "string"
+    description: "NSE script selection. Categories: vuln, safe, discovery, auth, broadcast, brute, exploit. Or specific scripts: http-title,ssl-cert"
+    required: false
+    flag: "--script"
+  - name: "timing"
+    type: "string"
+    description: "Timing template: -T0 (paranoid), -T1 (sneaky), -T2 (polite), -T3 (normal), -T4 (aggressive), -T5 (insane)"
+    required: false
+    flag: ""
+  - name: "output_format"
+    type: "string"
+    description: "Output format: -oN (normal), -oX (XML), -oG (grepable), -oA (all formats with base filename)"
+    required: false
+    flag: ""
+  - name: "os_detection"
+    type: "boolean"
+    description: "Enable OS detection (-O). Requires root privileges and at least one open and one closed port."
+    required: false
+    flag: "-O"
+  - name: "service_detection"
+    type: "boolean"
+    description: "Enable service/version detection (-sV). Probes open ports to determine service and version info."
+    required: false
+    flag: "-sV"
+  - name: "top_ports"
+    type: "integer"
+    description: "Scan the N most common ports instead of specifying a range. Common values: 100, 1000, 5000."
+    required: false
+    flag: "--top-ports"
+output:
+  format: "xml"
+  success_patterns:
+    - "Nmap scan report for"
+    - "Host is up"
+    - "open"
+    - "Nmap done"
+  failure_patterns:
+    - "Note: Host seems down"
+    - "0 hosts up"
+    - "Failed to resolve"
+    - "QUITTING!"
+  severity_indicators:
+    critical:
+      - "VULNERABLE"
+      - "CVE-"
+      - "EXPLOIT"
+    high:
+      - "open.*telnet"
+      - "open.*ftp"
+      - "open.*rsh"
+      - "open.*rlogin"
+      - "ssl-heartbleed"
+    medium:
+      - "open.*smtp"
+      - "open.*snmp"
+      - "ssl-cert.*expired"
+    low:
+      - "filtered"
+      - "tcpwrapped"
+chain_suggestions:
+  before:
+    - "masscan"
+    - "rustscan"
+    - "subfinder"
+  after:
+    - "nuclei"
+    - "nikto"
+    - "sqlmap"
+    - "testssl"
+    - "whatweb"
+    - "metasploit"
+enabled: true

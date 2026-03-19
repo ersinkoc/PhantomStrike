@@ -1,0 +1,411 @@
+import { useParams } from "react-router-dom";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Play, Pause, XCircle, Terminal, Bug, GitBranch, Loader2 } from "lucide-react";
+import { toast } from "sonner";
+import { api } from "@/lib/api";
+import { cn, statusColor, severityColor, formatDate } from "@/lib/utils";
+import type { Mission, Vulnerability } from "@/types";
+import { useState, useEffect, useRef } from "react";
+import { useAuthStore } from "@/stores/auth";
+
+type Tab = "overview" | "console" | "findings" | "chain";
+
+interface LogEntry {
+  id: string;
+  type: "thinking" | "tool_start" | "tool_complete" | "tool_error" | "vuln_found" | "phase_change" | "system";
+  agent: string;
+  message: string;
+  timestamp: Date;
+  data?: Record<string, unknown>;
+}
+
+export default function MissionDetail() {
+  const { id } = useParams<{ id: string }>();
+  const [activeTab, setActiveTab] = useState<Tab>("overview");
+  const [logs, setLogs] = useState<LogEntry[]>([]);
+  const logsEndRef = useRef<HTMLDivElement>(null);
+  const queryClient = useQueryClient();
+  const { token } = useAuthStore();
+
+  const { data: mission } = useQuery({
+    queryKey: ["mission", id],
+    queryFn: () => api.get<Mission>(`/missions/${id}`),
+    refetchInterval: 5000,
+  });
+
+  const { data: vulns } = useQuery({
+    queryKey: ["mission-vulns", id],
+    queryFn: () => api.get<{ vulnerabilities: Vulnerability[] }>(`/missions/${id}/vulns`),
+  });
+
+  const startMutation = useMutation({
+    mutationFn: () => api.post(`/missions/${id}/start`),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["mission", id] }); toast.success("Mission started"); },
+  });
+
+  const pauseMutation = useMutation({
+    mutationFn: () => api.post(`/missions/${id}/pause`),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["mission", id] }); toast.info("Mission paused"); },
+  });
+
+  const cancelMutation = useMutation({
+    mutationFn: () => api.post(`/missions/${id}/cancel`),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["mission", id] }); toast.warning("Mission cancelled"); },
+  });
+
+  // WebSocket connection for real-time logs
+  useEffect(() => {
+    if (!token || !id) return;
+
+    const wsUrl = `${import.meta.env.VITE_WS_URL || "ws://localhost:8080"}/ws?token=${token}`;
+    const ws = new WebSocket(wsUrl);
+
+    ws.onopen = () => {
+      ws.send(JSON.stringify({ type: "subscribe", data: { mission_id: id } }));
+    };
+
+    ws.onmessage = (event) => {
+      try {
+        const msg = JSON.parse(event.data);
+        if (msg.type === "subscribed") {
+          setLogs(prev => [...prev, {
+            id: crypto.randomUUID(),
+            type: "system",
+            agent: "system",
+            message: "Connected to mission stream",
+            timestamp: new Date(),
+          }]);
+        } else if (["thinking", "tool_start", "tool_complete", "tool_error", "vuln_found", "phase_change"].includes(msg.type)) {
+          const logEntry: LogEntry = {
+            id: crypto.randomUUID(),
+            type: msg.type as LogEntry["type"],
+            agent: msg.data?.agent || "agent",
+            message: formatLogMessage(msg),
+            timestamp: new Date(),
+            data: msg.data,
+          };
+          setLogs(prev => [...prev, logEntry]);
+        }
+      } catch {
+        // ignore invalid messages
+      }
+    };
+
+    ws.onerror = () => {
+      setLogs(prev => [...prev, {
+        id: crypto.randomUUID(),
+        type: "system",
+        agent: "system",
+        message: "WebSocket connection error",
+        timestamp: new Date(),
+      }]);
+    };
+
+    return () => {
+      ws.close();
+    };
+  }, [token, id]);
+
+  // Auto-scroll logs
+  useEffect(() => {
+    if (activeTab === "console" && logsEndRef.current) {
+      logsEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [logs, activeTab]);
+
+  if (!mission) return <div className="text-[var(--color-muted-foreground)]">Loading...</div>;
+
+  const tabs = [
+    { id: "overview" as const, label: "Overview", icon: GitBranch },
+    { id: "console" as const, label: "Console", icon: Terminal },
+    { id: "findings" as const, label: `Findings (${vulns?.vulnerabilities?.length ?? 0})`, icon: Bug },
+    { id: "chain" as const, label: "Attack Chain", icon: GitBranch },
+  ];
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">{mission.name}</h1>
+          <div className="mt-1 flex items-center gap-3 text-sm text-[var(--color-muted-foreground)]">
+            <span className={cn("font-medium capitalize", statusColor(mission.status))}>{mission.status}</span>
+            <span>·</span>
+            <span>{mission.mode}</span>
+            <span>·</span>
+            <span>{mission.depth}</span>
+            {mission.current_phase && <><span>·</span><span className="text-[var(--color-primary)]">{mission.current_phase}</span></>}
+          </div>
+        </div>
+        <div className="flex gap-2">
+          {mission.status === "created" && (
+            <button onClick={() => startMutation.mutate()} disabled={startMutation.isPending} className="flex items-center gap-1.5 rounded-lg bg-[var(--color-primary)] px-3 py-1.5 text-sm font-semibold text-[var(--color-primary-foreground)] hover:opacity-90 disabled:opacity-50">
+              {startMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
+              Start
+            </button>
+          )}
+          {["running", "planning", "recon", "scanning", "exploitation"].includes(mission.status) && (
+            <button onClick={() => pauseMutation.mutate()} disabled={pauseMutation.isPending} className="flex items-center gap-1.5 rounded-lg border border-amber-500/30 px-3 py-1.5 text-sm text-amber-400 hover:bg-amber-500/10">
+              <Pause className="h-4 w-4" /> Pause
+            </button>
+          )}
+          {!["completed", "cancelled", "failed"].includes(mission.status) && (
+            <button onClick={() => cancelMutation.mutate()} disabled={cancelMutation.isPending} className="flex items-center gap-1.5 rounded-lg border border-[var(--color-destructive)]/30 px-3 py-1.5 text-sm text-[var(--color-destructive)] hover:bg-[var(--color-destructive)]/10">
+              <XCircle className="h-4 w-4" /> Cancel
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Progress */}
+      <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-card)] p-4">
+        <div className="mb-2 flex justify-between text-sm">
+          <span className="text-[var(--color-muted-foreground)]">Progress</span>
+          <span className="font-mono text-[var(--color-primary)]">{mission.progress}%</span>
+        </div>
+        <div className="h-2 rounded-full bg-[var(--color-muted)]">
+          <div className="h-2 rounded-full bg-[var(--color-primary)] transition-all duration-500" style={{ width: `${mission.progress}%` }} />
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex gap-1 border-b border-[var(--color-border)]">
+        {tabs.map((tab) => (
+          <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+            className={cn("flex items-center gap-1.5 border-b-2 px-4 py-2 text-sm transition-colors",
+              activeTab === tab.id ? "border-[var(--color-primary)] text-[var(--color-primary)]" : "border-transparent text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)]"
+            )}>
+            <tab.icon className="h-4 w-4" /> {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Tab Content */}
+      {activeTab === "overview" && (
+        <div className="grid grid-cols-2 gap-4">
+          <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-card)] p-4">
+            <h3 className="mb-2 text-sm font-semibold text-[var(--color-muted-foreground)]">Target</h3>
+            <pre className="text-sm font-mono text-[var(--color-primary)]">{JSON.stringify(mission.target, null, 2)}</pre>
+          </div>
+          <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-card)] p-4">
+            <h3 className="mb-2 text-sm font-semibold text-[var(--color-muted-foreground)]">Timeline</h3>
+            <div className="space-y-2 text-sm">
+              <p><span className="text-[var(--color-muted-foreground)]">Created:</span> {formatDate(mission.created_at)}</p>
+              {mission.started_at && <p><span className="text-[var(--color-muted-foreground)]">Started:</span> {formatDate(mission.started_at)}</p>}
+              {mission.completed_at && <p><span className="text-[var(--color-muted-foreground)]">Completed:</span> {formatDate(mission.completed_at)}</p>}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeTab === "console" && (
+        <div className="rounded-xl border border-[var(--color-border)] bg-[#0D0D12] p-4 font-mono text-sm h-96 overflow-y-auto">
+          {logs.length === 0 ? (
+            <div className="text-[var(--color-muted-foreground)]">
+              <p className="text-[var(--color-primary)]">$ phantomstrike mission run --id {id}</p>
+              <p className="mt-2 text-emerald-400">Waiting for agent output...</p>
+            </div>
+          ) : (
+            <div className="space-y-1">
+              {logs.map((log) => (
+                <div key={log.id} className={cn("flex gap-3", getLogColor(log.type))}>
+                  <span className="shrink-0 text-zinc-600">{log.timestamp.toLocaleTimeString()}</span>
+                  <span className="shrink-0 w-16 text-xs uppercase">[{log.agent}]</span>
+                  <span className="break-all">{log.message}</span>
+                </div>
+              ))}
+              <div ref={logsEndRef} />
+            </div>
+          )}
+        </div>
+      )}
+
+      {activeTab === "findings" && (
+        <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-card)]">
+          {vulns?.vulnerabilities?.length ? (
+            <div className="divide-y divide-[var(--color-border)]">
+              {vulns.vulnerabilities.map((v) => (
+                <div key={v.id} className="flex items-center justify-between px-5 py-3">
+                  <div>
+                    <p className="font-medium">{v.title}</p>
+                    <p className="text-xs text-[var(--color-muted-foreground)]">{v.target} · {v.found_by}</p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    {v.cvss_score && <span className="font-mono text-sm">{v.cvss_score}</span>}
+                    <span className={cn("rounded px-2 py-0.5 text-xs font-semibold uppercase", severityColor(v.severity))}>{v.severity}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="p-8 text-center text-sm text-[var(--color-muted-foreground)]">No findings yet</div>
+          )}
+        </div>
+      )}
+
+      {activeTab === "chain" && <AttackChainView missionId={id!} />}
+    </div>
+  );
+}
+
+function formatLogMessage(msg: { type: string; data?: Record<string, unknown> }): string {
+  switch (msg.type) {
+    case "thinking":
+      return msg.data?.thought as string || "Thinking...";
+    case "tool_start":
+      return `→ Running ${msg.data?.tool}...`;
+    case "tool_complete":
+      return `✓ ${msg.data?.tool} completed (${msg.data?.duration}ms)`;
+    case "tool_error":
+      return `✗ ${msg.data?.tool} failed: ${msg.data?.error}`;
+    case "vuln_found":
+      return `🐛 Found ${msg.data?.severity} vulnerability: ${msg.data?.title}`;
+    case "phase_change":
+      return `▶ Entering ${msg.data?.phase} phase`;
+    default:
+      return JSON.stringify(msg.data);
+  }
+}
+
+function getLogColor(type: LogEntry["type"]): string {
+  switch (type) {
+    case "thinking": return "text-zinc-400";
+    case "tool_start": return "text-blue-400";
+    case "tool_complete": return "text-emerald-400";
+    case "tool_error": return "text-[#FF3366]";
+    case "vuln_found": return "text-amber-400";
+    case "phase_change": return "text-[var(--color-primary)]";
+    default: return "text-zinc-500";
+  }
+}
+
+// Attack Chain View Component
+function AttackChainView({ missionId }: { missionId: string }) {
+  const { data, isLoading } = useQuery({
+    queryKey: ["attack-chain", missionId],
+    queryFn: () => api.get<{ nodes: ChainNode[]; edges: ChainEdge[] }>(`/missions/${missionId}/chain`),
+  });
+
+  if (isLoading) {
+    return <div className="text-[var(--color-muted-foreground)]">Loading attack chain...</div>;
+  }
+
+  const nodes = data?.nodes || [];
+  const edges = data?.edges || [];
+
+  if (nodes.length === 0) {
+    return (
+      <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-card)] p-12 text-center">
+        <GitBranch className="mx-auto h-12 w-12 opacity-30 text-[var(--color-muted-foreground)]" />
+        <p className="mt-4 text-[var(--color-muted-foreground)]">No attack chain data available yet</p>
+        <p className="text-xs text-[var(--color-muted-foreground)] mt-1">
+          The attack chain will be built as the mission progresses
+        </p>
+      </div>
+    );
+  }
+
+  // Build adjacency list
+  const nodeMap = new Map(nodes.map(n => [n.id, n]));
+  const children = new Map<string, string[]>();
+  edges.forEach(e => {
+    if (!children.has(e.source_id)) children.set(e.source_id, []);
+    children.get(e.source_id)!.push(e.target_id);
+  });
+
+  // Find root nodes
+  const targets = new Set(edges.map(e => e.target_id));
+  const roots = nodes.filter(n => !targets.has(n.id));
+
+  function renderNode(nodeId: string, depth: number = 0): JSX.Element {
+    const node = nodeMap.get(nodeId);
+    if (!node) return null!;
+
+    const nodeChildren = children.get(nodeId) || [];
+    const isVuln = node.node_type === "vulnerability";
+    const isTool = node.node_type === "tool";
+    const isTarget = node.node_type === "target";
+
+    return (
+      <div key={nodeId} className="relative">
+        <div
+          className={cn(
+            "flex items-center gap-3 p-3 rounded-lg border transition-all",
+            isVuln && "border-red-500/30 bg-red-500/5",
+            isTool && "border-blue-500/30 bg-blue-500/5",
+            isTarget && "border-emerald-500/30 bg-emerald-500/5",
+            !isVuln && !isTool && !isTarget && "border-[var(--color-border)] bg-[var(--color-card)]"
+          )}
+          style={{ marginLeft: `${depth * 24}px` }}
+        >
+          {/* Node Icon */}
+          <div className={cn(
+            "w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold",
+            isVuln && "bg-red-500/20 text-red-400",
+            isTool && "bg-blue-500/20 text-blue-400",
+            isTarget && "bg-emerald-500/20 text-emerald-400",
+            !isVuln && !isTool && !isTarget && "bg-[var(--color-muted)] text-[var(--color-muted-foreground)]"
+          )}>
+            {isVuln ? "⚠" : isTool ? "🔧" : isTarget ? "🎯" : "●"}
+          </div>
+
+          {/* Node Content */}
+          <div className="flex-1 min-w-0">
+            <p className="font-medium text-sm truncate">{node.label}</p>
+            <div className="flex items-center gap-2 text-xs text-[var(--color-muted-foreground)]">
+              <span className="uppercase">{node.node_type}</span>
+              {node.phase && <span>· {node.phase}</span>}
+              {node.severity && (
+                <span className={cn(
+                  "px-1.5 py-0.5 rounded text-xs font-semibold uppercase",
+                  node.severity === "critical" && "bg-red-500/20 text-red-400",
+                  node.severity === "high" && "bg-orange-500/20 text-orange-400",
+                  node.severity === "medium" && "bg-yellow-500/20 text-yellow-400",
+                  node.severity === "low" && "bg-blue-500/20 text-blue-400"
+                )}>
+                  {node.severity}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Render Children */}
+        {nodeChildren.length > 0 && (
+          <div className="mt-2 relative">
+            {/* Connection Line */}
+            <div className="absolute left-4 top-0 bottom-4 w-px bg-[var(--color-border)]" />
+            <div className="space-y-2 pt-2">
+              {nodeChildren.map(childId => renderNode(childId, depth + 1))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-card)] p-6">
+      <h3 className="text-lg font-semibold mb-4">Attack Chain</h3>
+      <div className="space-y-3 overflow-x-auto">
+        {roots.map(root => renderNode(root.id))}
+      </div>
+
+      {/* Legend */}
+      <div className="mt-6 pt-4 border-t border-[var(--color-border)] flex flex-wrap gap-4 text-xs">
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 rounded bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs">🎯</div>
+          <span className="text-[var(--color-muted-foreground)]">Target</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 rounded bg-blue-500/20 text-blue-400 flex items-center justify-center text-xs">🔧</div>
+          <span className="text-[var(--color-muted-foreground)]">Tool</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 rounded bg-red-500/20 text-red-400 flex items-center justify-center text-xs">⚠</div>
+          <span className="text-[var(--color-muted-foreground)]">Vulnerability</span>
+        </div>
+      </div>
+    </div>
+  );
+}

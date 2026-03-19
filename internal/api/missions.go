@@ -1,0 +1,388 @@
+package api
+
+import (
+	"context"
+	"log/slog"
+	"net/http"
+	"strconv"
+	"time"
+
+	"github.com/google/uuid"
+
+	"github.com/ersinkoc/phantomstrike/internal/agent"
+	"github.com/ersinkoc/phantomstrike/internal/auth"
+)
+
+type missionRequest struct {
+	Name        string   `json:"name"`
+	Description string   `json:"description"`
+	Mode        string   `json:"mode"`
+	Depth       string   `json:"depth"`
+	Target      any      `json:"target"`
+	Config      any      `json:"config"`
+	Phases      []string `json:"phases"`
+}
+
+type missionResponse struct {
+	ID           uuid.UUID  `json:"id"`
+	Name         string     `json:"name"`
+	Description  string     `json:"description,omitempty"`
+	Status       string     `json:"status"`
+	Mode         string     `json:"mode"`
+	Depth        string     `json:"depth"`
+	Target       any        `json:"target"`
+	Config       any        `json:"config,omitempty"`
+	Phases       []string   `json:"phases,omitempty"`
+	CurrentPhase *string    `json:"current_phase,omitempty"`
+	Progress     int        `json:"progress"`
+	StartedAt    *time.Time `json:"started_at,omitempty"`
+	CompletedAt  *time.Time `json:"completed_at,omitempty"`
+	CreatedAt    time.Time  `json:"created_at"`
+	UpdatedAt    time.Time  `json:"updated_at"`
+}
+
+func (h *Handler) handleListMissions(w http.ResponseWriter, r *http.Request) {
+	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
+	if limit <= 0 || limit > 100 {
+		limit = 20
+	}
+	offset, _ := strconv.Atoi(r.URL.Query().Get("offset"))
+
+	rows, err := h.db.Pool.Query(r.Context(),
+		`SELECT id, name, description, status, mode, depth, target, progress, current_phase, started_at, completed_at, created_at, updated_at
+		 FROM missions ORDER BY created_at DESC LIMIT $1 OFFSET $2`, limit, offset)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to list missions")
+		return
+	}
+	defer rows.Close()
+
+	var missions []missionResponse
+	for rows.Next() {
+		var m missionResponse
+		if err := rows.Scan(&m.ID, &m.Name, &m.Description, &m.Status, &m.Mode, &m.Depth, &m.Target, &m.Progress, &m.CurrentPhase, &m.StartedAt, &m.CompletedAt, &m.CreatedAt, &m.UpdatedAt); err != nil {
+			continue
+		}
+		missions = append(missions, m)
+	}
+
+	if missions == nil {
+		missions = []missionResponse{}
+	}
+
+	writeJSON(w, http.StatusOK, map[string]any{
+		"missions": missions,
+		"total":    len(missions),
+	})
+}
+
+func (h *Handler) handleCreateMission(w http.ResponseWriter, r *http.Request) {
+	claims := auth.GetClaims(r.Context())
+	if claims == nil {
+		writeError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+	var req missionRequest
+	if err := decodeJSON(r, &req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	if req.Name == "" {
+		writeError(w, http.StatusBadRequest, "name is required")
+		return
+	}
+	if req.Target == nil {
+		writeError(w, http.StatusBadRequest, "target is required")
+		return
+	}
+	if req.Mode == "" {
+		req.Mode = "autonomous"
+	}
+	if req.Depth == "" {
+		req.Depth = "standard"
+	}
+
+	var id uuid.UUID
+	err := h.db.Pool.QueryRow(r.Context(),
+		`INSERT INTO missions (name, description, mode, depth, target, config, phases, created_by)
+		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
+		req.Name, req.Description, req.Mode, req.Depth, req.Target, req.Config, req.Phases, claims.UserID,
+	).Scan(&id)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to create mission")
+		return
+	}
+
+	writeJSON(w, http.StatusCreated, map[string]any{
+		"id":     id,
+		"status": "created",
+	})
+}
+
+func (h *Handler) handleGetMission(w http.ResponseWriter, r *http.Request) {
+	id, err := parseUUID(r.PathValue("id"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid mission ID")
+		return
+	}
+
+	var m missionResponse
+	err = h.db.Pool.QueryRow(r.Context(),
+		`SELECT id, name, description, status, mode, depth, target, config, phases, progress, current_phase, started_at, completed_at, created_at, updated_at
+		 FROM missions WHERE id = $1`, id,
+	).Scan(&m.ID, &m.Name, &m.Description, &m.Status, &m.Mode, &m.Depth, &m.Target, &m.Config, &m.Phases, &m.Progress, &m.CurrentPhase, &m.StartedAt, &m.CompletedAt, &m.CreatedAt, &m.UpdatedAt)
+	if err != nil {
+		writeError(w, http.StatusNotFound, "mission not found")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, m)
+}
+
+func (h *Handler) handleUpdateMission(w http.ResponseWriter, r *http.Request) {
+	id, err := parseUUID(r.PathValue("id"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid mission ID")
+		return
+	}
+
+	var req missionRequest
+	if err := decodeJSON(r, &req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	_, err = h.db.Pool.Exec(r.Context(),
+		`UPDATE missions SET name = COALESCE(NULLIF($1, ''), name), description = COALESCE(NULLIF($2, ''), description), updated_at = NOW() WHERE id = $3`,
+		req.Name, req.Description, id,
+	)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "update failed")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]string{"status": "updated"})
+}
+
+func (h *Handler) handleDeleteMission(w http.ResponseWriter, r *http.Request) {
+	id, err := parseUUID(r.PathValue("id"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid mission ID")
+		return
+	}
+
+	_, err = h.db.Pool.Exec(r.Context(), "DELETE FROM missions WHERE id = $1", id)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "delete failed")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]string{"status": "deleted"})
+}
+
+func (h *Handler) handleStartMission(w http.ResponseWriter, r *http.Request) {
+	claims := auth.GetClaims(r.Context())
+	if claims == nil {
+		writeError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+	id, err := parseUUID(r.PathValue("id"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid mission ID")
+		return
+	}
+
+	// Get mission details first
+	var mission struct {
+		Target any      `json:"target"`
+		Phases []string `json:"phases"`
+		Mode   string   `json:"mode"`
+	}
+	err = h.db.Pool.QueryRow(r.Context(),
+		`SELECT target, phases, mode FROM missions WHERE id = $1`, id,
+	).Scan(&mission.Target, &mission.Phases, &mission.Mode)
+	if err != nil {
+		writeError(w, http.StatusNotFound, "mission not found")
+		return
+	}
+
+	now := time.Now()
+	_, err = h.db.Pool.Exec(r.Context(),
+		`UPDATE missions SET status = 'running', started_at = $1, updated_at = $1 WHERE id = $2 AND status = 'created'`,
+		now, id,
+	)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to start mission")
+		return
+	}
+
+	// Trigger agent swarm to begin mission execution asynchronously
+	go func() {
+		ctx := context.Background()
+
+		// Create event channel for this mission
+		events := make(chan agent.SwarmEvent, 100)
+
+		// Start event broadcaster
+		go func() {
+			for event := range events {
+				// Broadcast to WebSocket clients
+				h.hub.Broadcast(id, WSEvent{
+					Type: event.Type,
+					Data: map[string]any{
+						"agent": event.Agent,
+						"data":  event.Data,
+					},
+				})
+			}
+		}()
+
+		// Convert phases
+		var phases []agent.Phase
+		for _, p := range mission.Phases {
+			phases = append(phases, agent.Phase(p))
+		}
+		if len(phases) == 0 {
+			phases = []agent.Phase{agent.PhaseRecon, agent.PhaseScanning, agent.PhaseExploit, agent.PhaseReporting}
+		}
+
+		// Run the mission
+		if err := h.swarm.RunMission(ctx, id, mission.Target, phases, events); err != nil {
+			slog.Error("mission failed", "mission_id", id, "error", err)
+			// Update mission status to failed
+			h.db.Pool.Exec(ctx,
+				`UPDATE missions SET status = 'failed', updated_at = NOW() WHERE id = $1`,
+				id,
+			)
+		} else {
+			// Update mission status to completed
+			h.db.Pool.Exec(ctx,
+				`UPDATE missions SET status = 'completed', completed_at = NOW(), updated_at = NOW() WHERE id = $1`,
+				id,
+			)
+		}
+
+		close(events)
+	}()
+
+	writeJSON(w, http.StatusOK, map[string]string{"status": "started"})
+}
+
+func (h *Handler) handlePauseMission(w http.ResponseWriter, r *http.Request) {
+	id, err := parseUUID(r.PathValue("id"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid mission ID")
+		return
+	}
+
+	_, _ = h.db.Pool.Exec(r.Context(),
+		`UPDATE missions SET status = 'paused', updated_at = NOW() WHERE id = $1`, id)
+
+	writeJSON(w, http.StatusOK, map[string]string{"status": "paused"})
+}
+
+func (h *Handler) handleCancelMission(w http.ResponseWriter, r *http.Request) {
+	id, err := parseUUID(r.PathValue("id"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid mission ID")
+		return
+	}
+
+	_, _ = h.db.Pool.Exec(r.Context(),
+		`UPDATE missions SET status = 'cancelled', updated_at = NOW() WHERE id = $1`, id)
+
+	writeJSON(w, http.StatusOK, map[string]string{"status": "cancelled"})
+}
+
+func (h *Handler) handleGetAttackChain(w http.ResponseWriter, r *http.Request) {
+	id, err := parseUUID(r.PathValue("id"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid mission ID")
+		return
+	}
+
+	// Get nodes
+	nodeRows, err := h.db.Pool.Query(r.Context(),
+		`SELECT id, node_type, label, data, severity, phase FROM attack_chain_nodes WHERE mission_id = $1`, id)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to get chain")
+		return
+	}
+	defer nodeRows.Close()
+
+	var nodes []map[string]any
+	for nodeRows.Next() {
+		var nID uuid.UUID
+		var nodeType, label string
+		var data any
+		var severity, phase *string
+		if err := nodeRows.Scan(&nID, &nodeType, &label, &data, &severity, &phase); err != nil {
+			continue
+		}
+		nodes = append(nodes, map[string]any{
+			"id": nID, "type": nodeType, "label": label, "data": data, "severity": severity, "phase": phase,
+		})
+	}
+
+	// Get edges
+	edgeRows, err := h.db.Pool.Query(r.Context(),
+		`SELECT id, source_id, target_id, edge_type, label FROM attack_chain_edges WHERE mission_id = $1`, id)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to get edges")
+		return
+	}
+	defer edgeRows.Close()
+
+	var edges []map[string]any
+	for edgeRows.Next() {
+		var eID, srcID, tgtID uuid.UUID
+		var edgeType string
+		var label *string
+		if err := edgeRows.Scan(&eID, &srcID, &tgtID, &edgeType, &label); err != nil {
+			continue
+		}
+		edges = append(edges, map[string]any{
+			"id": eID, "source": srcID, "target": tgtID, "type": edgeType, "label": label,
+		})
+	}
+
+	writeJSON(w, http.StatusOK, map[string]any{"nodes": nodes, "edges": edges})
+}
+
+func (h *Handler) handleGetMissionVulns(w http.ResponseWriter, r *http.Request) {
+	id, err := parseUUID(r.PathValue("id"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid mission ID")
+		return
+	}
+
+	rows, err := h.db.Pool.Query(r.Context(),
+		`SELECT id, title, severity, cvss_score, status, target, found_by, created_at
+		 FROM vulnerabilities WHERE mission_id = $1 ORDER BY created_at DESC`, id)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "query failed")
+		return
+	}
+	defer rows.Close()
+
+	var vulns []map[string]any
+	for rows.Next() {
+		var vID uuid.UUID
+		var title, severity, status string
+		var cvssScore *float64
+		var target, foundBy *string
+		var createdAt time.Time
+		if err := rows.Scan(&vID, &title, &severity, &cvssScore, &status, &target, &foundBy, &createdAt); err != nil {
+			continue
+		}
+		vulns = append(vulns, map[string]any{
+			"id": vID, "title": title, "severity": severity, "cvss_score": cvssScore,
+			"status": status, "target": target, "found_by": foundBy, "created_at": createdAt,
+		})
+	}
+
+	writeJSON(w, http.StatusOK, map[string]any{"vulnerabilities": vulns})
+}

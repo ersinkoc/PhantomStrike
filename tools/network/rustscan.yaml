@@ -1,0 +1,85 @@
+name: "rustscan"
+version: "1.0.0"
+category: "network/scanning"
+tags: ["port-scan", "fast-scan", "rust", "network"]
+command: "rustscan"
+args: []
+docker:
+  image: "phantomstrike/rustscan:latest"
+  network: "isolated"
+  memory_limit: "512m"
+  cpu_limit: "1.5"
+  timeout: "300s"
+short_description: "Modern fast port scanner written in Rust, designed to quickly find open ports then hand off to Nmap."
+description: |
+  RustScan is a modern port scanner written in Rust that combines speed with
+  nmap's feature set. It rapidly identifies open ports using asynchronous
+  networking and then automatically pipes results to nmap for detailed service
+  detection. RustScan can scan all 65535 ports in under 10 seconds on a fast
+  network. It features adaptive learning to optimize scan speed based on
+  network conditions, built-in scripting engine support, and a user-friendly
+  interface. It is ideal for CTFs and penetration testing where speed matters.
+notes: |
+  - RustScan is designed as a port discovery tool that feeds results to nmap.
+  - Default batch size is 4500; increase for faster scans on reliable networks, decrease for stealth.
+  - The --ulimit flag may need adjustment on Linux systems (default 5000).
+  - Timeout values are in milliseconds; increase on high-latency networks.
+  - RustScan automatically calls nmap on discovered ports unless --no-nmap is specified.
+  - For very large scans, use --batch-size to control connection concurrency.
+parameters:
+  - name: "target"
+    type: "string"
+    description: "Target IP address, hostname, or CIDR range to scan. Examples: 192.168.1.1, scanme.nmap.org, 10.0.0.0/24."
+    required: true
+    flag: "-a"
+  - name: "ports"
+    type: "string"
+    description: "Specific ports to scan. Ranges (1-1000) or comma-separated (22,80,443). Omit to scan all 65535 ports."
+    required: false
+    flag: "-p"
+  - name: "batch_size"
+    type: "integer"
+    description: "Number of ports to scan concurrently per batch. Default: 4500. Lower for stealth, higher for speed."
+    required: false
+    flag: "-b"
+  - name: "timeout"
+    type: "integer"
+    description: "Timeout in milliseconds for each port connection attempt. Default: 1500. Increase for high-latency targets."
+    required: false
+    flag: "-t"
+output:
+  format: "text"
+  success_patterns:
+    - "Open"
+    - "open"
+    - "Nmap scan report"
+  failure_patterns:
+    - "Could not resolve hostname"
+    - "error"
+    - "Timed out"
+  severity_indicators:
+    critical:
+      - "23/open"
+      - "3389/open"
+      - "5900/open"
+    high:
+      - "21/open"
+      - "445/open"
+      - "1433/open"
+      - "3306/open"
+    medium:
+      - "25/open"
+      - "161/open"
+      - "8080/open"
+    low:
+      - "80/open"
+      - "443/open"
+chain_suggestions:
+  before:
+    - "subfinder"
+    - "amass"
+  after:
+    - "nmap"
+    - "nuclei"
+    - "httpx"
+enabled: true

@@ -1,0 +1,1057 @@
+openapi: 3.0.3
+info:
+  title: PhantomStrike API
+  description: AI-Native Autonomous Security Testing Platform API
+  version: 1.0.0
+  contact:
+    name: PhantomStrike
+    url: https://github.com/ersinkoc/phantomstrike
+
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Local development server
+
+security:
+  - BearerAuth: []
+
+paths:
+  # Health
+  /health:
+    get:
+      summary: Health check
+      description: Returns the health status of the API
+      security: []
+      responses:
+        "200":
+          description: API is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+
+  # Authentication
+  /auth/login:
+    post:
+      summary: Login
+      description: Authenticate a user and return JWT tokens
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  format: password
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                  refresh_token:
+                    type: string
+                  user:
+                    $ref: "#/components/schemas/User"
+        "401":
+          description: Invalid credentials
+
+  /auth/register:
+    post:
+      summary: Register
+      description: Register a new user account
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - name
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                name:
+                  type: string
+                password:
+                  type: string
+                  format: password
+                  minLength: 8
+      responses:
+        "201":
+          description: Registration successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                  refresh_token:
+                    type: string
+                  user:
+                    $ref: "#/components/schemas/User"
+        "400":
+          description: Invalid input
+        "409":
+          description: Email already exists
+
+  /auth/me:
+    get:
+      summary: Get current user
+      description: Returns the currently authenticated user's profile
+      responses:
+        "200":
+          description: User profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /auth/refresh:
+    post:
+      summary: Refresh token
+      description: Get a new access token using refresh token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - refresh_token
+              properties:
+                refresh_token:
+                  type: string
+      responses:
+        "200":
+          description: New tokens issued
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                  refresh_token:
+                    type: string
+
+  # Missions
+  /missions:
+    get:
+      summary: List missions
+      description: Returns a list of missions
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        "200":
+          description: List of missions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  missions:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Mission"
+
+    post:
+      summary: Create mission
+      description: Create a new security testing mission
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MissionCreate"
+      responses:
+        "201":
+          description: Mission created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Mission"
+
+  /missions/{id}:
+    get:
+      summary: Get mission
+      description: Get mission details by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Mission details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Mission"
+        "404":
+          description: Mission not found
+
+    put:
+      summary: Update mission
+      description: Update mission details
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MissionUpdate"
+      responses:
+        "200":
+          description: Mission updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Mission"
+
+    delete:
+      summary: Delete mission
+      description: Delete a mission
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Mission deleted
+
+  /missions/{id}/start:
+    post:
+      summary: Start mission
+      description: Start a mission execution
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Mission started
+        "400":
+          description: Mission cannot be started
+
+  /missions/{id}/pause:
+    post:
+      summary: Pause mission
+      description: Pause a running mission
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Mission paused
+
+  /missions/{id}/cancel:
+    post:
+      summary: Cancel mission
+      description: Cancel a mission
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Mission cancelled
+
+  /missions/{id}/chain:
+    get:
+      summary: Get attack chain
+      description: Get the attack chain graph for a mission
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Attack chain data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  nodes:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ChainNode"
+                  edges:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ChainEdge"
+
+  /missions/{id}/vulns:
+    get:
+      summary: Get mission vulnerabilities
+      description: Get vulnerabilities found in a mission
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Mission vulnerabilities
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  vulnerabilities:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Vulnerability"
+
+  # Vulnerabilities
+  /vulnerabilities:
+    get:
+      summary: List vulnerabilities
+      description: Returns a list of all vulnerabilities
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+        - name: severity
+          in: query
+          schema:
+            type: string
+            enum: [critical, high, medium, low, info]
+      responses:
+        "200":
+          description: List of vulnerabilities
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  vulnerabilities:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Vulnerability"
+
+    post:
+      summary: Create vulnerability
+      description: Manually create a vulnerability finding
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VulnerabilityCreate"
+      responses:
+        "201":
+          description: Vulnerability created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Vulnerability"
+
+  /vulnerabilities/{id}:
+    get:
+      summary: Get vulnerability
+      description: Get vulnerability details
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Vulnerability details
+
+    put:
+      summary: Update vulnerability
+      description: Update vulnerability details
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VulnerabilityUpdate"
+      responses:
+        "200":
+          description: Vulnerability updated
+
+    delete:
+      summary: Delete vulnerability
+      description: Delete a vulnerability
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Vulnerability deleted
+
+  /vulnerabilities/stats:
+    get:
+      summary: Vulnerability statistics
+      description: Get vulnerability count statistics
+      responses:
+        "200":
+          description: Statistics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VulnStats"
+
+  # Tools
+  /tools:
+    get:
+      summary: List tools
+      description: Returns available security tools
+      responses:
+        "200":
+          description: List of tools
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tools:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Tool"
+
+  /tools/{name}:
+    get:
+      summary: Get tool
+      description: Get tool details
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Tool details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Tool"
+
+  /tools/{name}/toggle:
+    put:
+      summary: Toggle tool
+      description: Enable or disable a tool
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Tool toggled
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  enabled:
+                    type: boolean
+
+  /tools/categories:
+    get:
+      summary: Tool categories
+      description: Returns tool category list
+      responses:
+        "200":
+          description: Categories
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  categories:
+                    type: array
+                    items:
+                      type: string
+
+  # Reports
+  /reports:
+    get:
+      summary: List reports
+      description: Returns generated reports
+      responses:
+        "200":
+          description: List of reports
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  reports:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Report"
+
+    post:
+      summary: Create report
+      description: Generate a new report
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReportCreate"
+      responses:
+        "201":
+          description: Report created
+
+  /reports/{id}/download:
+    get:
+      summary: Download report
+      description: Download a generated report
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Report file
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+
+  # Settings
+  /settings:
+    get:
+      summary: Get settings
+      description: Returns platform configuration
+      responses:
+        "200":
+          description: Settings
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  providers:
+                    type: object
+                  agent:
+                    type: object
+                  mcp:
+                    type: object
+
+    put:
+      summary: Update settings
+      description: Update platform configuration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: Settings updated
+
+  # Knowledge Base
+  /knowledge:
+    get:
+      summary: List knowledge items
+      description: Returns knowledge base entries
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Knowledge items
+
+  /knowledge/search:
+    post:
+      summary: Search knowledge
+      description: Search the knowledge base
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                query:
+                  type: string
+      responses:
+        "200":
+          description: Search results
+
+  # Scheduler
+  /scheduler:
+    get:
+      summary: List scheduled jobs
+      description: Returns scheduled scan jobs
+      responses:
+        "200":
+          description: Scheduled jobs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  jobs:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ScheduledJob"
+
+  /scheduler/{id}/trigger:
+    post:
+      summary: Trigger job
+      description: Manually trigger a scheduled job
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Job triggered
+
+  /scheduler/{id}:
+    delete:
+      summary: Delete scheduled job
+      description: Delete a scheduled job
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Job deleted
+
+  # Roles & Skills
+  /roles:
+    get:
+      summary: List roles
+      description: Returns security testing roles
+      responses:
+        "200":
+          description: Roles
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  roles:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Role"
+
+  /skills:
+    get:
+      summary: List skills
+      description: Returns security testing skills
+      responses:
+        "200":
+          description: Skills
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  skills:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Skill"
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+        role:
+          type: string
+        avatar_url:
+          type: string
+
+    Mission:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+          enum: [created, planning, recon, scanning, exploitation, post_exploit, completed, cancelled, failed, paused]
+        mode:
+          type: string
+          enum: [autonomous, guided, manual]
+        depth:
+          type: string
+          enum: [quick, standard, deep, exhaustive]
+        target:
+          type: object
+        phases:
+          type: array
+          items:
+            type: string
+        current_phase:
+          type: string
+        progress:
+          type: integer
+          minimum: 0
+          maximum: 100
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    MissionCreate:
+      type: object
+      required:
+        - name
+        - target
+        - mode
+        - depth
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        target:
+          type: object
+        mode:
+          type: string
+          enum: [autonomous, guided, manual]
+        depth:
+          type: string
+          enum: [quick, standard, deep, exhaustive]
+
+    MissionUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+
+    Vulnerability:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        mission_id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        description:
+          type: string
+        severity:
+          type: string
+          enum: [critical, high, medium, low, info]
+        cvss_score:
+          type: number
+        cvss_vector:
+          type: string
+        status:
+          type: string
+        target:
+          type: string
+        affected_component:
+          type: string
+        evidence:
+          type: string
+        remediation:
+          type: string
+        cve_ids:
+          type: array
+          items:
+            type: string
+        cwe_id:
+          type: string
+        found_by:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
+    VulnerabilityCreate:
+      type: object
+      required:
+        - title
+        - severity
+      properties:
+        mission_id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        severity:
+          type: string
+          enum: [critical, high, medium, low, info]
+        target:
+          type: string
+
+    VulnerabilityUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        severity:
+          type: string
+        status:
+          type: string
+        remediation:
+          type: string
+
+    VulnStats:
+      type: object
+      properties:
+        total:
+          type: integer
+        critical:
+          type: integer
+        high:
+          type: integer
+        medium:
+          type: integer
+        low:
+          type: integer
+        info:
+          type: integer
+
+    Tool:
+      type: object
+      properties:
+        name:
+          type: string
+        category:
+          type: string
+        enabled:
+          type: boolean
+        source:
+          type: string
+        avg_exec_time:
+          type: number
+        success_rate:
+          type: number
+
+    Report:
+      type: object
+      properties:
+        id:
+          type: string
+        mission_id:
+          type: string
+        format:
+          type: string
+          enum: [json, md, html, pdf]
+        title:
+          type: string
+        status:
+          type: string
+          enum: [generating, ready, failed]
+        file_path:
+          type: string
+        file_size:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+
+    ReportCreate:
+      type: object
+      required:
+        - mission_id
+        - format
+      properties:
+        mission_id:
+          type: string
+          format: uuid
+        format:
+          type: string
+          enum: [json, md, html, pdf]
+        title:
+          type: string
+
+    ChainNode:
+      type: object
+      properties:
+        id:
+          type: string
+        node_type:
+          type: string
+          enum: [target, tool, vulnerability, credential, pivot]
+        label:
+          type: string
+        data:
+          type: object
+        severity:
+          type: string
+        phase:
+          type: string
+
+    ChainEdge:
+      type: object
+      properties:
+        id:
+          type: string
+        source_id:
+          type: string
+        target_id:
+          type: string
+        edge_type:
+          type: string
+          enum: [discovered, exploited, pivoted, escalated]
+        label:
+          type: string
+
+    ScheduledJob:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        cron_expr:
+          type: string
+        enabled:
+          type: boolean
+        run_count:
+          type: integer
+        last_run:
+          type: string
+          format: date-time
+        next_run:
+          type: string
+          format: date-time
+
+    Role:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        phases:
+          type: array
+          items:
+            type: string
+        skills:
+          type: array
+          items:
+            type: string
+        icon:
+          type: string
+
+    Skill:
+      type: object
+      properties:
+        name:
+          type: string
+        category:
+          type: string
+        description:
+          type: string
+        content:
+          type: string

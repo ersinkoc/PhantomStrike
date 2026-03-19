@@ -1,0 +1,92 @@
+name: "theHarvester"
+version: "1.0.0"
+category: "recon/osint"
+tags: ["email-harvesting", "subdomain-enumeration", "osint", "reconnaissance", "information-gathering"]
+command: "theHarvester"
+args: []
+docker:
+  image: "phantomstrike/theharvester:latest"
+  network: "isolated"
+  memory_limit: "512m"
+  cpu_limit: "1.0"
+  timeout: "300s"
+short_description: "OSINT tool for gathering emails, subdomains, IPs, and URLs from multiple public data sources."
+description: |
+  theHarvester is an OSINT (Open Source Intelligence) tool designed for gathering
+  email addresses, subdomains, hosts, employee names, open ports, and banners
+  from different public sources. It supports numerous data sources including
+  search engines (Google, Bing, DuckDuckGo, Yahoo), certificate transparency
+  logs (Certspotter, Crtsh), DNS datasets (DNSdumpster, ThreatCrowd), social
+  networks (LinkedIn), code repositories (GitHub), threat intelligence platforms
+  (Shodan, Censys, VirusTotal), and more. theHarvester is commonly used in the
+  early stages of penetration testing for passive reconnaissance and attack
+  surface mapping.
+notes: |
+  - Use -b to specify data source(s). Use -b all for all sources (slow but comprehensive).
+  - Common sources: google, bing, linkedin, crtsh, dnsdumpster, shodan, virustotal.
+  - Some sources require API keys configured in /etc/theHarvester/api-keys.yaml.
+  - The -l flag limits the number of search results (default: 500).
+  - Use -f to export results to HTML and XML files.
+  - DNS brute-forcing can be enabled with -c for additional subdomain discovery.
+  - Combine with subfinder and amass for maximum subdomain coverage.
+  - Rate limiting by search engines may affect results; space out large scans.
+parameters:
+  - name: "domain"
+    type: "string"
+    description: "Target domain to harvest information from. Example: example.com"
+    required: true
+    flag: "-d"
+  - name: "source"
+    type: "string"
+    description: "Data source to query. Options: google, bing, linkedin, crtsh, dnsdumpster, shodan, virustotal, all. Use -b flag."
+    required: true
+    flag: "-b"
+  - name: "limit"
+    type: "integer"
+    description: "Limit the number of search results to process. Default: 500. Higher values take longer but find more results."
+    required: false
+    flag: "-l"
+  - name: "output"
+    type: "string"
+    description: "Base filename for output. Generates both HTML and XML reports. Example: results (creates results.html and results.xml)"
+    required: false
+    flag: "-f"
+output:
+  format: "text"
+  success_patterns:
+    - "Emails found"
+    - "Hosts found"
+    - "IPs found"
+    - "\\[\\*\\]"
+  failure_patterns:
+    - "Error"
+    - "No results"
+    - "API key"
+    - "rate limit"
+  severity_indicators:
+    critical:
+      - "admin@"
+      - "root@"
+      - "security@"
+    high:
+      - "internal"
+      - "vpn"
+      - "staging"
+      - "dev"
+    medium:
+      - "@"
+      - "employee"
+      - "corp"
+    low:
+      - "info@"
+      - "support@"
+      - "www"
+chain_suggestions:
+  before: []
+  after:
+    - "subfinder"
+    - "amass"
+    - "httpx"
+    - "nmap"
+    - "nuclei"
+enabled: true

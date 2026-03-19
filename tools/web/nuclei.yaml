@@ -1,0 +1,104 @@
+name: "nuclei"
+version: "1.0.0"
+category: "web/vulnerability-scanning"
+tags: ["vulnerability-scanner", "template-based", "cve", "web-app", "automation"]
+command: "nuclei"
+args: ["-silent", "-nc"]
+docker:
+  image: "phantomstrike/nuclei:latest"
+  network: "isolated"
+  memory_limit: "1024m"
+  cpu_limit: "2.0"
+  timeout: "900s"
+short_description: "Fast and customizable template-based vulnerability scanner powered by YAML templates."
+description: |
+  Nuclei is a fast, template-based vulnerability scanner built by ProjectDiscovery.
+  It sends requests to targets based on predefined YAML templates, enabling precise
+  and rapid scanning across a large number of hosts. Nuclei templates cover a wide
+  range of vulnerability classes including CVEs, misconfigurations, exposed panels,
+  default credentials, takeovers, and technology detection. The community-maintained
+  template repository (nuclei-templates) contains thousands of detection templates.
+  Nuclei supports HTTP, DNS, TCP, SSL, and file protocols, making it versatile for
+  network and application-level vulnerability detection.
+notes: |
+  - Update templates regularly with 'nuclei -update-templates' for latest CVE coverage.
+  - Use -severity to focus on critical/high findings and reduce noise in large scans.
+  - Template tags allow targeted scanning (e.g., -tags cve,rce,sqli,xss).
+  - Rate limiting (-rl) is important for production targets to avoid disruption.
+  - Use -header to add authentication tokens for scanning authenticated endpoints.
+  - Combine with httpx output for efficient scanning of large subdomain lists.
+  - Custom templates can be written in YAML for organization-specific checks.
+  - The -interactsh-url flag enables OOB (out-of-band) testing for blind vulnerabilities.
+parameters:
+  - name: "target"
+    type: "string"
+    description: "Target URL, host, or file containing list of targets (-l for file). Example: https://target.com or targets.txt"
+    required: true
+    flag: "-u"
+  - name: "templates"
+    type: "string"
+    description: "Template or template directory to use. Path to custom template or category. Example: cves/ or /path/to/custom-template.yaml"
+    required: false
+    flag: "-t"
+  - name: "severity"
+    type: "string"
+    description: "Filter templates by severity level. Comma-separated: critical,high,medium,low,info. Example: critical,high"
+    required: false
+    flag: "-severity"
+  - name: "tags"
+    type: "string"
+    description: "Filter templates by tags. Examples: cve,rce,sqli,xss,lfi,ssrf,redirect,exposure,misconfig,takeover"
+    required: false
+    flag: "-tags"
+  - name: "rate_limit"
+    type: "integer"
+    description: "Maximum requests per second. Default: 150. Lower for production targets. Recommended: 50-100 for external targets."
+    required: false
+    flag: "-rl"
+  - name: "output"
+    type: "string"
+    description: "File path to write output results. Supports -json flag for JSON output format."
+    required: false
+    flag: "-o"
+output:
+  format: "text"
+  success_patterns:
+    - "\\[critical\\]"
+    - "\\[high\\]"
+    - "\\[medium\\]"
+    - "\\[low\\]"
+    - "\\[info\\]"
+  failure_patterns:
+    - "Could not connect"
+    - "context deadline exceeded"
+    - "no templates were found"
+    - "ERR"
+  severity_indicators:
+    critical:
+      - "[critical]"
+      - "rce"
+      - "CVE-"
+    high:
+      - "[high]"
+      - "sqli"
+      - "ssrf"
+      - "lfi"
+    medium:
+      - "[medium]"
+      - "xss"
+      - "redirect"
+    low:
+      - "[low]"
+      - "[info]"
+      - "exposure"
+chain_suggestions:
+  before:
+    - "httpx"
+    - "subfinder"
+    - "nmap"
+    - "whatweb"
+  after:
+    - "sqlmap"
+    - "dalfox"
+    - "metasploit"
+enabled: true

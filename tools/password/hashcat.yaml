@@ -1,0 +1,97 @@
+name: "hashcat"
+version: "1.0.0"
+category: "password/cracking"
+tags: ["password-cracking", "hash-cracking", "gpu", "offline-attack", "credential-recovery"]
+command: "hashcat"
+args: ["--force", "--potfile-disable"]
+docker:
+  image: "phantomstrike/hashcat:latest"
+  network: "isolated"
+  memory_limit: "2048m"
+  cpu_limit: "4.0"
+  timeout: "3600s"
+short_description: "World's fastest and most advanced GPU-accelerated password recovery tool supporting 350+ hash types."
+description: |
+  Hashcat is the world's fastest and most advanced password recovery utility,
+  supporting over 350 hash types including MD5, SHA-1, SHA-256, SHA-512, bcrypt,
+  scrypt, NTLM, Kerberos, WPA/WPA2, and many application-specific formats.
+  It leverages GPU acceleration (CUDA, OpenCL, Metal) to achieve billions of
+  password candidates per second. Hashcat supports multiple attack modes:
+  dictionary (straight), combination, brute-force (mask), hybrid (dictionary+mask),
+  and rule-based attacks. Rule-based attacks use transformation rules to mutate
+  wordlist entries, dramatically increasing coverage. Hashcat is essential for
+  offline password cracking after hash extraction from databases, SAM files,
+  or network captures.
+notes: |
+  - GPU acceleration requires appropriate drivers (NVIDIA CUDA, AMD OpenCL, Apple Metal).
+  - Use --force flag if running in a VM or container without GPU (CPU-only mode, much slower).
+  - Hash mode (-m) must match the hash type exactly; use hashcat --help or hashid to identify.
+  - Common modes: 0=MD5, 100=SHA1, 1000=NTLM, 1400=SHA256, 1800=SHA512crypt, 3200=bcrypt, 22000=WPA.
+  - Attack types: 0=Dictionary, 1=Combination, 3=Brute-force/Mask, 6=Hybrid Dict+Mask, 7=Hybrid Mask+Dict.
+  - Mask charsets: ?l=lowercase, ?u=uppercase, ?d=digits, ?s=special, ?a=all, ?b=binary.
+  - Rules files (e.g., best64.rule, d3ad0ne.rule) dramatically improve dictionary attack success.
+  - Use --increment for mask attacks to try shorter lengths before longer ones.
+  - Status can be checked with 's' key during cracking; estimated time with 'p' key.
+  - Cracked passwords are stored in hashcat.potfile; use --show to display cracked hashes.
+parameters:
+  - name: "hash_file"
+    type: "string"
+    description: "File containing hashes to crack, one per line. Or a single hash value directly."
+    required: true
+    flag: ""
+  - name: "mode"
+    type: "integer"
+    description: "Hash type mode number. Common: 0 (MD5), 100 (SHA1), 1000 (NTLM), 1400 (SHA256), 1800 (SHA512crypt), 3200 (bcrypt), 22000 (WPA)."
+    required: true
+    flag: "-m"
+  - name: "attack_type"
+    type: "integer"
+    description: "Attack mode: 0=Dictionary/Straight, 1=Combination, 3=Brute-force/Mask, 6=Hybrid Dict+Mask, 7=Hybrid Mask+Dict."
+    required: true
+    flag: "-a"
+  - name: "wordlist"
+    type: "string"
+    description: "Wordlist file for dictionary attacks. Common: /usr/share/wordlists/rockyou.txt. Or mask pattern for brute-force: ?a?a?a?a?a?a"
+    required: true
+    flag: ""
+  - name: "rules"
+    type: "string"
+    description: "Rules file for mutating wordlist entries. Common: best64.rule, d3ad0ne.rule, dive.rule, OneRuleToRuleThemAll.rule"
+    required: false
+    flag: "-r"
+output:
+  format: "text"
+  success_patterns:
+    - "Cracked"
+    - "All hashes found"
+    - "Status.*Cracked"
+    - ":"
+  failure_patterns:
+    - "Exhausted"
+    - "No hashes loaded"
+    - "Separator unmatched"
+    - "Token length exception"
+    - "Line-length exception"
+  severity_indicators:
+    critical:
+      - "Cracked"
+      - "password"
+      - "admin"
+      - "root"
+    high:
+      - "All hashes found"
+      - "Status.*Cracked"
+    medium:
+      - "Recovered"
+      - "Progress"
+    low:
+      - "Exhausted"
+      - "Status.*Running"
+chain_suggestions:
+  before:
+    - "nmap"
+    - "metasploit"
+  after:
+    - "hydra"
+    - "metasploit"
+enabled: true

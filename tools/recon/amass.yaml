@@ -1,0 +1,107 @@
+name: "amass"
+version: "1.0.0"
+category: "recon/subdomain"
+tags: ["subdomain-enumeration", "osint", "dns", "attack-surface", "reconnaissance"]
+command: "amass"
+args: []
+docker:
+  image: "phantomstrike/amass:latest"
+  network: "isolated"
+  memory_limit: "2048m"
+  cpu_limit: "2.0"
+  timeout: "1800s"
+short_description: "In-depth attack surface mapping and subdomain enumeration using OSINT, DNS, and active techniques."
+description: |
+  Amass by OWASP performs network mapping of attack surfaces and external asset
+  discovery using open-source information gathering and active reconnaissance
+  techniques. It supports passive enumeration via certificate transparency logs,
+  search engines, web archives, and API integrations with over 50 data sources.
+  Active enumeration includes DNS brute-forcing, zone transfers, NSEC walking,
+  and web scraping. Amass builds a graph database of discovered assets and their
+  relationships, enabling advanced attack surface analysis. It is one of the most
+  comprehensive tools for subdomain enumeration and is widely used in bug bounty
+  and penetration testing.
+notes: |
+  - Amass has two main subcommands: 'enum' for enumeration and 'intel' for OSINT.
+  - Passive mode (-passive) only queries third-party sources; no direct target interaction.
+  - Active mode includes DNS resolution and zone transfer attempts against the target.
+  - Brute force mode (-brute) performs DNS brute-forcing using built-in or custom wordlists.
+  - Configure API keys in $HOME/.config/amass/config.yaml for premium data sources.
+  - Amass can be memory-intensive; allocate at least 2GB for large scans.
+  - Use -timeout to set a per-enumeration timeout in minutes.
+  - Graph database output (-dir) allows for persistent tracking across scans.
+  - Results can be exported as JSON, graphML, or text formats.
+parameters:
+  - name: "domain"
+    type: "string"
+    description: "Target domain for enumeration. Example: example.com. Use -df for a file containing multiple domains."
+    required: true
+    flag: "-d"
+  - name: "passive"
+    type: "boolean"
+    description: "Passive enumeration only. No direct DNS queries to the target. Uses only third-party data sources."
+    required: false
+    flag: "-passive"
+  - name: "active"
+    type: "boolean"
+    description: "Enable active enumeration including DNS resolution, zone transfers, and certificate fetching."
+    required: false
+    flag: "-active"
+  - name: "brute"
+    type: "boolean"
+    description: "Enable DNS brute-force subdomain enumeration using wordlists."
+    required: false
+    flag: "-brute"
+  - name: "output"
+    type: "string"
+    description: "File path to write discovered subdomains. Text format, one subdomain per line."
+    required: false
+    flag: "-o"
+output:
+  format: "text"
+  success_patterns:
+    - "Querying"
+    - "\\."
+    - "names discovered"
+    - "OWASP"
+  failure_patterns:
+    - "The enumeration has finished"
+    - "0 names discovered"
+    - "Failed to"
+    - "no names were discovered"
+  severity_indicators:
+    critical:
+      - "admin\\."
+      - "staging\\."
+      - "internal\\."
+      - "corp\\."
+      - "intranet\\."
+    high:
+      - "vpn\\."
+      - "mail\\."
+      - "remote\\."
+      - "jenkins\\."
+      - "jira\\."
+      - "gitlab\\."
+    medium:
+      - "api\\."
+      - "dev\\."
+      - "test\\."
+      - "beta\\."
+      - "uat\\."
+    low:
+      - "www\\."
+      - "cdn\\."
+      - "static\\."
+      - "blog\\."
+chain_suggestions:
+  before: []
+  after:
+    - "httpx"
+    - "subfinder"
+    - "nmap"
+    - "nuclei"
+    - "masscan"
+    - "whatweb"
+    - "wafw00f"
+enabled: true

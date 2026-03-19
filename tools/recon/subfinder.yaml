@@ -1,0 +1,98 @@
+name: "subfinder"
+version: "1.0.0"
+category: "recon/subdomain"
+tags: ["subdomain-enumeration", "passive-recon", "osint", "reconnaissance"]
+command: "subfinder"
+args: ["-silent"]
+docker:
+  image: "phantomstrike/subfinder:latest"
+  network: "isolated"
+  memory_limit: "512m"
+  cpu_limit: "1.0"
+  timeout: "300s"
+short_description: "Fast passive subdomain enumeration tool using multiple OSINT sources and APIs."
+description: |
+  Subfinder is a subdomain discovery tool by ProjectDiscovery that returns valid
+  subdomains for websites using passive online sources. It uses certificate
+  transparency logs, search engines, DNS datasets, and various internet-wide
+  scanning databases to discover subdomains without actively probing the target.
+  Subfinder supports over 40 passive data sources including Censys, Shodan,
+  VirusTotal, SecurityTrails, Chaos, and many others. It is designed for speed
+  and can enumerate thousands of subdomains in seconds. API keys for premium
+  sources can be configured in the provider-config.yaml file.
+notes: |
+  - Subfinder is a passive tool; it does not send requests to the target domain directly.
+  - Configure API keys in $HOME/.config/subfinder/provider-config.yaml for better results.
+  - Free sources work without API keys but return fewer results.
+  - Use -all flag to use all sources including slow ones for maximum coverage.
+  - Recursive enumeration (-recursive) discovers subdomains of subdomains.
+  - Output is a plain list of subdomains, ideal for piping to httpx, nuclei, or nmap.
+  - Combine with amass for comprehensive subdomain coverage using different techniques.
+  - Use -sources to specify only certain providers (e.g., -sources censys,shodan,virustotal).
+parameters:
+  - name: "domain"
+    type: "string"
+    description: "Target domain to enumerate subdomains for. Example: example.com. Use -dL for file with multiple domains."
+    required: true
+    flag: "-d"
+  - name: "sources"
+    type: "string"
+    description: "Comma-separated list of sources to use. Example: censys,shodan,virustotal,securitytrails,chaos"
+    required: false
+    flag: "-sources"
+  - name: "output"
+    type: "string"
+    description: "File path to write discovered subdomains. Plain text, one subdomain per line."
+    required: false
+    flag: "-o"
+  - name: "silent"
+    type: "boolean"
+    description: "Show only subdomains in output, suppress banner and status messages."
+    required: false
+    flag: "-silent"
+  - name: "recursive"
+    type: "boolean"
+    description: "Enable recursive subdomain enumeration to find subdomains of discovered subdomains."
+    required: false
+    flag: "-recursive"
+output:
+  format: "text"
+  success_patterns:
+    - "\\."
+    - "Found .* subdomains"
+  failure_patterns:
+    - "Could not resolve"
+    - "no results found"
+    - "zero results"
+  severity_indicators:
+    critical:
+      - "admin\\."
+      - "staging\\."
+      - "dev\\."
+      - "internal\\."
+    high:
+      - "vpn\\."
+      - "mail\\."
+      - "remote\\."
+      - "jenkins\\."
+      - "gitlab\\."
+    medium:
+      - "api\\."
+      - "test\\."
+      - "beta\\."
+      - "uat\\."
+    low:
+      - "www\\."
+      - "cdn\\."
+      - "static\\."
+      - "assets\\."
+chain_suggestions:
+  before: []
+  after:
+    - "httpx"
+    - "nmap"
+    - "nuclei"
+    - "whatweb"
+    - "masscan"
+    - "wafw00f"
+enabled: true

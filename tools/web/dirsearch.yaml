@@ -1,0 +1,110 @@
+name: "dirsearch"
+version: "1.0.0"
+category: "web/enumeration"
+tags: ["directory-bruteforce", "content-discovery", "web-app", "path-discovery"]
+command: "dirsearch"
+args: []
+docker:
+  image: "phantomstrike/dirsearch:latest"
+  network: "isolated"
+  memory_limit: "512m"
+  cpu_limit: "1.0"
+  timeout: "600s"
+short_description: "Advanced web path brute-forcer with recursive scanning, smart wordlist, and wildcard detection."
+description: |
+  Dirsearch is an advanced command-line tool designed to brute-force directories
+  and files on web servers. It features a smart recursive scanning engine,
+  automatic wildcard and false-positive detection, advanced wordlist processing
+  with extension substitution, and support for multiple target scanning. Dirsearch
+  supports HTTP/HTTPS, custom headers, cookies, proxy routing, and multiple
+  output formats. It includes a curated default wordlist and supports custom
+  wordlists. The tool handles response analysis intelligently, detecting custom
+  404 pages and filtering false positives automatically. It supports subdirectory
+  brute-forcing with configurable recursion depth.
+notes: |
+  - Dirsearch has built-in smart wildcard response detection to reduce false positives.
+  - Use -r for recursive scanning and --recursion-depth to limit depth.
+  - The %EXT% placeholder in wordlists is replaced with specified extensions.
+  - Default wordlist is comprehensive but custom wordlists (SecLists) improve results.
+  - Use --exclude-status to filter out specific HTTP status codes.
+  - Force extensions mode (-f) appends extensions to every wordlist entry.
+  - Use --random-agent to rotate User-Agent headers.
+  - Supports scanning multiple targets from a file with -l flag.
+  - Proxy support (--proxy) allows routing through Burp Suite or other intercepting proxies.
+parameters:
+  - name: "url"
+    type: "string"
+    description: "Target URL to scan. Example: https://target.com. Use -l for a file containing multiple URLs."
+    required: true
+    flag: "-u"
+  - name: "extensions"
+    type: "string"
+    description: "File extensions to search for. Comma-separated. Example: php,asp,aspx,jsp,html,js,txt,bak"
+    required: false
+    flag: "-e"
+  - name: "wordlist"
+    type: "string"
+    description: "Custom wordlist file path. Default: built-in dirsearch wordlist. Example: /usr/share/seclists/Discovery/Web-Content/common.txt"
+    required: false
+    flag: "-w"
+  - name: "threads"
+    type: "integer"
+    description: "Number of concurrent threads. Default: 25. Increase for faster scanning on tolerant targets."
+    required: false
+    flag: "-t"
+  - name: "recursive"
+    type: "boolean"
+    description: "Enable recursive scanning to brute-force discovered directories. Use with --recursion-depth."
+    required: false
+    flag: "-r"
+output:
+  format: "text"
+  success_patterns:
+    - "200"
+    - "301"
+    - "302"
+    - "Target:"
+    - "\\[\\d{2}:\\d{2}:\\d{2}\\]"
+  failure_patterns:
+    - "Error"
+    - "Connection refused"
+    - "Invalid URL"
+    - "could not connect"
+  severity_indicators:
+    critical:
+      - "/admin"
+      - "/.env"
+      - "/.git"
+      - "/backup"
+      - "/config"
+      - "/phpinfo"
+      - "/.htpasswd"
+    high:
+      - "/wp-admin"
+      - "/phpmyadmin"
+      - "/console"
+      - "/manager"
+      - "/server-status"
+    medium:
+      - "/api"
+      - "/swagger"
+      - "/upload"
+      - "/test"
+      - "/debug"
+    low:
+      - "/robots.txt"
+      - "/sitemap.xml"
+      - "/favicon.ico"
+      - "/humans.txt"
+chain_suggestions:
+  before:
+    - "httpx"
+    - "nmap"
+    - "wafw00f"
+    - "whatweb"
+  after:
+    - "sqlmap"
+    - "nuclei"
+    - "nikto"
+    - "dalfox"
+enabled: true

@@ -1,0 +1,107 @@
+services:
+  # --- Core ---
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+      - "8081:8081"
+    environment:
+      - DATABASE_URL=postgresql://phantom:${DB_PASSWORD:-phantom123}@postgres:5432/phantomstrike
+      - REDIS_URL=redis://redis:6379
+      - STORAGE_PATH=/data/artifacts
+      - CONFIG_PATH=/app/config.yaml
+      - JWT_SECRET=${JWT_SECRET:-change-me-in-production}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin123}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - GROQ_API_KEY=${GROQ_API_KEY:-}
+      - MCP_AUTH_TOKEN=${MCP_AUTH_TOKEN:-}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+    volumes:
+      - ./config.yaml:/app/config.yaml:ro
+      - ./tools:/app/tools:ro
+      - ./roles:/app/roles:ro
+      - ./skills:/app/skills:ro
+      - ./knowledge:/app/knowledge:ro
+      - artifacts:/data/artifacts
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # --- Worker ---
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    environment:
+      - DATABASE_URL=postgresql://phantom:${DB_PASSWORD:-phantom123}@postgres:5432/phantomstrike
+      - REDIS_URL=redis://redis:6379
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+    volumes:
+      - ./tools:/app/tools:ro
+      - artifacts:/data/artifacts
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # --- Data ---
+  postgres:
+    image: pgvector/pgvector:pg17
+    environment:
+      POSTGRES_DB: phantomstrike
+      POSTGRES_USER: phantom
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-phantom123}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U phantom"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redisdata:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  # --- Optional: MinIO ---
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: phantom
+      MINIO_ROOT_PASSWORD: ${MINIO_PASSWORD:-minio123}
+    volumes:
+      - miniodata:/data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    profiles: ["full"]
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  redisdata:
+  miniodata:
+  artifacts:

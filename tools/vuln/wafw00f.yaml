@@ -1,0 +1,83 @@
+name: "wafw00f"
+version: "1.0.0"
+category: "vuln/waf-detection"
+tags: ["waf", "firewall", "detection", "fingerprint", "reconnaissance"]
+command: "wafw00f"
+args: []
+docker:
+  image: "phantomstrike/wafw00f:latest"
+  network: "isolated"
+  memory_limit: "256m"
+  cpu_limit: "0.5"
+  timeout: "120s"
+short_description: "Web Application Firewall detection tool that identifies and fingerprints WAF products."
+description: |
+  wafw00f is a Web Application Firewall (WAF) fingerprinting tool that identifies
+  and detects WAF products protecting a website. It sends a series of HTTP requests
+  with specially crafted payloads and analyzes the responses to determine if a WAF
+  is present and which product is in use. wafw00f can identify over 150 WAF products
+  including Cloudflare, AWS WAF, Akamai, Imperva/Incapsula, F5 BIG-IP ASM, ModSecurity,
+  Sucuri, Barracuda, Fortinet FortiWeb, and many others. Knowing the WAF in use is
+  critical for selecting appropriate evasion techniques and bypass strategies during
+  penetration testing.
+notes: |
+  - Run wafw00f early in the reconnaissance phase to inform attack strategy.
+  - WAF detection helps choose appropriate tamper scripts for sqlmap and payloads for XSS.
+  - Use -a to test all WAF signatures even after a match is found.
+  - The -l flag lists all detectable WAF products.
+  - Some WAFs may not be detectable if configured to be transparent.
+  - CDN-based WAFs (Cloudflare, Akamai) may mask the origin server IP.
+  - Results should influence tool selection and payload crafting for subsequent testing.
+parameters:
+  - name: "url"
+    type: "string"
+    description: "Target URL to test for WAF presence. Example: https://target.com. Use -i for file with multiple URLs."
+    required: true
+    flag: ""
+  - name: "list"
+    type: "boolean"
+    description: "List all detectable WAF products and exit."
+    required: false
+    flag: "-l"
+  - name: "verbose"
+    type: "boolean"
+    description: "Enable verbose output showing request/response details for each WAF check."
+    required: false
+    flag: "-v"
+output:
+  format: "text"
+  success_patterns:
+    - "is behind"
+    - "No WAF detected"
+    - "Checking"
+    - "Number of requests"
+  failure_patterns:
+    - "could not be resolved"
+    - "Connection refused"
+    - "ERROR"
+  severity_indicators:
+    critical: []
+    high:
+      - "No WAF detected"
+    medium:
+      - "is behind"
+      - "ModSecurity"
+      - "Generic"
+    low:
+      - "Cloudflare"
+      - "Akamai"
+      - "AWS"
+      - "Incapsula"
+chain_suggestions:
+  before:
+    - "httpx"
+    - "subfinder"
+    - "nmap"
+  after:
+    - "sqlmap"
+    - "nuclei"
+    - "nikto"
+    - "ffuf"
+    - "gobuster"
+    - "dalfox"
+enabled: true

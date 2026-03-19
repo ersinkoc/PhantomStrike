@@ -1,0 +1,106 @@
+name: "httpx"
+version: "1.0.0"
+category: "recon/http"
+tags: ["http-probe", "web-discovery", "technology-detection", "reconnaissance"]
+command: "httpx"
+args: ["-silent"]
+docker:
+  image: "phantomstrike/httpx:latest"
+  network: "isolated"
+  memory_limit: "512m"
+  cpu_limit: "1.5"
+  timeout: "300s"
+short_description: "Fast multi-purpose HTTP toolkit for probing, technology detection, and web server fingerprinting."
+description: |
+  httpx is a fast and multi-purpose HTTP toolkit by ProjectDiscovery that allows
+  running multiple probes using the retryablehttp library. It is designed to
+  maintain result reliability with an increased number of threads. httpx can
+  probe a list of hosts, extract status codes, content lengths, page titles,
+  server headers, technology stacks, TLS certificate information, and more. It
+  supports HTTP/HTTPS pipelining, custom headers, multiple HTTP methods, and
+  follows redirects. httpx is commonly used after subdomain enumeration to
+  identify live web servers and gather initial intelligence before deeper scanning.
+notes: |
+  - httpx reads targets from stdin or a file (-l), making it ideal for pipeline use.
+  - Common pipeline: subfinder -d target.com | httpx -title -tech-detect -status-code
+  - Use -match-code and -filter-code to focus on specific HTTP response codes.
+  - Technology detection (-tech-detect) uses Wappalyzer signatures.
+  - The -json flag outputs structured JSON for machine processing.
+  - Use -follow-redirects to resolve redirect chains and find final destinations.
+  - Rate limiting (-threads, -rl) is important for scanning large lists without overload.
+  - Probe both HTTP and HTTPS with -probe flag for comprehensive coverage.
+parameters:
+  - name: "input"
+    type: "string"
+    description: "Input file containing list of hosts/URLs to probe, one per line. Use -l flag. Can also read from stdin."
+    required: true
+    flag: "-l"
+  - name: "status_code"
+    type: "boolean"
+    description: "Display HTTP response status codes in output."
+    required: false
+    flag: "-status-code"
+  - name: "title"
+    type: "boolean"
+    description: "Display page titles extracted from HTML responses."
+    required: false
+    flag: "-title"
+  - name: "tech_detect"
+    type: "boolean"
+    description: "Enable technology detection using Wappalyzer-based fingerprinting."
+    required: false
+    flag: "-tech-detect"
+  - name: "follow_redirects"
+    type: "boolean"
+    description: "Follow HTTP redirects to resolve final destination URLs."
+    required: false
+    flag: "-follow-redirects"
+  - name: "threads"
+    type: "integer"
+    description: "Number of concurrent threads. Default: 50. Adjust based on network capacity and target tolerance."
+    required: false
+    flag: "-threads"
+output:
+  format: "text"
+  success_patterns:
+    - "http"
+    - "\\[200\\]"
+    - "\\[301\\]"
+    - "\\[302\\]"
+  failure_patterns:
+    - "could not connect"
+    - "no addresses found"
+    - "context deadline exceeded"
+  severity_indicators:
+    critical:
+      - "Jenkins"
+      - "Tomcat Manager"
+      - "phpMyAdmin"
+      - "WebLogic"
+    high:
+      - "WordPress"
+      - "Joomla"
+      - "Drupal"
+      - "IIS/6"
+      - "IIS/7"
+    medium:
+      - "Apache/2.2"
+      - "nginx/1.1"
+      - "PHP/5"
+    low:
+      - "\\[200\\]"
+      - "\\[301\\]"
+chain_suggestions:
+  before:
+    - "subfinder"
+    - "amass"
+    - "masscan"
+    - "nmap"
+  after:
+    - "nuclei"
+    - "nikto"
+    - "whatweb"
+    - "ffuf"
+    - "gobuster"
+    - "wafw00f"
+enabled: true

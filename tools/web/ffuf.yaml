@@ -1,0 +1,117 @@
+name: "ffuf"
+version: "1.0.0"
+category: "web/fuzzing"
+tags: ["fuzzer", "directory-bruteforce", "content-discovery", "web-app", "vhost"]
+command: "ffuf"
+args: ["-noninteractive"]
+docker:
+  image: "phantomstrike/ffuf:latest"
+  network: "isolated"
+  memory_limit: "512m"
+  cpu_limit: "1.5"
+  timeout: "600s"
+short_description: "Fast web fuzzer for directory/file discovery, parameter fuzzing, virtual host enumeration, and more."
+description: |
+  ffuf (Fuzz Faster U Fool) is a high-speed web fuzzer written in Go. It supports
+  directory discovery, virtual host enumeration, parameter fuzzing, POST data
+  fuzzing, and header fuzzing. ffuf uses the FUZZ keyword as a placeholder in
+  URLs, headers, or POST data to indicate where wordlist entries should be
+  substituted. It supports multiple wordlists with different FUZZ keywords
+  (FUZZ, FUZ2, FUZ3, etc.), enabling complex multi-point fuzzing. Output
+  filtering by status code, response size, word count, and line count helps
+  eliminate false positives. ffuf is significantly faster than alternatives
+  like dirb and dirbuster.
+notes: |
+  - The FUZZ keyword must appear in the URL, headers, or POST data to indicate the injection point.
+  - Use -fc (filter code), -fs (filter size), -fw (filter words), -fl (filter lines) to reduce false positives.
+  - Use -mc (match code), -ms (match size), -mw (match words), -ml (match lines) to define what constitutes a finding.
+  - Calibration mode (-ac) automatically sets filters based on initial responses.
+  - For virtual host discovery, use -H "Host: FUZZ.target.com" with a subdomain wordlist.
+  - Rate limiting (-rate) is critical for production targets; default is unlimited.
+  - Use -recursion with -recursion-depth for recursive directory discovery.
+  - Multiple wordlists: -w wordlist1:FUZZ -w wordlist2:FUZ2 for clusterbomb mode.
+parameters:
+  - name: "url"
+    type: "string"
+    description: "Target URL with FUZZ keyword for substitution point. Example: https://target.com/FUZZ or https://target.com/api/FUZZ"
+    required: true
+    flag: "-u"
+  - name: "wordlist"
+    type: "string"
+    description: "Path to wordlist file. Common: /usr/share/seclists/Discovery/Web-Content/directory-list-2.3-medium.txt"
+    required: true
+    flag: "-w"
+  - name: "method"
+    type: "string"
+    description: "HTTP method to use. Default: GET. Options: GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS."
+    required: false
+    flag: "-X"
+  - name: "headers"
+    type: "string"
+    description: "HTTP headers to include. Repeatable. Example: 'Authorization: Bearer token123' or 'Content-Type: application/json'"
+    required: false
+    flag: "-H"
+  - name: "filters"
+    type: "string"
+    description: "Response filter string. Use -fc for status codes (404,403), -fs for size, -fw for word count, -fl for line count."
+    required: false
+    flag: "-fc"
+  - name: "extensions"
+    type: "string"
+    description: "File extensions to append to each wordlist entry. Comma-separated. Example: php,html,txt,bak,asp,aspx,jsp"
+    required: false
+    flag: "-e"
+  - name: "recursion"
+    type: "boolean"
+    description: "Enable recursive directory discovery. Use with -recursion-depth to set max depth (default: 0 = infinite)."
+    required: false
+    flag: "-recursion"
+output:
+  format: "json"
+  success_patterns:
+    - "Status: 200"
+    - "Status: 301"
+    - "Status: 302"
+    - "\\[Status:"
+  failure_patterns:
+    - "No results"
+    - "error"
+    - "Encountered error"
+    - "context deadline exceeded"
+  severity_indicators:
+    critical:
+      - "admin"
+      - "backup"
+      - ".sql"
+      - ".bak"
+      - "config"
+      - "phpinfo"
+      - ".env"
+    high:
+      - "wp-admin"
+      - "phpmyadmin"
+      - "console"
+      - "dashboard"
+      - "debug"
+    medium:
+      - "upload"
+      - "api"
+      - "swagger"
+      - "docs"
+      - "test"
+    low:
+      - "robots.txt"
+      - "sitemap.xml"
+      - "favicon.ico"
+chain_suggestions:
+  before:
+    - "httpx"
+    - "nmap"
+    - "whatweb"
+    - "wafw00f"
+  after:
+    - "sqlmap"
+    - "nuclei"
+    - "nikto"
+    - "dalfox"
+enabled: true

@@ -1,0 +1,95 @@
+name: "hydra"
+version: "1.0.0"
+category: "password/brute-force"
+tags: ["brute-force", "login-cracker", "password-attack", "authentication", "credential-testing"]
+command: "hydra"
+args: []
+docker:
+  image: "phantomstrike/hydra:latest"
+  network: "isolated"
+  memory_limit: "512m"
+  cpu_limit: "1.5"
+  timeout: "900s"
+short_description: "Fast and flexible online password brute-forcing tool supporting over 50 network protocols."
+description: |
+  Hydra (THC-Hydra) is a fast and flexible online password brute-forcing tool
+  that supports over 50 protocols including SSH, FTP, HTTP, HTTPS, SMB, SMTP,
+  POP3, IMAP, Telnet, LDAP, MySQL, PostgreSQL, MSSQL, Oracle, RDP, VNC, SIP,
+  Redis, MongoDB, and many more. It performs parallelized login attacks with
+  support for username and password lists, combo lists, and custom login
+  sequences. Hydra supports HTTP form-based authentication with configurable
+  success/failure conditions, making it versatile for web application login
+  testing. It is one of the most widely used tools for validating password
+  policies and testing credential strength.
+notes: |
+  - ALWAYS ensure proper authorization before brute-forcing. Unauthorized access attempts are illegal.
+  - Account lockout policies may lock accounts; use -W to add wait time between attempts.
+  - Use -t to control parallelism; too many threads may cause false negatives or lockouts.
+  - For HTTP forms, use http-post-form with the format: "path:POST_DATA:FAIL_STRING".
+  - -L and -P specify username and password list files; -l and -p specify single values.
+  - Use -C for colon-separated combo files (username:password format).
+  - The -e nsr flag tests null password (n), same-as-username (s), and reversed-username (r).
+  - -f stops after first valid pair per host; -F stops after first valid pair globally.
+  - Use -o to save results to a file for later analysis.
+  - Rate limiting (-W wait) and task limiting (-t) help avoid detection and lockouts.
+parameters:
+  - name: "target"
+    type: "string"
+    description: "Target host IP or hostname. For multiple targets, use -M with a file of targets."
+    required: true
+    flag: ""
+  - name: "service"
+    type: "string"
+    description: "Service/protocol to attack. Examples: ssh, ftp, http-post-form, smb, rdp, mysql, telnet, vnc, smtp"
+    required: true
+    flag: ""
+  - name: "username"
+    type: "string"
+    description: "Username or username list file. Use -l for single username, -L for file with usernames."
+    required: true
+    flag: "-l"
+  - name: "password_list"
+    type: "string"
+    description: "Password list file path. Common: /usr/share/wordlists/rockyou.txt, /usr/share/seclists/Passwords/Common-Credentials/10k-most-common.txt"
+    required: true
+    flag: "-P"
+  - name: "threads"
+    type: "integer"
+    description: "Number of parallel tasks/connections. Default: 16. Lower for sensitive targets to avoid lockout. Max: 64."
+    required: false
+    flag: "-t"
+output:
+  format: "text"
+  success_patterns:
+    - "\\[.*\\] host:"
+    - "login:"
+    - "password:"
+    - "valid password"
+    - "successfully completed"
+  failure_patterns:
+    - "0 valid passwords found"
+    - "could not connect"
+    - "Connection refused"
+    - "\\[ERROR\\]"
+  severity_indicators:
+    critical:
+      - "login:.*password:"
+      - "valid password found"
+      - "root"
+      - "admin"
+    high:
+      - "successfully completed"
+      - "valid"
+    medium:
+      - "\\[ATTEMPT\\]"
+      - "waiting"
+    low:
+      - "\\[STATUS\\]"
+chain_suggestions:
+  before:
+    - "nmap"
+    - "whatweb"
+    - "nikto"
+  after:
+    - "metasploit"
+enabled: true

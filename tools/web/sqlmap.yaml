@@ -1,0 +1,121 @@
+name: "sqlmap"
+version: "1.0.0"
+category: "web/injection"
+tags: ["sql-injection", "database", "exploitation", "web-app", "sqli"]
+command: "sqlmap"
+args: ["--batch", "--random-agent"]
+docker:
+  image: "phantomstrike/sqlmap:latest"
+  network: "isolated"
+  memory_limit: "512m"
+  cpu_limit: "1.0"
+  timeout: "600s"
+short_description: "Automatic SQL injection detection and exploitation tool supporting all major database engines."
+description: |
+  SQLMap is an open-source penetration testing tool that automates the detection
+  and exploitation of SQL injection flaws. It supports a full range of SQL
+  injection techniques including boolean-based blind, time-based blind, error-based,
+  UNION query-based, stacked queries, and out-of-band. It can enumerate databases,
+  tables, columns, and dump data. SQLMap supports all major DBMS platforms including
+  MySQL, PostgreSQL, Microsoft SQL Server, Oracle, SQLite, IBM DB2, SAP MaxDB,
+  MariaDB, and many others. It includes features for OS-level access, file system
+  read/write, and command execution via SQL injection.
+notes: |
+  - Always use --batch for non-interactive mode in automated pipelines.
+  - --random-agent is recommended to avoid default sqlmap user-agent detection by WAFs.
+  - Level 1-5 controls the number of tests; higher levels test more injection points (headers, cookies).
+  - Risk 1-3 controls test intrusiveness; risk 3 includes heavy time-based and OR-based tests.
+  - Use --tamper scripts to bypass WAF/IPS (e.g., space2comment, between, randomcase).
+  - Combine with --proxy for traffic inspection or to route through Burp Suite.
+  - The --forms flag auto-parses and tests HTML forms on the target page.
+  - Use --threads to parallelize data extraction (max 10).
+  - Be cautious with --os-shell and --os-pwn as they attempt OS-level access.
+parameters:
+  - name: "url"
+    type: "string"
+    description: "Target URL with injectable parameter marked by *. Example: http://target.com/page?id=1 or http://target.com/page?id=1*"
+    required: true
+    flag: "-u"
+  - name: "data"
+    type: "string"
+    description: "POST data string for testing POST parameters. Example: 'username=admin&password=test'"
+    required: false
+    flag: "--data"
+  - name: "level"
+    type: "integer"
+    description: "Level of tests to perform (1-5). Level 1: basic. Level 2: adds Cookie header. Level 3: adds User-Agent/Referer. Level 5: adds Host header."
+    required: false
+    flag: "--level"
+  - name: "risk"
+    type: "integer"
+    description: "Risk of tests (1-3). Risk 1: safe tests only. Risk 2: adds time-based. Risk 3: adds OR-based tests (may modify data)."
+    required: false
+    flag: "--risk"
+  - name: "technique"
+    type: "string"
+    description: "SQL injection techniques to test. B=Boolean, E=Error, U=Union, S=Stacked, T=Time-based, Q=Inline. Example: BEUST"
+    required: false
+    flag: "--technique"
+  - name: "dbs"
+    type: "boolean"
+    description: "Enumerate databases available on the DBMS server."
+    required: false
+    flag: "--dbs"
+  - name: "tables"
+    type: "boolean"
+    description: "Enumerate tables in the specified database (-D required)."
+    required: false
+    flag: "--tables"
+  - name: "dump"
+    type: "boolean"
+    description: "Dump table entries. Use with -D (database) and -T (table) to target specific data."
+    required: false
+    flag: "--dump"
+  - name: "tamper"
+    type: "string"
+    description: "Tamper script(s) to modify payloads for WAF bypass. Examples: space2comment,between,randomcase,charunicodeencode"
+    required: false
+    flag: "--tamper"
+  - name: "cookie"
+    type: "string"
+    description: "HTTP Cookie header value for authenticated scanning. Example: 'PHPSESSID=abc123; security=low'"
+    required: false
+    flag: "--cookie"
+output:
+  format: "text"
+  success_patterns:
+    - "Parameter .* is vulnerable"
+    - "sqlmap identified the following injection point"
+    - "Type: "
+    - "available databases"
+    - "Database:"
+  failure_patterns:
+    - "all tested parameters do not appear to be injectable"
+    - "connection timed out"
+    - "target URL content is not stable"
+    - "does not seem to be injectable"
+  severity_indicators:
+    critical:
+      - "is vulnerable"
+      - "stacked queries"
+      - "os-shell"
+      - "sql-shell"
+    high:
+      - "UNION query"
+      - "error-based"
+      - "boolean-based blind"
+    medium:
+      - "time-based blind"
+      - "inline query"
+    low:
+      - "partial UNION"
+chain_suggestions:
+  before:
+    - "nmap"
+    - "nuclei"
+    - "ffuf"
+    - "gobuster"
+    - "nikto"
+  after:
+    - "metasploit"
+enabled: true

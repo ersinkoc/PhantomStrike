@@ -1,0 +1,60 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background: #0A0A0F;
+  --color-foreground: #E4E4E7;
+  --color-card: #111118;
+  --color-card-foreground: #E4E4E7;
+  --color-popover: #111118;
+  --color-popover-foreground: #E4E4E7;
+  --color-primary: #00FFD1;
+  --color-primary-foreground: #0A0A0F;
+  --color-secondary: #1A0533;
+  --color-secondary-foreground: #E4E4E7;
+  --color-muted: #18181B;
+  --color-muted-foreground: #A1A1AA;
+  --color-accent: #1C1C24;
+  --color-accent-foreground: #E4E4E7;
+  --color-destructive: #FF3366;
+  --color-destructive-foreground: #FFFFFF;
+  --color-border: #27272A;
+  --color-input: #27272A;
+  --color-ring: #00FFD1;
+  --color-success: #10B981;
+  --color-warning: #F59E0B;
+  --color-info: #3B82F6;
+  --color-critical: #FF3366;
+  --color-high: #F97316;
+  --color-medium: #F59E0B;
+  --color-low: #3B82F6;
+  --radius: 0.5rem;
+  --font-mono: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
+}
+
+body {
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  font-family: Inter, system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-background);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-muted-foreground);
+}
+
+/* Terminal text */
+.font-mono {
+  font-family: var(--font-mono);
+}

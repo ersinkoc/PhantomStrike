@@ -1,0 +1,93 @@
+name: "whatweb"
+version: "1.0.0"
+category: "recon/fingerprinting"
+tags: ["web-fingerprint", "technology-detection", "cms-detection", "reconnaissance"]
+command: "whatweb"
+args: []
+docker:
+  image: "phantomstrike/whatweb:latest"
+  network: "isolated"
+  memory_limit: "256m"
+  cpu_limit: "1.0"
+  timeout: "300s"
+short_description: "Next-generation web scanner that identifies technologies, CMS platforms, and frameworks used by websites."
+description: |
+  WhatWeb identifies websites and recognizes web technologies including content
+  management systems (CMS), blogging platforms, JavaScript libraries, web servers,
+  embedded devices, and more. WhatWeb has over 1800 plugins, each capable of
+  recognizing a different technology. It identifies version numbers, email addresses,
+  account IDs, web framework modules, SQL errors, and more. WhatWeb supports
+  multiple levels of aggression from passive (single HTTP request) to aggressive
+  (multiple requests including brute-force guessing). It can scan single URLs,
+  lists, IP ranges, and even nmap-format targets.
+notes: |
+  - Aggression level 1 (stealthy) sends a single HTTP request per target.
+  - Aggression level 3 (aggressive) sends multiple requests and tries common paths.
+  - Aggression level 4 (heavy) performs brute-force guessing of paths and parameters.
+  - Use --log-json for machine-parseable output.
+  - WhatWeb follows redirects by default; use --no-redirect to disable.
+  - Plugin-specific options can be set with -p PluginName[option=value].
+  - Cookie and authentication headers can be set with -H flag.
+  - Useful for initial technology profiling before targeted vulnerability scanning.
+parameters:
+  - name: "target"
+    type: "string"
+    description: "Target URL, IP, hostname, or file with targets. Examples: https://target.com, 192.168.1.0/24, targets.txt"
+    required: true
+    flag: ""
+  - name: "aggression"
+    type: "integer"
+    description: "Aggression level 1-4. 1=stealthy (1 request), 3=aggressive (multiple requests), 4=heavy (brute force)."
+    required: false
+    flag: "-a"
+  - name: "plugins"
+    type: "string"
+    description: "Comma-separated list of plugins to use. Example: WordPress,Apache,PHP,jQuery. Use -l to list all available plugins."
+    required: false
+    flag: "-p"
+output:
+  format: "text"
+  success_patterns:
+    - "http"
+    - "\\[200\\]"
+    - "IP\\["
+    - "Country\\["
+  failure_patterns:
+    - "ERROR"
+    - "Timed out"
+    - "No route to host"
+    - "Connection refused"
+  severity_indicators:
+    critical:
+      - "SQL Error"
+      - "phpinfo"
+      - "Default Password"
+      - "WebDAV"
+    high:
+      - "WordPress"
+      - "Joomla"
+      - "Drupal"
+      - "phpMyAdmin"
+      - "Tomcat"
+    medium:
+      - "Apache/2.2"
+      - "PHP/5"
+      - "X-Powered-By"
+      - "nginx/1.1"
+    low:
+      - "jQuery"
+      - "Bootstrap"
+      - "Google Analytics"
+chain_suggestions:
+  before:
+    - "httpx"
+    - "subfinder"
+    - "nmap"
+  after:
+    - "nuclei"
+    - "nikto"
+    - "sqlmap"
+    - "ffuf"
+    - "gobuster"
+    - "wafw00f"
+enabled: true

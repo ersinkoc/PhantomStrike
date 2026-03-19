@@ -1,0 +1,121 @@
+name: "nuclei"
+version: "1.0.0"
+category: "vuln/general"
+tags: ["vulnerability-scanner", "cve", "templates", "fast"]
+
+command: "nuclei"
+args: ["-silent", "-nc"]
+
+docker:
+  image: "phantomstrike/nuclei:latest"
+  network: "isolated"
+  memory_limit: "1g"
+  cpu_limit: "2.0"
+  timeout: "600s"
+  readonly: true
+
+short_description: "Fast and customizable vulnerability scanner"
+description: |
+  Nuclei is a fast tool for configurable targeted scanning based on templates
+  offering massive extensibility and ease of use. It is used to send requests
+  across targets based on a template, leading to zero false positives and
+  providing fast scanning on a large number of hosts.
+
+notes: |
+  - Templates are auto-updated on first run
+  - Use -t to specify custom templates
+  - Use -severity to filter by severity
+  - Use -tags to filter by tags
+  - Use -c for concurrent threads (default: 25)
+
+parameters:
+  - name: "target"
+    type: "string"
+    description: "Target URL or host to scan"
+    required: true
+    flag: "-u"
+    validation: "url"
+
+  - name: "templates"
+    type: "string"
+    description: "Template or template directory to run"
+    required: false
+    flag: "-t"
+
+  - name: "severity"
+    type: "string"
+    description: "Filter by severity (info, low, medium, high, critical)"
+    required: false
+    flag: "-s"
+
+  - name: "tags"
+    type: "string"
+    description: "Filter by tags"
+    required: false
+    flag: "-tags"
+
+  - name: "concurrency"
+    type: "integer"
+    description: "Number of concurrent templates"
+    required: false
+    flag: "-c"
+    default: 25
+
+  - name: "rate_limit"
+    type: "integer"
+    description: "Maximum requests per second"
+    required: false
+    flag: "-rl"
+
+  - name: "timeout"
+    type: "integer"
+    description: "Time to wait in seconds before timeout"
+    required: false
+    flag: "-timeout"
+    default: 10
+
+  - name: "retries"
+    type: "integer"
+    description: "Number of times to retry a failed request"
+    required: false
+    flag: "-retries"
+    default: 1
+
+  - name: "json_output"
+    type: "boolean"
+    description: "Output in JSON format"
+    required: false
+    flag: "-j"
+    default: false
+
+  - name: "update_templates"
+    type: "boolean"
+    description: "Update nuclei templates"
+    required: false
+    flag: "-ut"
+    default: false
+
+output:
+  format: "text"
+  success_patterns:
+    - "\\[.*\\]"
+    - "matched"
+  failure_patterns:
+    - "no templates provided"
+    - "context deadline exceeded"
+  severity_indicators:
+    critical: ["\\[critical\\]"]
+    high: ["\\[high\\]"]
+    medium: ["\\[medium\\]"]
+    low: ["\\[low\\]"]
+    info: ["\\[info\\]"]
+
+chain_suggestions:
+  before: ["httpx", "nmap"]
+  after: []
+
+requirements:
+  tools: []
+  docker_available: true
+
+enabled: true
