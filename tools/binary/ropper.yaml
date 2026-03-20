@@ -2,14 +2,11 @@ name: ropper
 version: "1.0"
 category: binary/rop-finder
 phase: analysis
-command: ropper
+command: python3
+args:
+  - "/app/tools/_custom/ropper-lite.py"
 docker:
-  image: phantomstrike/ropper:latest
-  args:
-    - "--file"
-    - "/input/binary"
-    - "--chain"
-    - "execve"
+  image: phantomstrike/custom:latest
   memory_limit: "1g"
   timeout: "300s"
 
@@ -27,4 +24,4 @@ parameters:
 output:
   format: text
 
-enabled: false
+enabled: true

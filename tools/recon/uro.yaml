@@ -2,27 +2,58 @@ name: uro
 version: "1.0"
 category: reconnaissance/url-optimization
 phase: post-processing
-command: uro
+command: python3
+args: ["/app/tools/_custom/uro-lite.py"]
 docker:
-  image: phantomstrike/uro:latest
-  args:
-    - "-f"
-    - "/input/urls.txt"
-    - "-o"
-    - "/output/uro-results.txt"
-  memory_limit: "512m"
-  timeout: "300s"
+  image: phantomstrike/custom:latest
+  memory_limit: "256m"
+  timeout: "120s"
 
-short_description: URL optimization tool
+short_description: URL deduplication and optimization
 description: |
-  uro removes unnecessary URLs from a list.
+  URO-lite filters and deduplicates URL lists by removing static resources,
+  tracking parameters, duplicate paths, and similar URLs that differ only
+  in numeric IDs or UUIDs.
 
 parameters:
-  - name: urls
+  - name: input
     type: string
-    required: true
+    required: false
+    flag: "-i"
+    description: "Input file (default: stdin)"
+  - name: output
+    type: string
+    required: false
+    flag: "-o"
+    description: "Output file (default: stdout)"
+  - name: keep_static
+    type: bool
+    required: false
+    flag: "--keep-static"
+    default: false
+    description: "Keep static resource URLs"
+  - name: strict
+    type: bool
+    required: false
+    flag: "--strict"
+    default: false
+    description: "Strict dedup (same path+param names = duplicate)"
+  - name: path_dedup
+    type: bool
+    required: false
+    flag: "--path-dedup"
+    default: false
+    description: "Deduplicate similar paths"
 
 output:
   format: text
 
-enabled: false
+chain_suggestions:
+  before:
+    - "katana"
+    - "waybackurls"
+  after:
+    - "qsreplace"
+    - "burp"
+
+enabled: true

@@ -2,13 +2,11 @@ name: cloudmapper
 version: "1.0"
 category: cloud/security-audit
 phase: reconnaissance
-command: cloudmapper
+command: python3
+args:
+  - "/app/tools/_custom/cloudmapper-lite.py"
 docker:
-  image: phantomstrike/cloudmapper:latest
-  args:
-    - "collect"
-    - "--account"
-    - "${account}"
+  image: phantomstrike/custom:latest
   memory_limit: "2g"
   timeout: "1800s"
 
@@ -26,4 +24,4 @@ parameters:
 output:
   format: json
 
-enabled: false
+enabled: true

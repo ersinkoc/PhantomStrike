@@ -2,28 +2,58 @@ name: qsreplace
 version: "1.0"
 category: reconnaissance/url-modification
 phase: post-processing
-command: qsreplace
+command: python3
+args: ["/app/tools/_custom/qsreplace-lite.py"]
 docker:
-  image: phantomstrike/qsreplace:latest
-  args:
-    - "${payload}"
-  stdin: "${urls}"
+  image: phantomstrike/custom:latest
   memory_limit: "256m"
   timeout: "60s"
 
-short_description: Query string replacement
+short_description: URL query string replacer for payload injection
 description: |
-  qsreplace replaces query string values in URLs.
+  QSReplace-lite reads URLs from stdin or file and replaces query string
+  parameter values with specified payloads. Supports replacing individual
+  or all parameters, appending payloads, and path segment replacement.
 
 parameters:
-  - name: urls
-    type: string
-    required: true
   - name: payload
     type: string
-    required: true
+    required: false
+    flag: ""
+    default: "FUZZ"
+    description: "Payload to inject"
+  - name: input
+    type: string
+    required: false
+    flag: "-i"
+    description: "Input file with URLs"
+  - name: param
+    type: string
+    required: false
+    flag: "-p"
+    description: "Only replace specific parameter"
+  - name: append
+    type: bool
+    required: false
+    flag: "-a"
+    default: false
+    description: "Append payload instead of replacing"
+  - name: unique
+    type: bool
+    required: false
+    flag: "-u"
+    default: false
+    description: "Deduplicate output URLs"
 
 output:
   format: text
 
-enabled: false
+chain_suggestions:
+  before:
+    - "katana"
+    - "waybackurls"
+  after:
+    - "xss-scanner"
+    - "burp"
+
+enabled: true

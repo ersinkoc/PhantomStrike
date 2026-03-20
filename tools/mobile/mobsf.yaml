@@ -2,14 +2,13 @@ name: mobsf
 version: "1.0"
 category: mobile/security-scanning
 phase: scanning
-command: mobsf
+command: python3
+args:
+  - "/app/tools/_custom/mobsf-lite.py"
 docker:
-  image: phantomstrike/mobsf:latest
-  args: []
+  image: phantomstrike/custom:latest
   memory_limit: "4g"
   timeout: "1800s"
-  ports:
-    - "8000:8000"
 
 short_description: Mobile Security Framework for Android/iOS
 description: |
@@ -36,4 +35,4 @@ output:
   failure_patterns:
     - "error"
 
-enabled: false
+enabled: true

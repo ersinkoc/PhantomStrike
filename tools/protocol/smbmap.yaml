@@ -2,27 +2,59 @@ name: smbmap
 version: "1.0"
 category: protocol/smb-enumeration
 phase: reconnaissance
-command: smbmap
+command: python3
+args: ["/app/tools/_custom/smbmap-lite.py"]
 docker:
-  image: phantomstrike/smbmap:latest
-  args:
-    - "-H"
-    - "${target}"
-    - "-R"
+  image: phantomstrike/custom:latest
   memory_limit: "512m"
-  timeout: "300s"
+  timeout: "120s"
 
-short_description: SMB share enumerator
+short_description: SMB share enumerator with permissions and anonymous access check
 description: |
-  SMBMap is a handy SMB enumeration tool.
+  SMBMap-lite enumerates SMB shares, checks SMB version negotiation,
+  tests for null session (anonymous) access, and verifies SMB signing
+  requirements. Identifies SMBv1 exposure.
 
 parameters:
   - name: target
     type: string
     required: true
-    description: Target IP
+    flag: ""
+    description: "Target IP or hostname"
+  - name: port
+    type: string
+    required: false
+    flag: "-p"
+    default: "445"
+    description: "SMB port"
+  - name: timeout
+    type: string
+    required: false
+    flag: "-t"
+    default: "5"
+    description: "Connection timeout"
+  - name: check_139
+    type: bool
+    required: false
+    flag: "--check-139"
+    default: false
+    description: "Also check port 139"
 
 output:
   format: text
+  severity_indicators:
+    high:
+      - "HIGH"
+      - "SMBv1"
+      - "Null session"
+    medium:
+      - "MEDIUM"
+      - "signing not required"
 
-enabled: false
+chain_suggestions:
+  before:
+    - "port-scanner"
+  after:
+    - "crackmapexec"
+
+enabled: true

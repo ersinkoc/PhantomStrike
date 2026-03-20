@@ -2,27 +2,50 @@ name: asnlookup
 version: "1.0"
 category: reconnaissance/network
 phase: reconnaissance
-command: asnlookup
+command: python3
+args: ["/app/tools/_custom/asnlookup-lite.py"]
 docker:
-  image: phantomstrike/asnlookup:latest
-  args:
-    - "-o"
-    - "${organization}"
+  image: phantomstrike/custom:latest
   memory_limit: "256m"
-  timeout: "300s"
+  timeout: "120s"
 
-short_description: ASN and IP ranges lookup
+short_description: ASN lookup with IP ranges and org info
 description: |
-  ASNLookup searches for the ASN (Autonomous System Number) of an organization
-  and retrieves all associated IP ranges.
+  ASN Lookup finds ASN for IP addresses, lists IP ranges, and retrieves
+  organization info using BGPView API and Team Cymru DNS. Supports
+  searching by organization name.
 
 parameters:
-  - name: organization
+  - name: target
     type: string
     required: true
-    description: Organization name
+    flag: ""
+    description: "IP address, domain, or ASN (e.g., AS13335)"
+  - name: timeout
+    type: string
+    required: false
+    flag: "-t"
+    default: "10"
+    description: "Request timeout"
+  - name: prefixes
+    type: bool
+    required: false
+    flag: "--prefixes"
+    default: false
+    description: "List all prefixes for ASN"
+  - name: search
+    type: bool
+    required: false
+    flag: "--search"
+    default: false
+    description: "Search by organization name"
 
 output:
   format: text
 
-enabled: false
+chain_suggestions:
+  after:
+    - "nmap"
+    - "masscan"
+
+enabled: true

@@ -2,43 +2,60 @@ name: zap
 version: "1.0"
 category: web/vulnerability-scanning
 phase: scanning
-command: zap-full-scan.py
+command: python3
+args: ["/app/tools/_custom/zap-lite.py"]
 docker:
-  image: phantomstrike/zap-full-scan.py:latest
-  args:
-    - "-t"
-    - "${target}"
-    - "-J"
-    - "/output/zap-report.json"
-    - "-r"
-    - "/output/zap-report.html"
-  memory_limit: "4g"
-  timeout: "3600s"
+  image: phantomstrike/custom:latest
+  memory_limit: "512m"
+  timeout: "300s"
 
-short_description: OWASP ZAP - Web App vulnerability scanner
+short_description: Active web scanner with spidering and vuln testing
 description: |
-  OWASP Zed Attack Proxy is one of the world's most popular free security tools
-  and is actively maintained by a dedicated international team of volunteers.
+  ZAP-lite actively scans web applications by spidering the site, finding forms,
+  and testing for common vulnerabilities including SQLi, XSS, LFI, and RFI.
+  Reports findings with severity ratings.
 
 parameters:
   - name: target
     type: string
     required: true
-    description: Target URL to scan
-  - name: context
+    flag: ""
+    description: "Target URL (e.g., http://example.com)"
+  - name: depth
     type: string
     required: false
-    description: Context file for authenticated scanning
+    flag: "-d"
+    default: "20"
+    description: "Max pages to spider"
+  - name: timeout
+    type: string
+    required: false
+    flag: "-t"
+    default: "10"
+    description: "Request timeout in seconds"
 
 output:
-  format: json
+  format: text
   success_patterns:
-    - "PASS"
-    - "WARN"
+    - "SQL Injection"
+    - "XSS"
+    - "LFI"
+    - "RFI"
   severity_indicators:
-    HIGH:
-      - "HIGH"
-    CRITICAL:
+    critical:
       - "CRITICAL"
+      - "LFI"
+      - "RFI"
+    high:
+      - "HIGH"
+      - "SQLi"
+      - "XSS"
 
-enabled: false
+chain_suggestions:
+  before:
+    - "httpx"
+  after:
+    - "nuclei"
+    - "sqlmap"
+
+enabled: true

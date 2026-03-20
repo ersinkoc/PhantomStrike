@@ -2,14 +2,11 @@ name: clair
 version: "1.0"
 category: container/vulnerability-scanning
 phase: scanning
-command: clairctl
+command: python3
+args:
+  - "/app/tools/_custom/clair-lite.py"
 docker:
-  image: phantomstrike/clairctl:latest
-  args:
-    - "report"
-    - "${image}"
-    - "-o"
-    - "json"
+  image: phantomstrike/custom:latest
   memory_limit: "2g"
   timeout: "600s"
 
@@ -36,4 +33,4 @@ chain_suggestions:
   after:
     - trivy
 
-enabled: false
+enabled: true

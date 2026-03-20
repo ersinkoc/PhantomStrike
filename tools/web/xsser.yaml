@@ -2,30 +2,66 @@ name: xsser
 version: "1.0"
 category: web/xss-automation
 phase: exploitation
-command: xsser
+command: python3
+args: ["/app/tools/_custom/xsser-lite.py"]
 docker:
-  image: phantomstrike/xsser:latest
-  args:
-    - "-u"
-    - "${target}"
-    - "--auto"
-    - "--Fp"
-    - "-o"
-    - "/output/xsser-results"
-  memory_limit: "1g"
-  timeout: "1800s"
+  image: phantomstrike/custom:latest
+  memory_limit: "512m"
+  timeout: "300s"
 
-short_description: XSS automation framework
+short_description: Advanced XSS scanner with DOM detection and encoding bypasses
 description: |
-  XSSer is an automatic framework to detect, exploit and report XSS vulnerabilities.
+  XSSer-lite performs advanced XSS scanning including DOM-based XSS detection,
+  multiple encoding bypass attempts, polyglot payloads, and event handler
+  injection testing. Analyzes reflection contexts.
 
 parameters:
   - name: target
     type: string
     required: true
-    description: Target URL
+    flag: ""
+    description: "Target URL with parameters (e.g., http://example.com/page?q=test)"
+  - name: timeout
+    type: string
+    required: false
+    flag: "-t"
+    default: "10"
+    description: "Request timeout in seconds"
+  - name: dom_only
+    type: bool
+    required: false
+    flag: "--dom-only"
+    default: false
+    description: "Only check for DOM-based XSS"
+  - name: no_encoding
+    type: bool
+    required: false
+    flag: "--no-encoding"
+    default: false
+    description: "Skip encoding bypass tests"
 
 output:
-  format: html
+  format: text
+  success_patterns:
+    - "Reflected XSS"
+    - "DOM XSS"
+    - "Encoding Bypass"
+    - "Event Handler"
+  severity_indicators:
+    high:
+      - "HIGH"
+      - "DOM XSS"
+      - "Reflected XSS"
+      - "Encoding Bypass"
+    medium:
+      - "MEDIUM"
+      - "DOM Sinks"
 
-enabled: false
+chain_suggestions:
+  before:
+    - "katana"
+    - "paramspider"
+  after:
+    - "nuclei"
+
+enabled: true

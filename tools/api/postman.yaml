@@ -2,18 +2,11 @@ name: postman
 version: "1.0"
 category: api/testing
 phase: scanning
-command: newman
+command: python3
+args:
+  - "/app/tools/_custom/postman-lite.py"
 docker:
-  image: phantomstrike/newman:latest
-  args:
-    - "run"
-    - "/input/collection.json"
-    - "-e"
-    - "/input/environment.json"
-    - "--reporters"
-    - "cli,json"
-    - "--reporter-json-export"
-    - "/output/postman-results.json"
+  image: phantomstrike/custom:latest
   memory_limit: "1g"
   timeout: "600s"
 
@@ -44,4 +37,4 @@ output:
   failure_patterns:
     - "failed"
 
-enabled: false
+enabled: true

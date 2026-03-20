@@ -2,14 +2,11 @@ name: sqlninja
 version: "1.0"
 category: database/sql-injection
 phase: exploitation
-command: sqlninja
+command: python3
+args:
+  - "/app/tools/_custom/sqlninja-lite.py"
 docker:
-  image: phantomstrike/sqlninja:latest
-  args:
-    - "-m"
-    - "test"
-    - "-f"
-    - "/config/sqlninja.conf"
+  image: phantomstrike/custom:latest
   memory_limit: "512m"
   timeout: "1800s"
 
@@ -28,4 +25,4 @@ parameters:
 output:
   format: text
 
-enabled: false
+enabled: true

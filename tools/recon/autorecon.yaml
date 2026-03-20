@@ -2,28 +2,51 @@ name: autorecon
 version: "1.0"
 category: reconnaissance/automation
 phase: reconnaissance
-command: autorecon
+command: python3
+args: ["/app/tools/_custom/autorecon-lite.py"]
 docker:
-  image: phantomstrike/autorecon:latest
-  args:
-    - "${target}"
-    - "-o"
-    - "/output/autorecon-results"
-  memory_limit: "2g"
-  timeout: "3600s"
+  image: phantomstrike/custom:latest
+  memory_limit: "512m"
+  timeout: "600s"
 
-short_description: Automated reconnaissance
+short_description: Automated recon pipeline (port scan + HTTP probe + subdomain enum)
 description: |
-  AutoRecon is a multi-threaded network reconnaissance tool which
-  performs automated enumeration of services.
+  AutoRecon-lite performs automated reconnaissance combining port scanning,
+  HTTP service probing, and subdomain enumeration (DNS brute-force + crt.sh)
+  in a single pipeline.
 
 parameters:
   - name: target
     type: string
     required: true
-    description: Target IP/CIDR
+    flag: ""
+    description: "Target domain or IP"
+  - name: timeout
+    type: string
+    required: false
+    flag: "-t"
+    default: "2"
+    description: "Connection timeout"
+  - name: skip_subdomains
+    type: bool
+    required: false
+    flag: "--skip-subdomains"
+    default: false
+    description: "Skip subdomain enumeration"
+  - name: skip_http
+    type: bool
+    required: false
+    flag: "--skip-http"
+    default: false
+    description: "Skip HTTP probing"
 
 output:
-  format: directory
+  format: text
 
-enabled: false
+chain_suggestions:
+  after:
+    - "nmap"
+    - "nuclei"
+    - "httpx"
+
+enabled: true

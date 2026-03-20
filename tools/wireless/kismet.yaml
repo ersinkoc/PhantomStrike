@@ -2,19 +2,13 @@ name: kismet
 version: "1.0"
 category: wireless/network-detection
 phase: reconnaissance
-command: kismet
+command: python3
+args:
+  - "/app/tools/_custom/kismet-lite.py"
 docker:
-  image: phantomstrike/kismet:latest
-  args:
-    - "-c"
-    - "${interface}"
-    - "--daemonize"
-    - "--log-prefix"
-    - "/output/kismet"
+  image: phantomstrike/custom:latest
   memory_limit: "2g"
   timeout: "3600s"
-  privileged: true
-  network_mode: host
 
 short_description: Wireless network detector
 description: |
@@ -30,4 +24,4 @@ parameters:
 output:
   format: xml
 
-enabled: false
+enabled: true

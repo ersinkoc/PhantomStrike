@@ -2,36 +2,44 @@ name: fofa
 version: "1.0"
 category: reconnaissance/osint
 phase: reconnaissance
-command: fofa
+command: python3
+args: ["/app/tools/_custom/fofa-lite.py"]
 docker:
-  image: phantomstrike/fofa:latest
-  args:
-    - "-q"
-    - "${query}"
-    - "-s"
-    - "${size}"
-    - "-k"
-    - "${api_key}"
+  image: phantomstrike/custom:latest
   memory_limit: "512m"
   timeout: "300s"
 
-short_description: FOFA search engine
+short_description: Internet asset search using free public APIs
 description: |
-  FOFA is a cyberspace search engine for mapping assets.
+  FOFA-lite searches for exposed internet assets using free public APIs
+  including Shodan InternetDB, crt.sh, HackerTarget, and urlscan.io.
+  Identifies open ports, services, CVEs, and certificates.
 
 parameters:
-  - name: query
+  - name: target
     type: string
     required: true
-  - name: size
-    type: integer
+    flag: ""
+    description: "Domain or IP to search"
+  - name: timeout
+    type: string
     required: false
-    default: 100
-  - name: api_key
-    type: string
-    required: true
+    flag: "-t"
+    default: "15"
+    description: "Request timeout"
+  - name: probe
+    type: bool
+    required: false
+    flag: "--probe"
+    default: false
+    description: "Probe discovered IPs for open services"
 
 output:
-  format: json
+  format: text
 
-enabled: false
+chain_suggestions:
+  after:
+    - "nmap"
+    - "nuclei"
+
+enabled: true

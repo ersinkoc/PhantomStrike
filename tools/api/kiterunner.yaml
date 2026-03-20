@@ -2,17 +2,11 @@ name: kiterunner
 version: "1.0"
 category: api/routing-discovery
 phase: scanning
-command: kite
+command: python3
+args:
+  - "/app/tools/_custom/kiterunner-lite.py"
 docker:
-  image: phantomstrike/kite:latest
-  args:
-    - "scan"
-    - "-t"
-    - "${target}"
-    - "-w"
-    - "/wordlists/routes-large.kite"
-    - "-o"
-    - "/output/kiterunner-results.json"
+  image: phantomstrike/custom:latest
   memory_limit: "2g"
   timeout: "1800s"
 
@@ -35,4 +29,4 @@ parameters:
 output:
   format: json
 
-enabled: false
+enabled: true

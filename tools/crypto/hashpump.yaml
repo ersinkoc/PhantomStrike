@@ -2,18 +2,11 @@ name: hashpump
 version: "1.0"
 category: crypto/hash-length-extension
 phase: exploitation
-command: hashpump
+command: python3
+args:
+  - "/app/tools/_custom/hashpump-lite.py"
 docker:
-  image: phantomstrike/hashpump:latest
-  args:
-    - "-s"
-    - "${signature}"
-    - "-d"
-    - "${data}"
-    - "-a"
-    - "${append}"
-    - "-k"
-    - "${keylen}"
+  image: phantomstrike/custom:latest
   memory_limit: "256m"
   timeout: "60s"
 
@@ -38,4 +31,4 @@ parameters:
 output:
   format: text
 
-enabled: false
+enabled: true

@@ -2,16 +2,13 @@ name: cyberchef
 version: "1.0"
 category: forensics/data-transformation
 phase: analysis
-command: cyberchef-server
+command: python3
+args:
+  - "/app/tools/_custom/cyberchef-lite.py"
 docker:
-  image: phantomstrike/cyberchef-server:latest
-  args:
-    - "--port"
-    - "8080"
+  image: phantomstrike/custom:latest
   memory_limit: "1g"
   timeout: "3600s"
-  ports:
-    - "8080:8080"
 
 short_description: Cyber Swiss Army Knife
 description: |
@@ -27,4 +24,4 @@ parameters:
 output:
   format: web
 
-enabled: false
+enabled: true

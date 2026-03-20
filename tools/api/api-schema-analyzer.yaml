@@ -2,7 +2,7 @@ name: api-schema-analyzer
 version: "1.0"
 category: api/schema-analysis
 phase: scanning
-command: api-schema-analyzer
+command: python3
 docker:
   image: phantomstrike/api-schema-analyzer:latest
   args:
@@ -25,4 +25,4 @@ parameters:
 output:
   format: json
 
-enabled: false
+enabled: true

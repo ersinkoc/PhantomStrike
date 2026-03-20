@@ -2,13 +2,11 @@ name: volatility
 version: "1.0"
 category: forensics/memory-analysis
 phase: analysis
-command: volatility
+command: python3
+args:
+  - "/app/tools/_custom/volatility-lite.py"
 docker:
-  image: phantomstrike/volatility:latest
-  args:
-    - "-f"
-    - "/input/memory.dmp"
-    - "windows.info"
+  image: phantomstrike/custom:latest
   memory_limit: "4g"
   timeout: "1800s"
 
@@ -30,4 +28,4 @@ parameters:
 output:
   format: text
 
-enabled: false
+enabled: true

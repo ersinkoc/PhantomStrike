@@ -2,7 +2,7 @@ name: volatility3
 version: "1.0"
 category: forensics/memory-analysis
 phase: analysis
-command: volatility3
+command: python3
 docker:
   image: phantomstrike/volatility3:latest
   args:
@@ -26,4 +26,4 @@ parameters:
 output:
   format: text
 
-enabled: false
+enabled: true

@@ -2,12 +2,11 @@ name: oscanner
 version: "1.0"
 category: database/oracle-scanning
 phase: scanning
-command: oscanner
+command: python3
+args:
+  - "/app/tools/_custom/oracle-scanner.py"
 docker:
-  image: phantomstrike/oscanner:latest
-  args:
-    - "-s"
-    - "${target}"
+  image: phantomstrike/custom:latest
   memory_limit: "512m"
   timeout: "300s"
 
@@ -25,4 +24,4 @@ parameters:
 output:
   format: text
 
-enabled: false
+enabled: true

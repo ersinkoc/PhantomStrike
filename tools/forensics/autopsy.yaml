@@ -2,15 +2,11 @@ name: autopsy
 version: "1.0"
 category: forensics/disk-analysis
 phase: analysis
-command: autopsy
+command: python3
+args:
+  - "/app/tools/_custom/autopsy-lite.py"
 docker:
-  image: phantomstrike/autopsy:latest
-  args:
-    - "--nogui"
-    - "-d"
-    - "/input/disk-image"
-    - "--outputDir"
-    - "/output/autopsy"
+  image: phantomstrike/custom:latest
   memory_limit: "4g"
   timeout: "3600s"
 
@@ -28,4 +24,4 @@ parameters:
 output:
   format: directory
 
-enabled: false
+enabled: true

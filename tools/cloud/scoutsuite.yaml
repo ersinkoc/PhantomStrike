@@ -2,14 +2,11 @@ name: scoutsuite
 version: "1.0"
 category: cloud/security-audit
 phase: scanning
-command: scout
+command: python3
+args:
+  - "/app/tools/_custom/scout-lite.py"
 docker:
-  image: phantomstrike/scout:latest
-  args:
-    - "aws"
-    - "--report-dir"
-    - "/output/scoutsuite"
-    - "--no-browser"
+  image: phantomstrike/custom:latest
   memory_limit: "2g"
   timeout: "1800s"
 
@@ -54,4 +51,4 @@ chain_suggestions:
   after:
     - prowler
 
-enabled: false
+enabled: true

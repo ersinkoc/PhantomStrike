@@ -1,0 +1,65 @@
+name: cloud-scanner
+version: "1.0"
+category: cloud/storage-security
+phase: scanning
+command: python3
+args: ["/app/tools/_custom/cloud-scanner.py"]
+docker:
+  image: phantomstrike/custom:latest
+  memory_limit: "512m"
+  timeout: "600s"
+
+short_description: Multi-cloud public storage scanner (S3, Azure, GCP)
+description: |
+  Cloud-Scanner checks for publicly accessible cloud storage buckets and
+  containers across AWS S3, Azure Blob Storage, GCP Cloud Storage, and
+  DigitalOcean Spaces. Generates name variations from organization/domain
+  names and tests for public listing access.
+
+parameters:
+  - name: target
+    type: string
+    required: true
+    flag: ""
+    description: "Organization or domain name to generate bucket names from"
+  - name: timeout
+    type: string
+    required: false
+    flag: "-t"
+    default: "5"
+    description: "Request timeout"
+  - name: providers
+    type: string
+    required: false
+    flag: "--providers"
+    description: "Cloud providers to check (s3, azure, gcp, do)"
+  - name: custom
+    type: string
+    required: false
+    flag: "--custom"
+    description: "Custom bucket names to check"
+  - name: quick
+    type: bool
+    required: false
+    flag: "--quick"
+    default: false
+    description: "Quick scan (fewer name variations)"
+
+output:
+  format: text
+  success_patterns:
+    - "PUBLIC"
+    - "PUBLICLY ACCESSIBLE"
+  severity_indicators:
+    critical:
+      - "CRITICAL"
+      - "PUBLIC"
+      - "PUBLICLY ACCESSIBLE"
+    high:
+      - "HIGH"
+
+chain_suggestions:
+  after:
+    - "nuclei"
+
+enabled: true

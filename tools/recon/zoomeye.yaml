@@ -2,31 +2,50 @@ name: zoomeye
 version: "1.0"
 category: reconnaissance/osint
 phase: reconnaissance
-command: zoomeye
+command: python3
+args: ["/app/tools/_custom/zoomeye-lite.py"]
 docker:
-  image: phantomstrike/zoomeye:latest
-  args:
-    - "search"
-    - "${query}"
-    - "-num"
-    - "${limit}"
+  image: phantomstrike/custom:latest
   memory_limit: "512m"
   timeout: "300s"
 
-short_description: ZoomEye search engine
+short_description: Service fingerprinting via banner grabbing
 description: |
-  ZoomEye is a cyberspace search engine.
+  ZoomEye-lite performs service fingerprinting by connecting to open ports,
+  grabbing service banners, and identifying service types and versions.
+  Supports HTTP fingerprinting and SSL/TLS info extraction.
 
 parameters:
-  - name: query
+  - name: target
     type: string
     required: true
-  - name: limit
-    type: integer
+    flag: ""
+    description: "Target IP or hostname"
+  - name: ports
+    type: string
     required: false
-    default: 20
+    flag: "-p"
+    description: "Ports to scan (e.g., 80,443,8080)"
+  - name: timeout
+    type: string
+    required: false
+    flag: "-t"
+    default: "3"
+    description: "Connection timeout"
+  - name: deep
+    type: bool
+    required: false
+    flag: "--deep"
+    default: false
+    description: "Deep fingerprinting (slower)"
 
 output:
-  format: json
+  format: text
 
-enabled: false
+chain_suggestions:
+  before:
+    - "port-scanner"
+  after:
+    - "nuclei"
+
+enabled: true

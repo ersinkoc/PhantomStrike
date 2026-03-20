@@ -1,32 +1,60 @@
 name: responder
 version: "1.0"
-category: network/poisoning
-phase: exploitation
-command: responder
+category: network/service-detection
+phase: scanning
+command: python3
+args: ["/app/tools/_custom/responder-lite.py"]
 docker:
-  image: phantomstrike/responder:latest
-  args:
-    - "-I"
-    - "${interface}"
-    - "-wrfv"
-    - "--lm"
+  image: phantomstrike/custom:latest
   memory_limit: "512m"
-  timeout: "3600s"
-  privileged: true
-  network_mode: host
+  timeout: "300s"
 
-short_description: LLMNR, NBT-NS and MDNS poisoner
+short_description: Network service detector and misconfiguration checker
 description: |
-  Responder is an LLMNR, NBT-NS and MDNS poisoner. It answers specific NBT-NS
-  and LLMNR queries based on the name suffix of the request.
+  Responder-lite scans common service ports, identifies services via banner
+  grabbing, and checks for misconfigurations including anonymous FTP,
+  unauthenticated Redis/MongoDB/Memcached, and exposed HTTP endpoints.
 
 parameters:
-  - name: interface
+  - name: target
     type: string
     required: true
-    description: Network interface
+    flag: ""
+    description: "Target IP or hostname"
+  - name: timeout
+    type: string
+    required: false
+    flag: "-t"
+    default: "3"
+    description: "Connection timeout"
+  - name: skip_misconfig
+    type: bool
+    required: false
+    flag: "--skip-misconfig"
+    default: false
+    description: "Skip misconfiguration checks"
+  - name: skip_http
+    type: bool
+    required: false
+    flag: "--skip-http"
+    default: false
+    description: "Skip HTTP misconfiguration checks"
 
 output:
   format: text
+  severity_indicators:
+    critical:
+      - "CRITICAL"
+      - "without authentication"
+    high:
+      - "HIGH"
+      - "Anonymous"
+    medium:
+      - "MEDIUM"
 
-enabled: false
+chain_suggestions:
+  after:
+    - "nmap"
+    - "nuclei"
+
+enabled: true

@@ -2,13 +2,11 @@ name: snyk
 version: "1.0"
 category: cloud/sca
 phase: scanning
-command: snyk
+command: python3
+args:
+  - "/app/tools/_custom/snyk-lite.py"
 docker:
-  image: phantomstrike/snyk:latest
-  args:
-    - "test"
-    - "--json"
-    - "--severity-threshold=high"
+  image: phantomstrike/custom:latest
   memory_limit: "2g"
   timeout: "600s"
 
@@ -36,4 +34,4 @@ output:
     HIGH:
       - "high"
 
-enabled: false
+enabled: true

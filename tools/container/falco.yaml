@@ -2,19 +2,13 @@ name: falco
 version: "1.0"
 category: container/runtime-security
 phase: monitoring
-command: falco
+command: python3
+args:
+  - "/app/tools/_custom/falco-lite.py"
 docker:
-  image: phantomstrike/falco:latest
-  args:
-    - "-c"
-    - "/etc/falco/falco.yaml"
-    - "-o"
-    - "json_output=true"
+  image: phantomstrike/custom:latest
   memory_limit: "512m"
   timeout: "3600s"
-  privileged: true
-  volumes:
-    - "/var/run/docker.sock:/var/run/docker.sock"
 
 short_description: Container runtime security
 description: |
@@ -29,4 +23,4 @@ parameters:
 output:
   format: json
 
-enabled: false
+enabled: true

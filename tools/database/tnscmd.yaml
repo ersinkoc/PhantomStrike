@@ -2,12 +2,11 @@ name: tnscmd
 version: "1.0"
 category: database/oracle-scanning
 phase: scanning
-command: tnscmd10g
+command: python3
+args:
+  - "/app/tools/_custom/tnscmd-lite.py"
 docker:
-  image: phantomstrike/tnscmd10g:latest
-  args:
-    - "ping"
-    - "${target}"
+  image: phantomstrike/custom:latest
   memory_limit: "256m"
   timeout: "60s"
 
@@ -24,4 +23,4 @@ parameters:
 output:
   format: text
 
-enabled: false
+enabled: true

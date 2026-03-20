@@ -2,14 +2,11 @@ name: stegsolve
 version: "1.0"
 category: forensics/steganography-analysis
 phase: analysis
-command: java
+command: python3
+args:
+  - "/app/tools/_custom/stegsolve-lite.py"
 docker:
-  image: phantomstrike/java:latest
-  args:
-    - "-jar"
-    - "/tools/stegsolve.jar"
-    - "/input/image.png"
-    - "/output/stegsolve-results"
+  image: phantomstrike/custom:latest
   memory_limit: "1g"
   timeout: "600s"
 
@@ -26,4 +23,4 @@ parameters:
 output:
   format: directory
 
-enabled: false
+enabled: true

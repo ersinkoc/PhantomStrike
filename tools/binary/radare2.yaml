@@ -2,14 +2,11 @@ name: radare2
 version: "1.0"
 category: binary/reverse-engineering
 phase: analysis
-command: r2
+command: python3
+args:
+  - "/app/tools/_custom/radare2-lite.py"
 docker:
-  image: phantomstrike/r2:latest
-  args:
-    - "-q"
-    - "-c"
-    - "izzj"
-    - "/input/binary"
+  image: phantomstrike/custom:latest
   memory_limit: "2g"
   timeout: "600s"
 
@@ -27,4 +24,4 @@ parameters:
 output:
   format: json
 
-enabled: false
+enabled: true

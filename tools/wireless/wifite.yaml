@@ -2,7 +2,7 @@ name: wifite
 version: "1.0"
 category: wireless/wifi-automation
 phase: exploitation
-command: wifite
+command: python3
 docker:
   image: phantomstrike/wifite:latest
   args:
@@ -30,4 +30,4 @@ parameters:
 output:
   format: text
 
-enabled: false
+enabled: true

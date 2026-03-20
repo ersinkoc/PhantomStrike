@@ -2,15 +2,11 @@ name: pacu
 version: "1.0"
 category: cloud/exploitation
 phase: exploitation
-command: pacu
+command: python3
+args:
+  - "/app/tools/_custom/pacu-lite.py"
 docker:
-  image: phantomstrike/pacu:latest
-  args:
-    - "--session"
-    - "${session}"
-    - "--module"
-    - "${module}"
-    - "--exec"
+  image: phantomstrike/custom:latest
   memory_limit: "2g"
   timeout: "1800s"
 
@@ -32,4 +28,4 @@ parameters:
 output:
   format: json
 
-enabled: false
+enabled: true

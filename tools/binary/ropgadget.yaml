@@ -2,15 +2,11 @@ name: ropgadget
 version: "1.0"
 category: binary/rop-finder
 phase: analysis
-command: ROPgadget
+command: python3
+args:
+  - "/app/tools/_custom/ropgadget-lite.py"
 docker:
-  image: phantomstrike/ROPgadget:latest
-  args:
-    - "--binary"
-    - "/input/binary"
-    - "--ropchain"
-    - ">"
-    - "/output/ropgadget-results.txt"
+  image: phantomstrike/custom:latest
   memory_limit: "1g"
   timeout: "300s"
 
@@ -28,4 +24,4 @@ parameters:
 output:
   format: text
 
-enabled: false
+enabled: true

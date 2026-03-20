@@ -2,15 +2,11 @@ name: terrascan
 version: "1.0"
 category: iac/policy-as-code
 phase: scanning
-command: terrascan
+command: python3
 args:
-  - "scan"
-  - "-d"
-  - "${path}"
-  - "-o"
-  - "json"
+  - "/app/tools/_custom/terrascan-lite.py"
 docker:
-  image: phantomstrike/terrascan:latest
+  image: phantomstrike/custom:latest
   memory_limit: "1g"
   timeout: "300s"
 

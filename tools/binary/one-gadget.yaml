@@ -2,11 +2,11 @@ name: one-gadget
 version: "1.0"
 category: binary/exploit-helper
 phase: analysis
-command: one_gadget
+command: python3
+args:
+  - "/app/tools/_custom/one-gadget-lite.py"
 docker:
-  image: phantomstrike/one_gadget:latest
-  args:
-    - "/input/libc.so"
+  image: phantomstrike/custom:latest
   memory_limit: "512m"
   timeout: "300s"
 
@@ -23,4 +23,4 @@ parameters:
 output:
   format: text
 
-enabled: false
+enabled: true

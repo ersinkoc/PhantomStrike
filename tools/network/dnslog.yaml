@@ -1,32 +1,67 @@
 name: dnslog
 version: "1.0"
 category: network/dns-logging
-phase: exploitation
-command: dnslog
+phase: reconnaissance
+command: python3
+args: ["/app/tools/_custom/dnslog-lite.py"]
 docker:
-  image: phantomstrike/dnslog:latest
-  args:
-    - "-domain"
-    - "${domain}"
-    - "-wait"
-    - "${wait_time}"
+  image: phantomstrike/custom:latest
   memory_limit: "256m"
-  timeout: "300s"
+  timeout: "120s"
 
-short_description: DNS logging tool
+short_description: DNS query logger with TTL info and security checks
 description: |
-  dnslog is a tool for logging DNS queries.
+  DNSLog-lite performs comprehensive DNS queries (A, AAAA, MX, NS, TXT, SOA,
+  CNAME) and logs all responses with TTL information. Checks for email
+  security (SPF, DMARC). Supports querying multiple DNS servers.
 
 parameters:
-  - name: domain
+  - name: target
     type: string
     required: true
-  - name: wait_time
-    type: integer
+    flag: ""
+    description: "Domain to query"
+  - name: type
+    type: string
     required: false
-    default: 60
+    flag: "-t"
+    description: "Record types to query (space-separated)"
+  - name: nameserver
+    type: string
+    required: false
+    flag: "-n"
+    default: "8.8.8.8"
+    description: "DNS server"
+  - name: timeout
+    type: string
+    required: false
+    flag: "--timeout"
+    default: "5"
+    description: "Query timeout"
+  - name: all_ns
+    type: bool
+    required: false
+    flag: "--all-ns"
+    default: false
+    description: "Query multiple DNS servers"
+  - name: trace
+    type: bool
+    required: false
+    flag: "--trace"
+    default: false
+    description: "Show authority and additional sections"
 
 output:
   format: text
+  severity_indicators:
+    high:
+      - "MISSING"
+      - "No SPF"
+      - "No DMARC"
 
-enabled: false
+chain_suggestions:
+  after:
+    - "subfinder"
+    - "dns-recon"
+
+enabled: true

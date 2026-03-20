@@ -2,12 +2,11 @@ name: tfsec
 version: "1.0"
 category: iac/security
 phase: scanning
-command: tfsec
+command: python3
 args:
-  - "${path}"
-  - "--format=json"
+  - "/app/tools/_custom/tfsec-lite.py"
 docker:
-  image: phantomstrike/tfsec:latest
+  image: phantomstrike/custom:latest
   memory_limit: "1g"
   timeout: "300s"
 

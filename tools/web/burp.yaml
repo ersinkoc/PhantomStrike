@@ -2,31 +2,75 @@ name: burp
 version: "1.0"
 category: web/vulnerability-scanning
 phase: scanning
-command: burpsuite
+command: python3
+args: ["/app/tools/_custom/burp-lite.py"]
 docker:
-  image: phantomstrike/burpsuite:latest
-  args:
-    - "--project-file=/output/burp-project.burp"
-    - "--config-file=/config/burp-config.json"
-  memory_limit: "4g"
-  timeout: "3600s"
+  image: phantomstrike/custom:latest
+  memory_limit: "512m"
+  timeout: "300s"
 
-short_description: Burp Suite - Web vulnerability scanner
+short_description: Web vulnerability scanner (SQLi, XSS, redirect, SSRF)
 description: |
-  Burp Suite is an integrated platform for performing security testing of web applications.
-  Enterprise edition supports automated scanning.
+  Burp-lite scans web applications for common vulnerabilities including
+  SQL injection, XSS, open redirect, and SSRF patterns in URL parameters
+  and HTML forms. Sends payloads and analyzes responses for vulnerability indicators.
 
 parameters:
   - name: target
     type: string
     required: true
-    description: Target URL
-  - name: config
+    flag: ""
+    description: "Target URL with parameters (e.g., http://example.com/page?id=1)"
+  - name: timeout
     type: string
     required: false
-    description: Burp configuration file
+    flag: "-t"
+    default: "10"
+    description: "Request timeout in seconds"
+  - name: forms
+    type: bool
+    required: false
+    flag: "--forms"
+    default: false
+    description: "Also scan HTML forms"
+  - name: skip_sqli
+    type: bool
+    required: false
+    flag: "--skip-sqli"
+    default: false
+    description: "Skip SQL injection tests"
+  - name: skip_xss
+    type: bool
+    required: false
+    flag: "--skip-xss"
+    default: false
+    description: "Skip XSS tests"
 
 output:
-  format: json
+  format: text
+  success_patterns:
+    - "SQLi"
+    - "XSS"
+    - "Open Redirect"
+    - "SSRF"
+  severity_indicators:
+    critical:
+      - "CRITICAL"
+      - "SSRF"
+    high:
+      - "HIGH"
+      - "SQLi"
+      - "XSS"
+    medium:
+      - "MEDIUM"
+      - "Open Redirect"
 
-enabled: false
+chain_suggestions:
+  before:
+    - "katana"
+    - "httpx"
+  after:
+    - "nuclei"
+    - "sqlmap"
+
+enabled: true
