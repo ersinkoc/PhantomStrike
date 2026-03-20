@@ -34,4 +34,4 @@ parameters:
 output:
   format: xml
 
-enabled: true
+enabled: false

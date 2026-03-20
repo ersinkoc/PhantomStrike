@@ -35,4 +35,4 @@ parameters:
 output:
   format: json
 
-enabled: true
+enabled: false

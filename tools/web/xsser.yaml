@@ -28,4 +28,4 @@ parameters:
 output:
   format: html
 
-enabled: true
+enabled: false

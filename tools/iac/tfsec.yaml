@@ -39,4 +39,4 @@ chain_suggestions:
   before:
     - checkov
 
-enabled: true
+enabled: false

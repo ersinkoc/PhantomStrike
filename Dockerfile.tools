@@ -54,20 +54,18 @@ RUN pip3 install --break-system-packages git+https://github.com/aboul3la/Sublist
 RUN curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin 2>/dev/null || true
 RUN curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin 2>/dev/null || true
 
-# More Python security tools
-RUN pip3 install --break-system-packages \
-    droopescan eyewitness pdfcrack hash-identifier \
-    xsser paramspider uro waybackurls \
-    jwt-tool smbmap volatility3 \
-    prowler checkov cloudsplaining \
-    2>/dev/null || true
+# Python security tools (verified installable)
+RUN pip3 install --break-system-packages droopescan 2>/dev/null || true
+RUN pip3 install --break-system-packages uro 2>/dev/null || true
+RUN pip3 install --break-system-packages smbmap 2>/dev/null || true
+RUN pip3 install --break-system-packages checkov 2>/dev/null || true
+RUN pip3 install --break-system-packages prowler 2>/dev/null || true
+RUN pip3 install --break-system-packages cloudsplaining 2>/dev/null || true
 
-# More apt tools (batch 2)
+# APT security tools (verified available)
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    enum4linux reaver bully wifite \
-    smbmap pdfcrack \
-    ike-scan \
-    2>/dev/null; rm -rf /var/lib/apt/lists/* || true
+    ike-scan reaver bully sleuthkit pdfcrack \
+    && rm -rf /var/lib/apt/lists/*
 
 # Go binaries
 RUN for url in \

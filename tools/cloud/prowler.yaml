@@ -41,4 +41,4 @@ output:
     HIGH:
       - "HIGH"
 
-enabled: true
+enabled: false

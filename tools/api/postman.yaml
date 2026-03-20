@@ -44,4 +44,4 @@ output:
   failure_patterns:
     - "failed"
 
-enabled: true
+enabled: false
