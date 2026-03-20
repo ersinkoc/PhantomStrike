@@ -6,7 +6,7 @@ command: ffuf
 args: ["-noninteractive"]
 
 docker:
-  image: ffuf/ffuf:latest
+  image: phantomstrike/ffuf:latest
   memory_limit: "512m"
   timeout: "300s"
 

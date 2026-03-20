@@ -6,7 +6,7 @@ command: gobuster
 args: ["dir"]
 
 docker:
-  image: ghcr.io/oj/gobuster:latest
+  image: phantomstrike/gobuster:latest
   memory_limit: "512m"
   timeout: "300s"
 
