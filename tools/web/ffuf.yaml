@@ -3,7 +3,12 @@ version: "1.0"
 category: web/fuzzing
 phase: scanning
 command: ffuf
-args: []
+args: ["-noninteractive"]
+
+docker:
+  image: ffuf/ffuf:latest
+  memory_limit: "512m"
+  timeout: "300s"
 
 short_description: Fast web fuzzer for directory and parameter discovery
 description: |
@@ -11,19 +16,52 @@ description: |
   to discover directories, files, parameters, and virtual hosts. It supports
   multiple wordlists, filters, and matchers for flexible fuzzing.
 notes: |
-  - Runs in process mode (no Docker) - requires ffuf installed locally
   - Use FUZZ keyword in URL for fuzz position
-  - Use -w for wordlist, -mc for match codes, -fc for filter codes
-  - Use -t for threads (default: 40)
-  - Use -e for extensions (e.g. -e .php,.txt,.html)
+  - Use wordlist for the wordlist path
+  - Use match_code for match codes, filter_code for filter codes
+  - Use threads for concurrency (default: 40)
+  - Use extensions for file extensions (e.g. .php,.txt,.html)
 
 parameters:
-  - name: flags
+  - name: wordlist
     type: string
     required: false
-    flag: ""
-    default: "-mc 200,204,301,302,307,401,403,405 -t 40"
-    description: "Raw ffuf flags (e.g. -w /usr/share/wordlists/common.txt -mc 200,301 -t 50)"
+    flag: "-w"
+    default: "/usr/share/wordlists/dirb/common.txt"
+    description: "Path to wordlist file"
+  - name: match_code
+    type: string
+    required: false
+    flag: "-mc"
+    default: "200,204,301,302,307,401,403,405"
+    description: "Match HTTP status codes"
+  - name: filter_code
+    type: string
+    required: false
+    flag: "-fc"
+    description: "Filter HTTP status codes"
+  - name: filter_size
+    type: string
+    required: false
+    flag: "-fs"
+    description: "Filter response size"
+  - name: threads
+    type: string
+    required: false
+    flag: "-t"
+    default: "40"
+    description: "Number of concurrent threads"
+  - name: extensions
+    type: string
+    required: false
+    flag: "-e"
+    description: "Comma-separated list of extensions (e.g. .php,.txt,.html)"
+  - name: recursion
+    type: bool
+    required: false
+    flag: "-recursion"
+    default: false
+    description: "Enable recursive scanning"
   - name: target
     type: string
     required: true

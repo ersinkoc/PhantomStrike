@@ -3,12 +3,12 @@ version: "1.0"
 category: web/vulnerability-scanning
 phase: exploitation
 command: nuclei
-args: []
+args: ["-silent", "-nc"]
 
 docker:
   image: projectdiscovery/nuclei:latest
   memory_limit: "2g"
-  timeout: "1800s"
+  timeout: "300s"
 
 short_description: Fast vulnerability scanner using templates
 description: |
@@ -17,18 +17,45 @@ description: |
   misconfigurations, exposed panels, and more.
 notes: |
   - Templates are auto-updated on first run
-  - Use -t to specify custom template paths
-  - Use -severity to filter by severity level
-  - Use -tags to filter by template tags
-  - Use -c for concurrent templates, -rl for rate limit
+  - Use severity to filter by severity level
+  - Use tags to filter by template tags
+  - Use templates to specify custom template paths
 
 parameters:
-  - name: flags
+  - name: severity
     type: string
     required: false
-    flag: ""
-    default: "-silent -nc"
-    description: "Raw nuclei flags (e.g. -severity critical,high -tags cve -c 50 -rl 150)"
+    flag: "-severity"
+    default: "critical,high,medium"
+    description: "Severity levels to scan for (e.g. critical,high,medium,low)"
+  - name: templates
+    type: string
+    required: false
+    flag: "-t"
+    description: "Template or template directory paths"
+  - name: tags
+    type: string
+    required: false
+    flag: "-tags"
+    description: "Tags to filter templates (e.g. cve,rce,sqli)"
+  - name: rate_limit
+    type: string
+    required: false
+    flag: "-rl"
+    default: "150"
+    description: "Maximum requests per second"
+  - name: concurrency
+    type: string
+    required: false
+    flag: "-c"
+    default: "25"
+    description: "Number of concurrent templates to process"
+  - name: timeout
+    type: string
+    required: false
+    flag: "-timeout"
+    default: "30"
+    description: "Timeout in seconds for each request"
   - name: target
     type: string
     required: true

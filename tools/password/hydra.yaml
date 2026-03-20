@@ -3,12 +3,12 @@ version: "1.0"
 category: password/brute-force
 phase: exploitation
 command: hydra
-args: []
+args: ["-f"]
 
 docker:
   image: vanhauser/hydra:latest
   memory_limit: "512m"
-  timeout: "1800s"
+  timeout: "300s"
 
 short_description: Fast and flexible network login cracker
 description: |
@@ -17,24 +17,50 @@ description: |
   It is one of the most widely used tools for brute-force password attacks.
 notes: |
   - Syntax: hydra [options] target protocol
-  - Use -l for single username, -L for username list
-  - Use -p for single password, -P for password list
-  - Use -t for number of parallel tasks (default: 16)
-  - Use -V for verbose output showing each attempt
-  - Use -f to stop on first valid password found
+  - Use username for single username, userlist for username file
+  - Use password for single password, passlist for password file
+  - Use -f to stop on first valid password found (set in args)
+  - Target and service are positional args at the end (target service)
 
 parameters:
-  - name: flags
+  - name: username
     type: string
     required: false
-    flag: ""
-    default: "-t 16 -f -V"
-    description: "Raw hydra flags (e.g. -l admin -P /usr/share/wordlists/rockyou.txt -t 16 -f)"
+    flag: "-l"
+    description: "Single username to test"
+  - name: userlist
+    type: string
+    required: false
+    flag: "-L"
+    description: "File containing list of usernames"
+  - name: password
+    type: string
+    required: false
+    flag: "-p"
+    description: "Single password to test"
+  - name: passlist
+    type: string
+    required: false
+    flag: "-P"
+    default: "/usr/share/wordlists/rockyou.txt"
+    description: "File containing list of passwords"
+  - name: threads
+    type: string
+    required: false
+    flag: "-t"
+    default: "16"
+    description: "Number of parallel tasks"
+  - name: verbose
+    type: bool
+    required: false
+    flag: "-V"
+    default: false
+    description: "Verbose mode, show each login attempt"
   - name: target
     type: string
     required: true
     flag: ""
-    description: "Target in hydra format: host protocol (e.g. 192.168.1.1 ssh)"
+    description: "Target and service (e.g. '192.168.1.1 ssh' or 'ssh://192.168.1.1')"
 
 output:
   format: text

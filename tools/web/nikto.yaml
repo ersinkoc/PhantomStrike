@@ -3,7 +3,12 @@ version: "1.0"
 category: web/vulnerability-scanning
 phase: scanning
 command: nikto
-args: []
+args: ["-ask", "no", "-nointeractive"]
+
+docker:
+  image: phantomstrike/nikto:latest
+  memory_limit: "512m"
+  timeout: "300s"
 
 short_description: Comprehensive web server scanner for misconfigurations and vulnerabilities
 description: |
@@ -13,19 +18,34 @@ description: |
   server configuration issues. It supports SSL, proxy, host authentication,
   and output in multiple formats.
 notes: |
-  - Runs in process mode (no Docker) - requires nikto installed locally
-  - Uses -ask no for non-interactive mode
+  - Uses -ask no for non-interactive mode (set in args)
   - Nikto is noisy by design; not suitable for stealthy assessments
-  - Use -ssl flag for HTTPS targets
+  - Use ssl flag for HTTPS targets
   - Tuning codes: 1=Files, 2=Misconfig, 3=Info, 4=XSS, 5=Command Injection, 6=RFI
 
 parameters:
-  - name: flags
+  - name: ssl
+    type: bool
+    required: false
+    flag: "-ssl"
+    default: false
+    description: "Force SSL mode for HTTPS targets"
+  - name: port
     type: string
     required: false
-    flag: ""
-    default: "-ask no"
-    description: "Raw nikto flags (e.g. -ask no -ssl -p 443 -Tuning 123)"
+    flag: "-p"
+    description: "Port to scan (default: 80)"
+  - name: tuning
+    type: string
+    required: false
+    flag: "-Tuning"
+    description: "Scan tuning codes (e.g. 123 for Files+Misconfig+Info)"
+  - name: timeout
+    type: string
+    required: false
+    flag: "-timeout"
+    default: "10"
+    description: "Timeout for requests in seconds"
   - name: target
     type: string
     required: true

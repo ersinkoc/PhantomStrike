@@ -1,14 +1,14 @@
-name: testssl
+name: testssl-network
 version: "1.0"
 category: network/ssl-testing
 phase: scanning
 command: testssl.sh
-args: []
+args: ["--quiet", "--color", "0"]
 
 docker:
   image: drwetter/testssl.sh:latest
   memory_limit: "512m"
-  timeout: "600s"
+  timeout: "300s"
 
 short_description: SSL/TLS security testing
 description: |
@@ -16,16 +16,28 @@ description: |
   certificate issues, and common vulnerabilities like Heartbleed, POODLE, DROWN.
 notes: |
   - Runs all tests by default; use specific flags for targeted checks
-  - Use --color 0 for clean non-colored output
+  - --quiet reduces output noise, --color 0 for clean non-colored output
   - Use --ip one to test only one IP for multi-homed hosts
 
 parameters:
-  - name: flags
-    type: string
+  - name: full
+    type: bool
     required: false
-    flag: ""
-    default: "--color 0"
-    description: "Raw testssl flags (e.g. --full -p -U --ip one)"
+    flag: "--full"
+    default: false
+    description: "Run all checks including less common tests"
+  - name: protocols
+    type: bool
+    required: false
+    flag: "-p"
+    default: false
+    description: "Check TLS/SSL protocols only"
+  - name: vulnerabilities
+    type: bool
+    required: false
+    flag: "-U"
+    default: false
+    description: "Test for all vulnerabilities"
   - name: target
     type: string
     required: true

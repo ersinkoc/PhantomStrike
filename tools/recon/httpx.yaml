@@ -3,7 +3,7 @@ version: "1.0"
 category: recon/http
 phase: reconnaissance
 command: httpx
-args: []
+args: ["-silent", "-nc"]
 
 docker:
   image: projectdiscovery/httpx:latest
@@ -24,12 +24,46 @@ notes: |
   - Technology detection (-tech-detect) uses Wappalyzer signatures.
 
 parameters:
-  - name: flags
+  - name: status_code
+    type: bool
+    required: false
+    flag: "-status-code"
+    default: true
+    description: "Display response status code"
+  - name: title
+    type: bool
+    required: false
+    flag: "-title"
+    default: true
+    description: "Display page title"
+  - name: tech_detect
+    type: bool
+    required: false
+    flag: "-tech-detect"
+    default: true
+    description: "Display technology in use based on Wappalyzer"
+  - name: follow_redirects
+    type: bool
+    required: false
+    flag: "-follow-redirects"
+    default: false
+    description: "Follow HTTP redirects"
+  - name: threads
     type: string
     required: false
-    flag: ""
-    default: "-silent -status-code -title -tech-detect -nc"
-    description: "Raw httpx flags (e.g. -status-code -title -tech-detect -follow-redirects)"
+    flag: "-threads"
+    default: "50"
+    description: "Number of threads"
+  - name: match_code
+    type: string
+    required: false
+    flag: "-match-code"
+    description: "Match response with specific status code (e.g. 200,301,302)"
+  - name: filter_code
+    type: string
+    required: false
+    flag: "-filter-code"
+    description: "Filter response with specific status code (e.g. 404,500)"
   - name: target
     type: string
     required: true

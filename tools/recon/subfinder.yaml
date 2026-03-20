@@ -3,27 +3,74 @@ version: "1.0"
 category: reconnaissance/subdomain
 phase: reconnaissance
 command: subfinder
+args: ["-silent"]
+
 docker:
   image: projectdiscovery/subfinder:latest
-  args:
-    - "-d"
-    - "${domain}"
-    - "-o"
-    - "/output/subfinder-results.txt"
   memory_limit: "512m"
   timeout: "300s"
 
-short_description: Subdomain discovery tool
+short_description: Fast passive subdomain enumeration tool
 description: |
-  Subfinder is a subdomain discovery tool that discovers valid
-  subdomains for websites.
+  Subfinder is a subdomain discovery tool that discovers valid subdomains
+  for websites by using passive online sources. It has a simple modular
+  architecture and is optimized for speed.
+notes: |
+  - Uses passive sources only (no active DNS brute-forcing)
+  - -silent flag suppresses banner and status output
+  - Use -all to use all sources including slower ones
+  - Use -recursive for recursive subdomain enumeration
 
 parameters:
-  - name: domain
+  - name: all_sources
+    type: bool
+    required: false
+    flag: "-all"
+    default: false
+    description: "Use all sources (including slower ones)"
+  - name: recursive
+    type: bool
+    required: false
+    flag: "-recursive"
+    default: false
+    description: "Enable recursive subdomain enumeration"
+  - name: timeout
+    type: string
+    required: false
+    flag: "-timeout"
+    default: "30"
+    description: "Timeout in seconds for each source"
+  - name: target
     type: string
     required: true
+    flag: "-d"
+    description: "Target domain for subdomain enumeration (e.g. example.com)"
 
 output:
   format: text
+  success_patterns:
+    - "\\."
+  failure_patterns:
+    - "no subdomains found"
+    - "could not resolve"
+  severity_indicators:
+    high:
+      - "admin\\."
+      - "staging\\."
+      - "internal\\."
+    medium:
+      - "api\\."
+      - "dev\\."
+      - "test\\."
+    low:
+      - "www\\."
+      - "cdn\\."
+
+chain_suggestions:
+  before: []
+  after:
+    - "httpx"
+    - "nmap"
+    - "nuclei"
 
 enabled: true

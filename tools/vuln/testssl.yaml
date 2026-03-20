@@ -3,12 +3,12 @@ version: "1.0"
 category: vuln/ssl-tls
 phase: scanning
 command: testssl.sh
-args: []
+args: ["--quiet", "--color", "0"]
 
 docker:
   image: drwetter/testssl.sh:latest
   memory_limit: "512m"
-  timeout: "600s"
+  timeout: "300s"
 
 short_description: Command-line tool for testing TLS/SSL encryption and vulnerabilities
 description: |
@@ -17,19 +17,36 @@ description: |
   known cryptographic vulnerabilities. It tests for Heartbleed, CCS Injection,
   Ticketbleed, ROBOT, BREACH, POODLE, DROWN, LOGJAM, BEAST, and more.
 notes: |
-  - testssl.sh runs all tests by default; use specific flags to run targeted checks.
-  - Use --jsonfile for machine-parseable JSON output.
-  - The --full flag runs all checks including less common tests.
+  - testssl.sh runs all tests by default; use specific flags for targeted checks.
+  - --quiet reduces output noise, --color 0 gives clean non-colored output.
   - Use --ip one to test only one IP if the hostname resolves to multiple addresses.
   - Testing takes 2-5 minutes per host depending on server responsiveness.
 
 parameters:
-  - name: flags
-    type: string
+  - name: full
+    type: bool
     required: false
-    flag: ""
-    default: "--color 0"
-    description: "Raw testssl flags (e.g. --full -p -U --ip one)"
+    flag: "--full"
+    default: false
+    description: "Run all checks including less common tests"
+  - name: ip_one
+    type: bool
+    required: false
+    flag: "--ip"
+    default: false
+    description: "Test only one IP for multi-homed hosts (pass 'one' as value)"
+  - name: protocols
+    type: bool
+    required: false
+    flag: "-p"
+    default: false
+    description: "Check TLS/SSL protocols only"
+  - name: vulnerabilities
+    type: bool
+    required: false
+    flag: "-U"
+    default: false
+    description: "Test for all vulnerabilities"
   - name: target
     type: string
     required: true

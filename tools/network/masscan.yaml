@@ -3,47 +3,68 @@ version: "1.0"
 category: network/port-scanning
 phase: reconnaissance
 command: masscan
+args: []
+
 docker:
   image: adamlamar/masscan:latest
-  args:
-    - "${target}"
-    - "-p${ports}"
-    - "--rate"
-    - "${rate}"
-    - "-oJ"
-    - "/output/masscan-results.json"
   memory_limit: "512m"
-  timeout: "600s"
-  privileged: true
+  timeout: "300s"
 
 short_description: Internet-scale port scanner
 description: |
   Masscan is an Internet-scale port scanner. It can scan the entire Internet
-  in under 6 minutes, transmitting 10 million packets per second.
+  in under 6 minutes, transmitting 10 million packets per second. It produces
+  results similar to nmap but operates asynchronously for much higher speed.
+notes: |
+  - Masscan requires root/privileged mode for raw packet scanning
+  - Use rate to control packets per second (default: 10000)
+  - Use ports to specify port ranges
+  - Target is positional (IP or CIDR range)
 
 parameters:
-  - name: target
-    type: string
-    required: true
-    description: Target IP or CIDR range
   - name: ports
     type: string
     required: false
+    flag: "-p"
     default: "1-65535"
-    description: Ports to scan
+    description: "Ports to scan (e.g. 80,443 or 1-1000)"
   - name: rate
-    type: integer
+    type: string
     required: false
-    default: 10000
-    description: Packets per second rate
+    flag: "--rate"
+    default: "10000"
+    description: "Packets per second rate"
+  - name: banners
+    type: bool
+    required: false
+    flag: "--banners"
+    default: false
+    description: "Grab banners from discovered services"
+  - name: target
+    type: string
+    required: true
+    flag: ""
+    description: "Target IP or CIDR range (e.g. 192.168.1.0/24)"
 
 output:
-  format: json
+  format: text
   success_patterns:
-    - "ports"
+    - "open"
+    - "Discovered"
+    - "rate:"
+  failure_patterns:
+    - "FAIL"
+    - "could not"
+    - "error"
+  severity_indicators:
+    high:
+      - "open"
+    medium:
+      - "Discovered"
 
 chain_suggestions:
   after:
     - nmap
+    - httpx
 
 enabled: true

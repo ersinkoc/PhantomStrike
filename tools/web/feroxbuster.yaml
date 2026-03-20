@@ -3,36 +3,93 @@ version: "1.0"
 category: web/directory-enum
 phase: scanning
 command: feroxbuster
+args: ["--no-state", "--auto-tune"]
+
 docker:
   image: epi052/feroxbuster:latest
-  args:
-    - "-u"
-    - "${target}"
-    - "-w"
-    - "/wordlists/common.txt"
-    - "-o"
-    - "/output/ferox-results.json"
-    - "-j"
-    - "-t"
-    - "50"
   memory_limit: "1g"
-  timeout: "600s"
+  timeout: "300s"
 
-short_description: Fast content discovery tool
+short_description: Fast, simple, recursive content discovery tool
 description: |
   Feroxbuster is a fast, simple, recursive content discovery tool written in Rust.
+  It uses brute force combined with a wordlist to search for content on a target
+  web server. It supports recursive scanning, multiple wordlists, and filtering.
+notes: |
+  - --no-state prevents state file creation, --auto-tune adjusts speed automatically
+  - Uses dedicated Docker image with ENTRYPOINT set to feroxbuster
+  - Use depth to control recursion depth
+  - Use threads for concurrency
 
 parameters:
+  - name: wordlist
+    type: string
+    required: false
+    flag: "-w"
+    default: "/usr/share/seclists/Discovery/Web-Content/common.txt"
+    description: "Path to wordlist file"
+  - name: threads
+    type: string
+    required: false
+    flag: "-t"
+    default: "50"
+    description: "Number of concurrent threads"
+  - name: depth
+    type: string
+    required: false
+    flag: "-d"
+    default: "2"
+    description: "Maximum recursion depth"
+  - name: extensions
+    type: string
+    required: false
+    flag: "-x"
+    description: "File extensions to search for (e.g. php,txt,html)"
+  - name: status_codes
+    type: string
+    required: false
+    flag: "-s"
+    default: "200,204,301,302,307,401,403"
+    description: "Status codes to include"
+  - name: filter_status
+    type: string
+    required: false
+    flag: "-C"
+    description: "Status codes to exclude"
   - name: target
     type: string
     required: true
-    description: Target URL
-  - name: depth
-    type: integer
-    required: false
-    default: 4
+    flag: "-u"
+    description: "Target URL to scan"
 
 output:
-  format: json
+  format: text
+  success_patterns:
+    - "200"
+    - "301"
+    - "WLD"
+    - "found"
+  failure_patterns:
+    - "Could not connect"
+    - "error"
+  severity_indicators:
+    high:
+      - "admin"
+      - "backup"
+      - ".env"
+      - "config"
+    medium:
+      - "login"
+      - "api"
+      - "dashboard"
+    low:
+      - "200"
+      - "301"
+
+chain_suggestions:
+  before:
+    - "httpx"
+  after:
+    - "nuclei"
 
 enabled: true

@@ -3,44 +3,65 @@ version: "1.0"
 category: network/port-scanning
 phase: reconnaissance
 command: naabu
+args: ["-silent", "-nc"]
+
 docker:
   image: projectdiscovery/naabu:latest
-  args:
-    - "-host"
-    - "${target}"
-    - "-json"
-    - "-o"
-    - "/output/naabu-results.json"
-    - "-rate"
-    - "10000"
-    - "-c"
-    - "50"
   memory_limit: "512m"
-  timeout: "600s"
+  timeout: "300s"
 
 short_description: Fast port scanner
 description: |
   Naabu is a port scanning tool written in Go that allows you to enumerate
-  valid ports for hosts in a fast and reliable manner.
+  valid ports for hosts in a fast and reliable manner. It uses SYN/CONNECT
+  scanning with service discovery capabilities.
+notes: |
+  - Uses -silent and -nc flags for clean non-interactive output
+  - Use ports for specific ports or top-ports for common ports
+  - Supports both SYN and CONNECT scanning modes
 
 parameters:
-  - name: target
-    type: string
-    required: true
-    description: Target host or CIDR
   - name: ports
     type: string
     required: false
-    default: "top-1000"
-    description: Ports to scan
+    flag: "-p"
+    description: "Ports to scan (e.g. 80,443,8080 or 1-1000)"
+  - name: top_ports
+    type: string
+    required: false
+    flag: "-top-ports"
+    default: "1000"
+    description: "Scan top N ports"
+  - name: rate
+    type: string
+    required: false
+    flag: "-rate"
+    default: "5000"
+    description: "Rate of port scan probes per second"
+  - name: concurrency
+    type: string
+    required: false
+    flag: "-c"
+    default: "50"
+    description: "Number of concurrent goroutines for scanning"
+  - name: target
+    type: string
+    required: true
+    flag: "-host"
+    description: "Target host or CIDR range to scan"
 
 output:
-  format: json
+  format: text
   success_patterns:
+    - ":"
     - "port"
+  failure_patterns:
+    - "no ports found"
+    - "error"
 
 chain_suggestions:
   after:
     - httpx
+    - nmap
 
 enabled: true

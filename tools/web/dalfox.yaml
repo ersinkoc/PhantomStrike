@@ -3,40 +3,86 @@ version: "1.0"
 category: web/xss
 phase: exploitation
 command: dalfox
+args: ["url"]
+
 docker:
   image: hahwul/dalfox:latest
-  args:
-    - "url"
-    - "${target}"
-    - "--format"
-    - "json"
-    - "--output"
-    - "/output/dalfox-results.json"
-    - "--worker"
-    - "10"
   memory_limit: "1g"
-  timeout: "1800s"
+  timeout: "300s"
 
 short_description: XSS scanning and parameter analysis
 description: |
   DalFox is a powerful open source XSS scanning tool and parameter analyzer.
-  It focuses on automation and high performance.
+  It focuses on automation and high performance for finding reflected, stored,
+  and DOM-based XSS vulnerabilities.
+notes: |
+  - The 'url' subcommand is in args by default for single URL scanning
+  - Uses dedicated Docker image with ENTRYPOINT set to dalfox
+  - Use worker to control thread count
+  - Use format for output format
 
 parameters:
+  - name: worker
+    type: string
+    required: false
+    flag: "--worker"
+    default: "10"
+    description: "Number of worker threads"
+  - name: delay
+    type: string
+    required: false
+    flag: "--delay"
+    description: "Milliseconds to delay between requests"
+  - name: blind
+    type: string
+    required: false
+    flag: "--blind"
+    description: "Blind XSS callback URL"
+  - name: custom_payload
+    type: string
+    required: false
+    flag: "--custom-payload"
+    description: "Custom XSS payload file path"
+  - name: timeout
+    type: string
+    required: false
+    flag: "--timeout"
+    default: "10"
+    description: "Timeout in seconds for each request"
   - name: target
     type: string
     required: true
-    description: Target URL
-  - name: worker
-    type: integer
-    required: false
-    default: 10
-    description: Number of worker threads
+    flag: ""
+    description: "Target URL with parameters (e.g. http://target.com/page?param=value)"
 
 output:
-  format: json
+  format: text
   success_patterns:
     - "POC"
     - "found"
+    - "Vulnerable"
+    - "Reflected"
+  failure_patterns:
+    - "not found"
+    - "Error"
+    - "connection refused"
+  severity_indicators:
+    critical:
+      - "Stored XSS"
+      - "DOM XSS"
+    high:
+      - "Reflected XSS"
+      - "POC"
+      - "Vulnerable"
+    medium:
+      - "Reflected"
+      - "potential"
+
+chain_suggestions:
+  before:
+    - "katana"
+    - "httpx"
+  after:
+    - "nuclei"
 
 enabled: true

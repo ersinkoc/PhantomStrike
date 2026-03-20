@@ -3,30 +3,59 @@ version: "1.0"
 category: web/directory-enum
 phase: scanning
 command: gobuster
-args: []
+args: ["dir"]
 
 docker:
   image: ghcr.io/oj/gobuster:latest
   memory_limit: "512m"
-  timeout: "600s"
+  timeout: "300s"
 
 short_description: Directory/file/DNS busting tool
 description: |
   Gobuster is a tool used to brute-force URIs (directories and files),
   DNS subdomains, and virtual host names. Fast and written in Go.
 notes: |
-  - Modes: dir (directories), dns (subdomains), vhost (virtual hosts), fuzz (fuzzing)
+  - The 'dir' subcommand is in args by default for directory brute-forcing
   - Requires a wordlist (-w) for brute-forcing
-  - Use -t to set number of concurrent threads (default: 10)
-  - Use -x to append file extensions (e.g. -x php,txt,html)
+  - Use threads to set concurrency (default: 50)
+  - Use extensions to append file extensions (e.g. php,txt,html)
 
 parameters:
-  - name: flags
+  - name: wordlist
     type: string
     required: false
-    flag: ""
-    default: "dir -t 50"
-    description: "Raw gobuster flags (e.g. dir -w /usr/share/wordlists/common.txt -t 50 -x php)"
+    flag: "-w"
+    default: "/usr/share/wordlists/dirb/common.txt"
+    description: "Path to wordlist file"
+  - name: threads
+    type: string
+    required: false
+    flag: "-t"
+    default: "50"
+    description: "Number of concurrent threads"
+  - name: extensions
+    type: string
+    required: false
+    flag: "-x"
+    description: "File extensions to search for (e.g. php,txt,html,asp)"
+  - name: status_codes
+    type: string
+    required: false
+    flag: "-s"
+    default: "200,204,301,302,307,401,403"
+    description: "Positive status codes"
+  - name: expanded
+    type: bool
+    required: false
+    flag: "-e"
+    default: true
+    description: "Expanded mode, print full URLs"
+  - name: no_error
+    type: bool
+    required: false
+    flag: "--no-error"
+    default: true
+    description: "Don't display errors"
   - name: target
     type: string
     required: true

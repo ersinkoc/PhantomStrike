@@ -3,33 +3,52 @@ version: "1.0"
 category: web/directory-discovery
 phase: scanning
 command: dirb
+args: ["-r", "-S"]
+
 docker:
-  image: vortexau/dirb:latest
-  args:
-    - "${target}"
-    - "/wordlists/common.txt"
-    - "-o"
-    - "/output/dirb-results.txt"
-    - "-r"
+  image: phantomstrike/dirb:latest
   memory_limit: "512m"
-  timeout: "600s"
+  timeout: "300s"
 
 short_description: Web Content Scanner
 description: |
   DIRB is a Web Content Scanner. It looks for existing (and/or hidden)
   Web Objects by launching a dictionary-based attack against a web server.
+  It uses a dictionary-based approach and supports recursive scanning.
+notes: |
+  - Falls back to phantomstrike-tools:latest all-in-one image
+  - -r disables recursive scanning by default, -S enables silent mode
+  - target (URL) and wordlist are positional arguments
+  - Dirb syntax: dirb <url> <wordlist> [options]
 
 parameters:
   - name: target
     type: string
     required: true
-    description: Target URL
+    flag: ""
+    description: "Target URL to scan (e.g. http://target.com/)"
   - name: wordlist
     type: string
     required: false
-    description: Wordlist file
+    flag: ""
+    default: "/usr/share/wordlists/dirb/common.txt"
+    description: "Wordlist file path"
 
 output:
   format: text
+  success_patterns:
+    - "CODE:200"
+    - "CODE:301"
+    - "FOUND"
+    - "DIRECTORY"
+  failure_patterns:
+    - "FATAL"
+    - "Connection refused"
+
+chain_suggestions:
+  before:
+    - "httpx"
+  after:
+    - "nuclei"
 
 enabled: true

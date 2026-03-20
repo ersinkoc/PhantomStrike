@@ -3,48 +3,90 @@ version: "1.0"
 category: web/wordpress
 phase: scanning
 command: wpscan
+args: ["--no-banner", "--no-update"]
+
 docker:
   image: wpscanteam/wpscan:latest
-  args:
-    - "--url"
-    - "${target}"
-    - "--format"
-    - "json"
-    - "-o"
-    - "/output/wpscan-results.json"
-    - "--enumerate"
-    - "vp,vt,cb,dbe,u,m"
-    - "--api-token"
-    - "${api_token}"
   memory_limit: "1g"
-  timeout: "1800s"
+  timeout: "300s"
 
 short_description: WordPress security scanner
 description: |
   WPScan is a free, for non-commercial use, black box WordPress security scanner
-  written for security professionals and blog maintainers.
+  written for security professionals and blog maintainers. It can detect known
+  vulnerabilities in WordPress core, plugins, and themes.
+notes: |
+  - --no-banner and --no-update for clean non-interactive output
+  - Uses dedicated Docker image with ENTRYPOINT set to wpscan
+  - Use api_token for WPVulnDB vulnerability data enrichment
+  - Use enumerate to control what to scan for
 
 parameters:
-  - name: target
-    type: string
-    required: true
-    description: WordPress site URL
-  - name: api_token
-    type: string
-    required: false
-    description: WPScan API token for vulnerability data
   - name: enumerate
     type: string
     required: false
+    flag: "--enumerate"
     default: "vp,vt,cb,dbe,u,m"
-    description: Enumeration options
+    description: "Enumeration options (vp=vuln plugins, vt=vuln themes, cb=config backups, dbe=db exports, u=users, m=media)"
+  - name: api_token
+    type: string
+    required: false
+    flag: "--api-token"
+    description: "WPScan API token for vulnerability data"
+  - name: detection_mode
+    type: string
+    required: false
+    flag: "--detection-mode"
+    default: "mixed"
+    description: "Detection mode: passive, aggressive, or mixed"
+    enum:
+      - "passive"
+      - "aggressive"
+      - "mixed"
+  - name: plugins_detection
+    type: string
+    required: false
+    flag: "--plugins-detection"
+    default: "mixed"
+    description: "Plugin detection mode: passive, aggressive, or mixed"
+  - name: target
+    type: string
+    required: true
+    flag: "--url"
+    description: "WordPress site URL (e.g. http://target.com)"
 
 output:
-  format: json
+  format: text
+  success_patterns:
+    - "WordPress version"
+    - "Interesting Finding"
+    - "plugins found"
+    - "themes found"
+  failure_patterns:
+    - "The URL supplied"
+    - "does not seem to be running WordPress"
+    - "Scan Aborted"
   severity_indicators:
-    CRITICAL:
+    critical:
       - "CRITICAL"
-    HIGH:
+      - "RCE"
+      - "SQL Injection"
+    high:
       - "HIGH"
+      - "XSS"
+      - "Authentication Bypass"
+    medium:
+      - "MEDIUM"
+      - "Information Disclosure"
+    low:
+      - "LOW"
+      - "Directory listing"
+
+chain_suggestions:
+  before:
+    - "httpx"
+  after:
+    - "nuclei"
+    - "sqlmap"
 
 enabled: true

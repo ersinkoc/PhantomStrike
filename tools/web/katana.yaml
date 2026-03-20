@@ -3,35 +3,84 @@ version: "1.0"
 category: web/crawling
 phase: reconnaissance
 command: katana
+args: ["-silent", "-nc"]
+
 docker:
   image: projectdiscovery/katana:latest
-  args:
-    - "-u"
-    - "${target}"
-    - "-o"
-    - "/output/katana-results.txt"
-    - "-d"
-    - "5"
-    - "-jc"
   memory_limit: "1g"
-  timeout: "600s"
+  timeout: "300s"
 
-short_description: Next-gen web crawler
+short_description: Next-generation web crawling and spidering framework
 description: |
-  Katana is a next-generation crawling and spidering framework.
-  Built by ProjectDiscovery.
+  Katana is a next-generation crawling and spidering framework built by
+  ProjectDiscovery. It supports standard and headless crawling, JavaScript
+  parsing, and automatic form filling for comprehensive web crawling.
+notes: |
+  - -silent and -nc flags for clean non-interactive output
+  - Use depth to control crawl depth
+  - Use js_crawl to enable JavaScript file crawling
+  - Supports headless browser-based crawling with headless flag
 
 parameters:
+  - name: depth
+    type: string
+    required: false
+    flag: "-d"
+    default: "3"
+    description: "Maximum depth to crawl"
+  - name: js_crawl
+    type: bool
+    required: false
+    flag: "-jc"
+    default: true
+    description: "Enable JavaScript file crawling"
+  - name: concurrency
+    type: string
+    required: false
+    flag: "-c"
+    default: "20"
+    description: "Number of concurrent fetchers"
+  - name: headless
+    type: bool
+    required: false
+    flag: "-headless"
+    default: false
+    description: "Enable headless browser-based crawling"
+  - name: scope
+    type: string
+    required: false
+    flag: "-fs"
+    description: "Crawl scope field (dn=domain, rdn=root-domain, fqdn=FQDN)"
   - name: target
     type: string
     required: true
-    description: Target URL
-  - name: depth
-    type: integer
-    required: false
-    default: 5
+    flag: "-u"
+    description: "Target URL to crawl"
 
 output:
   format: text
+  success_patterns:
+    - "http"
+    - "/"
+  failure_patterns:
+    - "could not connect"
+    - "error"
+  severity_indicators:
+    high:
+      - "admin"
+      - "api"
+      - "config"
+    medium:
+      - "login"
+      - "upload"
+    low:
+      - "http"
+
+chain_suggestions:
+  before:
+    - "httpx"
+  after:
+    - "nuclei"
+    - "ffuf"
 
 enabled: true

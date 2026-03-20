@@ -3,37 +3,98 @@ version: "1.0"
 category: database/injection
 phase: exploitation
 command: sqlmap
+args: ["--batch"]
+
 docker:
   image: paoloo/sqlmap:latest
-  args:
-    - "-u"
-    - "${target}"
-    - "--batch"
-    - "--dump-all"
-    - "--output-dir=/output/sqlmap"
   memory_limit: "1g"
-  timeout: "1800s"
+  timeout: "300s"
 
-short_description: Automatic SQL injection tool
+short_description: Automatic SQL injection detection and exploitation tool
 description: |
   sqlmap is an open source penetration testing tool that automates the process
-  of detecting and exploiting SQL injection flaws.
+  of detecting and exploiting SQL injection flaws and taking over database servers.
+  It supports a full range of SQL injection techniques and database fingerprinting.
+notes: |
+  - --batch flag ensures non-interactive mode (answers default to all prompts)
+  - Use level (1-5) to control test thoroughness
+  - Use risk (1-3) to control test riskiness
+  - Use technique to specify injection techniques (BEUSTQ)
 
 parameters:
+  - name: level
+    type: string
+    required: false
+    flag: "--level"
+    default: "1"
+    description: "Level of tests to perform (1-5, higher = more thorough)"
+  - name: risk
+    type: string
+    required: false
+    flag: "--risk"
+    default: "1"
+    description: "Risk of tests to perform (1-3, higher = more risky)"
+  - name: technique
+    type: string
+    required: false
+    flag: "--technique"
+    description: "SQL injection techniques to test (B=Boolean, E=Error, U=Union, S=Stacked, T=Time, Q=Inline)"
+  - name: dbs
+    type: bool
+    required: false
+    flag: "--dbs"
+    default: false
+    description: "Enumerate databases"
+  - name: tables
+    type: bool
+    required: false
+    flag: "--tables"
+    default: false
+    description: "Enumerate tables"
+  - name: dump
+    type: bool
+    required: false
+    flag: "--dump"
+    default: false
+    description: "Dump database table entries"
+  - name: threads
+    type: string
+    required: false
+    flag: "--threads"
+    default: "5"
+    description: "Number of concurrent threads"
   - name: target
     type: string
     required: true
-    description: Target URL
-  - name: level
-    type: integer
-    required: false
-    default: 1
-  - name: risk
-    type: integer
-    required: false
-    default: 1
+    flag: "-u"
+    description: "Target URL with injectable parameter (e.g. http://target.com/page?id=1)"
 
 output:
   format: text
+  success_patterns:
+    - "sqlmap identified"
+    - "injectable"
+    - "back-end DBMS"
+    - "available databases"
+  failure_patterns:
+    - "all tested parameters do not appear to be injectable"
+    - "connection timed out"
+    - "unable to connect"
+  severity_indicators:
+    critical:
+      - "injectable"
+      - "sqlmap identified"
+      - "dumped to"
+    high:
+      - "back-end DBMS"
+      - "available databases"
+    medium:
+      - "parameter appears to be"
+
+chain_suggestions:
+  before:
+    - "nmap"
+    - "nuclei"
+  after: []
 
 enabled: true
