@@ -4,7 +4,7 @@ category: reconnaissance/url-modification
 phase: post-processing
 command: qsreplace
 docker:
-  image: tomnomnom/qsreplace:latest
+  image: phantomstrike/qsreplace:latest
   args:
     - "${payload}"
   stdin: "${urls}"

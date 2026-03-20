@@ -4,7 +4,7 @@ category: reconnaissance/text-processing
 phase: post-processing
 command: anew
 docker:
-  image: tomnomnom/anew:latest
+  image: phantomstrike/anew:latest
   args:
     - "/output/new-lines.txt"
   stdin: "${input}"

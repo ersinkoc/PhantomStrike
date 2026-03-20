@@ -4,7 +4,7 @@ category: binary/exploit-helper
 phase: analysis
 command: one_gadget
 docker:
-  image: kalilinux/one_gadget:latest
+  image: phantomstrike/one_gadget:latest
   args:
     - "/input/libc.so"
   memory_limit: "512m"

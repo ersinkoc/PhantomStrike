@@ -4,7 +4,7 @@ category: web/hidden-parameter
 phase: scanning
 command: x8
 docker:
-  image: kalilinux/x8:latest
+  image: phantomstrike/x8:latest
   args:
     - "-u"
     - "${target}"

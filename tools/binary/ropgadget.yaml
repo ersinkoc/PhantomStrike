@@ -4,7 +4,7 @@ category: binary/rop-finder
 phase: analysis
 command: ROPgadget
 docker:
-  image: kalilinux/ropgadget:latest
+  image: phantomstrike/ROPgadget:latest
   args:
     - "--binary"
     - "/input/binary"

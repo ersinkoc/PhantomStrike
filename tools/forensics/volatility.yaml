@@ -4,7 +4,7 @@ category: forensics/memory-analysis
 phase: analysis
 command: volatility
 docker:
-  image: volfoundation/volatility:latest
+  image: phantomstrike/volatility:latest
   args:
     - "-f"
     - "/input/memory.dmp"

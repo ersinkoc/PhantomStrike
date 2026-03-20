@@ -4,7 +4,7 @@ category: api/fuzzing
 phase: scanning
 command: api-fuzzer
 docker:
-  image: kalilinux/api-fuzzer:latest
+  image: phantomstrike/api-fuzzer:latest
   args:
     - "-t"
     - "${target}"

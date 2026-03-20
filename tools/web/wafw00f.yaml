@@ -4,7 +4,7 @@ category: web/waf-detection
 phase: reconnaissance
 command: wafw00f
 docker:
-  image: andmyhacks/wafw00f:latest
+  image: phantomstrike/wafw00f:latest
   args:
     - "${target}"
     - "-o"

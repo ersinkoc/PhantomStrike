@@ -4,7 +4,7 @@ category: web/command-injection
 phase: exploitation
 command: commix
 docker:
-  image: commixproject/commix:latest
+  image: phantomstrike/commix:latest
   args:
     - "-u"
     - "${target}"

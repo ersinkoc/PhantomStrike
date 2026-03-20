@@ -4,7 +4,7 @@ category: cloud/kubernetes-security
 phase: scanning
 command: kube-bench
 docker:
-  image: aquasec/kube-bench:latest
+  image: phantomstrike/kube-bench:latest
   args:
     - "run"
     - "--json"

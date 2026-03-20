@@ -4,7 +4,7 @@ category: password/zip-cracker
 phase: exploitation
 command: fcrackzip
 docker:
-  image: kalilinux/fcrackzip:latest
+  image: phantomstrike/fcrackzip:latest
   args:
     - "-b"
     - "-c"

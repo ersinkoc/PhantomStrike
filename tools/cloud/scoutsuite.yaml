@@ -4,7 +4,7 @@ category: cloud/security-audit
 phase: scanning
 command: scout
 docker:
-  image: rossja/scoutsuite:latest
+  image: phantomstrike/scout:latest
   args:
     - "aws"
     - "--report-dir"

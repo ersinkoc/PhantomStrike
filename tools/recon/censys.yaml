@@ -4,7 +4,7 @@ category: reconnaissance/osint
 phase: reconnaissance
 command: censys
 docker:
-  image: censys/censys-cli:latest
+  image: phantomstrike/censys:latest
   args:
     - "search"
     - "${query}"

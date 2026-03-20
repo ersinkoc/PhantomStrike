@@ -4,7 +4,7 @@ category: reconnaissance/automation
 phase: reconnaissance
 command: autorecon
 docker:
-  image: tib36/autorecon:latest
+  image: phantomstrike/autorecon:latest
   args:
     - "${target}"
     - "-o"

@@ -4,7 +4,7 @@ category: binary/firmware-analysis
 phase: analysis
 command: binwalk
 docker:
-  image: kalilinux/binwalk:latest
+  image: phantomstrike/binwalk:latest
   args:
     - "-e"
     - "-M"

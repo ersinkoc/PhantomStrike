@@ -4,7 +4,7 @@ category: binary/symbolic-execution
 phase: analysis
 command: python3
 docker:
-  image: angr/angr:latest
+  image: phantomstrike/python3:latest
   args:
     - "/input/solve.py"
   memory_limit: "4g"

@@ -4,7 +4,7 @@ category: protocol/dns-enumeration
 phase: reconnaissance
 command: dnsenum
 docker:
-  image: kalilinux/dnsenum:latest
+  image: phantomstrike/dnsenum:latest
   args:
     - "${domain}"
     - "-o"

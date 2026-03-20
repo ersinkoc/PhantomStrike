@@ -4,7 +4,7 @@ category: database/oracle-scanning
 phase: scanning
 command: tnscmd10g
 docker:
-  image: kalilinux/tnscmd:latest
+  image: phantomstrike/tnscmd10g:latest
   args:
     - "ping"
     - "${target}"

@@ -4,7 +4,7 @@ category: web/crawling
 phase: reconnaissance
 command: hakrawler
 docker:
-  image: hakluke/hakrawler:latest
+  image: phantomstrike/hakrawler:latest
   args:
     - "-url"
     - "${target}"

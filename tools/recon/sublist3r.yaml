@@ -4,7 +4,7 @@ category: reconnaissance/subdomain
 phase: reconnaissance
 command: sublist3r
 docker:
-  image: abhaybhargav/sublist3r:latest
+  image: phantomstrike/sublist3r:latest
   args:
     - "-d"
     - "${domain}"

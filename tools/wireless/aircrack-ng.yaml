@@ -4,7 +4,7 @@ category: wireless/wifi-cracking
 phase: exploitation
 command: aircrack-ng
 docker:
-  image: aircrackng/aircrack-ng:latest
+  image: phantomstrike/aircrack-ng:latest
   args:
     - "-w"
     - "/wordlists/wpa.txt"

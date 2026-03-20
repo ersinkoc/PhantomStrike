@@ -4,7 +4,7 @@ category: forensics/string-extraction
 phase: analysis
 command: strings
 docker:
-  image: busybox:latest
+  image: phantomstrike/strings:latest
   args:
     - "-n"
     - "6"

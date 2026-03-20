@@ -4,7 +4,7 @@ category: reconnaissance/osint
 phase: reconnaissance
 command: zoomeye
 docker:
-  image: zoomeye/zoomeye:latest
+  image: phantomstrike/zoomeye:latest
   args:
     - "search"
     - "${query}"

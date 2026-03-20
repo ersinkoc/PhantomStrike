@@ -4,7 +4,7 @@ category: container/vulnerability-scanning
 phase: scanning
 command: clairctl
 docker:
-  image: quay.io/projectquay/clair:latest
+  image: phantomstrike/clairctl:latest
   args:
     - "report"
     - "${image}"

@@ -4,7 +4,7 @@ category: cloud/security-audit
 phase: scanning
 command: prowler
 docker:
-  image: toniblyx/prowler:latest
+  image: phantomstrike/prowler:latest
   args:
     - "-c"
     - "check310,check311,check312"

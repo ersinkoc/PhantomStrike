@@ -6,7 +6,7 @@ command: sqlmap
 args: ["--batch"]
 
 docker:
-  image: paoloo/sqlmap:latest
+  image: phantomstrike/sqlmap:latest
   memory_limit: "1g"
   timeout: "300s"
 

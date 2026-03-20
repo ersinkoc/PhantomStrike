@@ -4,7 +4,7 @@ category: api/parameter-discovery
 phase: scanning
 command: arjun
 docker:
-  image: s1l3nt78/arjun:latest
+  image: phantomstrike/arjun:latest
   args:
     - "-u"
     - "${target}"

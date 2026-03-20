@@ -4,7 +4,7 @@ category: web/parameter-mining
 phase: reconnaissance
 command: paramspider
 docker:
-  image: devanshbatham/paramspider:latest
+  image: phantomstrike/paramspider:latest
   args:
     - "-d"
     - "${domain}"

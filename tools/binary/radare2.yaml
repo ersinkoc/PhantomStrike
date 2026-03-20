@@ -4,7 +4,7 @@ category: binary/reverse-engineering
 phase: analysis
 command: r2
 docker:
-  image: radare/radare2:latest
+  image: phantomstrike/r2:latest
   args:
     - "-q"
     - "-c"

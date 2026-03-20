@@ -4,7 +4,7 @@ category: web/http-testing
 phase: scanning
 command: http-intruder
 docker:
-  image: kalilinux/http-intruder:latest
+  image: phantomstrike/http-intruder:latest
   args:
     - "-t"
     - "${target}"

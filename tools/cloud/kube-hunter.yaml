@@ -4,7 +4,7 @@ category: cloud/kubernetes-pentesting
 phase: scanning
 command: kube-hunter
 docker:
-  image: aquasec/kube-hunter:latest
+  image: phantomstrike/kube-hunter:latest
   args:
     - "--remote"
     - "${target}"

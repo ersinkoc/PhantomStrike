@@ -4,7 +4,7 @@ category: iac/policy-as-code
 phase: scanning
 command: terrascan
 docker:
-  image: accurics/terrascan:latest
+  image: phantomstrike/terrascan:latest
   args:
     - "scan"
     - "-d"

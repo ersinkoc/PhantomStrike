@@ -4,7 +4,7 @@ category: reconnaissance/url-optimization
 phase: post-processing
 command: uro
 docker:
-  image: s0md3v/uro:latest
+  image: phantomstrike/uro:latest
   args:
     - "-f"
     - "/input/urls.txt"

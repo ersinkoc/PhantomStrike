@@ -4,7 +4,7 @@ category: web/graphql-security
 phase: scanning
 command: graphql-scanner
 docker:
-  image: dolevf/graphql-scan:latest
+  image: phantomstrike/graphql-scanner:latest
   args:
     - "-u"
     - "${target}"

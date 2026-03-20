@@ -4,7 +4,7 @@ category: cloud/iam-security
 phase: scanning
 command: cloudsplaining
 docker:
-  image: salesforce/cloudsplaining:latest
+  image: phantomstrike/cloudsplaining:latest
   args:
     - "scan"
     - "--input-file"

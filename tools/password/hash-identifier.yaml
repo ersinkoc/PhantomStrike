@@ -4,7 +4,7 @@ category: password/hash-identification
 phase: analysis
 command: hash-identifier
 docker:
-  image: kalilinux/hash-identifier:latest
+  image: phantomstrike/hash-identifier:latest
   args:
     - "${hash}"
   stdin: "${hash}"

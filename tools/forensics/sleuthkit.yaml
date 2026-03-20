@@ -4,7 +4,7 @@ category: forensics/disk-analysis
 phase: analysis
 command: fls
 docker:
-  image: kalilinux/sleuthkit:latest
+  image: phantomstrike/fls:latest
   args:
     - "-r"
     - "/input/disk-image"

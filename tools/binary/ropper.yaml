@@ -4,7 +4,7 @@ category: binary/rop-finder
 phase: analysis
 command: ropper
 docker:
-  image: kalilinux/ropper:latest
+  image: phantomstrike/ropper:latest
   args:
     - "--file"
     - "/input/binary"

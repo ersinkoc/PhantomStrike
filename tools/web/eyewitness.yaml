@@ -4,7 +4,7 @@ category: web/screenshotting
 phase: reconnaissance
 command: eyewitness
 docker:
-  image: fortyspokes/eyewitness:latest
+  image: phantomstrike/eyewitness:latest
   args:
     - "--web"
     - "-f"

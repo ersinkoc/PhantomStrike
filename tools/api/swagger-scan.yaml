@@ -4,7 +4,7 @@ category: api/swagger-security
 phase: scanning
 command: swagger-scan
 docker:
-  image: 42crunch/scand-agent:latest
+  image: phantomstrike/swagger-scan:latest
   args:
     - "-P"
     - "/input/swagger.json"

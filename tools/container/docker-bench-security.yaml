@@ -4,7 +4,7 @@ category: container/cis-benchmarks
 phase: scanning
 command: docker-bench-security
 docker:
-  image: docker/docker-bench-security:latest
+  image: phantomstrike/docker-bench-security:latest
   args:
     - "-o"
     - "/output/docker-bench-results"

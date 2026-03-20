@@ -4,7 +4,7 @@ category: network/port-scanning
 phase: reconnaissance
 command: rustscan
 docker:
-  image: rustscan/rustscan:latest
+  image: phantomstrike/rustscan:latest
   args:
     - "-a"
     - "${target}"

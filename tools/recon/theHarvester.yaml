@@ -4,7 +4,7 @@ category: reconnaissance/osint
 phase: reconnaissance
 command: theHarvester
 docker:
-  image: laramies/theharvester:latest
+  image: phantomstrike/theHarvester:latest
   args:
     - "-d"
     - "${domain}"

@@ -4,7 +4,7 @@ category: wireless/wps-cracking
 phase: exploitation
 command: bully
 docker:
-  image: rfhs/bully:latest
+  image: phantomstrike/bully:latest
   args:
     - "-b"
     - "${bssid}"

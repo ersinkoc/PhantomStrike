@@ -4,7 +4,7 @@ category: forensics/steganography-analysis
 phase: analysis
 command: java
 docker:
-  image: openjdk:11-jre-slim
+  image: phantomstrike/java:latest
   args:
     - "-jar"
     - "/tools/stegsolve.jar"

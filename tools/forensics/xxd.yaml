@@ -4,7 +4,7 @@ category: forensics/hex-dump
 phase: analysis
 command: xxd
 docker:
-  image: busybox:latest
+  image: phantomstrike/xxd:latest
   args:
     - "/input/binary"
     - ">"

@@ -4,7 +4,7 @@ category: mobile/security-scanning
 phase: scanning
 command: mobsf
 docker:
-  image: opensecurity/mobile-security-framework-mobsf:latest
+  image: phantomstrike/mobsf:latest
   args: []
   memory_limit: "4g"
   timeout: "1800s"

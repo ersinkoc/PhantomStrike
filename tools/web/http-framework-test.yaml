@@ -4,7 +4,7 @@ category: web/framework-testing
 phase: scanning
 command: http-framework-test
 docker:
-  image: kalilinux/http-framework-test:latest
+  image: phantomstrike/http-framework-test:latest
   args:
     - "-u"
     - "${target}"

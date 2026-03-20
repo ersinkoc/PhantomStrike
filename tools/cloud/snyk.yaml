@@ -4,7 +4,7 @@ category: cloud/sca
 phase: scanning
 command: snyk
 docker:
-  image: snyk/snyk-cli:latest
+  image: phantomstrike/snyk:latest
   args:
     - "test"
     - "--json"

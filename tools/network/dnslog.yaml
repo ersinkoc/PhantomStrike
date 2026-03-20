@@ -4,7 +4,7 @@ category: network/dns-logging
 phase: exploitation
 command: dnslog
 docker:
-  image: kalilinux/dnslog:latest
+  image: phantomstrike/dnslog:latest
   args:
     - "-domain"
     - "${domain}"

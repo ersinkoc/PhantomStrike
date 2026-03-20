@@ -4,7 +4,7 @@ category: container/runtime-security
 phase: monitoring
 command: falco
 docker:
-  image: falcosecurity/falco:latest
+  image: phantomstrike/falco:latest
   args:
     - "-c"
     - "/etc/falco/falco.yaml"

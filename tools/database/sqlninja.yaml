@@ -4,7 +4,7 @@ category: database/sql-injection
 phase: exploitation
 command: sqlninja
 docker:
-  image: tduval/sqlninja:latest
+  image: phantomstrike/sqlninja:latest
   args:
     - "-m"
     - "test"

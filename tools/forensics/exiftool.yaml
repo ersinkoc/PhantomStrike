@@ -4,7 +4,7 @@ category: forensics/metadata
 phase: analysis
 command: exiftool
 docker:
-  image: kiliant/exiftool:latest
+  image: phantomstrike/exiftool:latest
   args:
     - "-json"
     - "/input/file"

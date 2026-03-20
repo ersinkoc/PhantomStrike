@@ -4,7 +4,7 @@ category: wireless/wps-cracking
 phase: exploitation
 command: reaver
 docker:
-  image: koutto/reaver-wps-fork-t6x:latest
+  image: phantomstrike/reaver:latest
   args:
     - "-i"
     - "${interface}"

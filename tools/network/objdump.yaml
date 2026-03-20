@@ -4,7 +4,7 @@ category: binary/disassembly
 phase: analysis
 command: objdump
 docker:
-  image: kalilinux/binutils:latest
+  image: phantomstrike/objdump:latest
   args:
     - "-d"
     - "/input/binary"

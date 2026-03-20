@@ -4,7 +4,7 @@ category: password/brute-force
 phase: exploitation
 command: medusa
 docker:
-  image: linuxserver/medusa:latest
+  image: phantomstrike/medusa:latest
   args:
     - "-h"
     - "${target}"

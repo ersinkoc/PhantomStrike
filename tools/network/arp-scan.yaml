@@ -4,7 +4,7 @@ category: network/arp-scanning
 phase: reconnaissance
 command: arp-scan
 docker:
-  image: kalilinux/arp-scan:latest
+  image: phantomstrike/arp-scan:latest
   args:
     - "-l"
     - "${network}"

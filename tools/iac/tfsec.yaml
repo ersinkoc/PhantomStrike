@@ -4,7 +4,7 @@ category: iac/security
 phase: scanning
 command: tfsec
 docker:
-  image: aquasec/tfsec:latest
+  image: phantomstrike/tfsec:latest
   args:
     - "${path}"
     - "--format=json"

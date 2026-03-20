@@ -4,7 +4,7 @@ category: reconnaissance/network
 phase: reconnaissance
 command: asnlookup
 docker:
-  image: yassineaboukir/asnlookup:latest
+  image: phantomstrike/asnlookup:latest
   args:
     - "-o"
     - "${organization}"

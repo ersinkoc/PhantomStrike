@@ -4,7 +4,7 @@ category: crypto/hash-length-extension
 phase: exploitation
 command: hashpump
 docker:
-  image: kalilinux/hashpump:latest
+  image: phantomstrike/hashpump:latest
   args:
     - "-s"
     - "${signature}"

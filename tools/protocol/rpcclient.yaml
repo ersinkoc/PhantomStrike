@@ -4,7 +4,7 @@ category: protocol/ms-rpc
 phase: reconnaissance
 command: rpcclient
 docker:
-  image: kalilinux/rpcclient:latest
+  image: phantomstrike/rpcclient:latest
   args:
     - "-U"
     - "${username}%${password}"

@@ -4,7 +4,7 @@ category: password/cracking
 phase: exploitation
 command: john
 docker:
-  image: philsmd/john:latest
+  image: phantomstrike/john:latest
   args:
     - "--format=${format}"
     - "--wordlist=/wordlists/rockyou.txt"

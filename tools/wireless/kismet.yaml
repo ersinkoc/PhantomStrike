@@ -4,7 +4,7 @@ category: wireless/network-detection
 phase: reconnaissance
 command: kismet
 docker:
-  image: kismet/kismet:latest
+  image: phantomstrike/kismet:latest
   args:
     - "-c"
     - "${interface}"

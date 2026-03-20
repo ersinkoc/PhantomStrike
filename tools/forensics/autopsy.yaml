@@ -4,7 +4,7 @@ category: forensics/disk-analysis
 phase: analysis
 command: autopsy
 docker:
-  image: kali/autopsy:latest
+  image: phantomstrike/autopsy:latest
   args:
     - "--nogui"
     - "-d"

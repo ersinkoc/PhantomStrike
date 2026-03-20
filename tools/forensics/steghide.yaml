@@ -4,7 +4,7 @@ category: steganography/hide-extract
 phase: analysis
 command: steghide
 docker:
-  image: kali/steghide:latest
+  image: phantomstrike/steghide:latest
   args:
     - "extract"
     - "-sf"

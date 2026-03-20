@@ -4,7 +4,7 @@ category: password/wordlist-generator
 phase: reconnaissance
 command: cewl
 docker:
-  image: kalilinux/cewl:latest
+  image: phantomstrike/cewl:latest
   args:
     - "${target}"
     - "-d"

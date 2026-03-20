@@ -4,7 +4,7 @@ category: web/vulnerability-scanning
 phase: scanning
 command: burpsuite
 docker:
-  image: mstojkovic/burpsuite:latest
+  image: phantomstrike/burpsuite:latest
   args:
     - "--project-file=/output/burp-project.burp"
     - "--config-file=/config/burp-config.json"

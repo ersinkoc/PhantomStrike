@@ -4,7 +4,7 @@ category: web/directory-traversal
 phase: exploitation
 command: dotdotpwn
 docker:
-  image: kalilinux/dotdotpwn:latest
+  image: phantomstrike/dotdotpwn:latest
   args:
     - "-m"
     - "http"

@@ -4,7 +4,7 @@ category: web/vulnerability-scanning
 phase: scanning
 command: jaeles
 docker:
-  image: jaeles/jaeles:latest
+  image: phantomstrike/jaeles:latest
   args:
     - "scan"
     - "-u"

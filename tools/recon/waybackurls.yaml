@@ -4,7 +4,7 @@ category: reconnaissance/url-discovery
 phase: reconnaissance
 command: waybackurls
 docker:
-  image: tomnomnom/waybackurls:latest
+  image: phantomstrike/waybackurls:latest
   args:
     - "-dates"
   stdin: "${domains}"

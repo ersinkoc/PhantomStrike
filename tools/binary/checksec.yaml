@@ -4,7 +4,7 @@ category: binary/security-checks
 phase: analysis
 command: checksec
 docker:
-  image: kalilinux/checksec:latest
+  image: phantomstrike/checksec:latest
   args:
     - "--file=/input/binary"
     - "--json"

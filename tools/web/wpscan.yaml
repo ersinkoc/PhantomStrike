@@ -6,7 +6,7 @@ command: wpscan
 args: ["--no-banner", "--no-update"]
 
 docker:
-  image: wpscanteam/wpscan:latest
+  image: phantomstrike/wpscan:latest
   memory_limit: "1g"
   timeout: "300s"
 

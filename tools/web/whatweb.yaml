@@ -4,7 +4,7 @@ category: web/fingerprinting
 phase: reconnaissance
 command: whatweb
 docker:
-  image: wpscanteam/whatweb:latest
+  image: phantomstrike/whatweb:latest
   args:
     - "${target}"
     - "--log-json=/output/whatweb-results.json"

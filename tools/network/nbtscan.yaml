@@ -4,7 +4,7 @@ category: network/netbios-scanning
 phase: reconnaissance
 command: nbtscan
 docker:
-  image: kalilinux/nbtscan:latest
+  image: phantomstrike/nbtscan:latest
   args:
     - "-r"
     - "${network}"

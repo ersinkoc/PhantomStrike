@@ -4,7 +4,7 @@ category: reconnaissance/dns
 phase: reconnaissance
 command: dnsrecon
 docker:
-  image: berserker/dnsrecon:latest
+  image: phantomstrike/dnsrecon:latest
   args:
     - "-d"
     - "${domain}"

@@ -4,7 +4,7 @@ category: protocol/dns-reconnaissance
 phase: reconnaissance
 command: fierce
 docker:
-  image: kalilinux/fierce:latest
+  image: phantomstrike/fierce:latest
   args:
     - "--domain"
     - "${domain}"

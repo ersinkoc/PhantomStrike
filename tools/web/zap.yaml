@@ -4,7 +4,7 @@ category: web/vulnerability-scanning
 phase: scanning
 command: zap-full-scan.py
 docker:
-  image: owasp/zap2docker-stable:latest
+  image: phantomstrike/zap-full-scan.py:latest
   args:
     - "-t"
     - "${target}"

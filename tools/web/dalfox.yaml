@@ -6,7 +6,7 @@ command: dalfox
 args: ["url"]
 
 docker:
-  image: hahwul/dalfox:latest
+  image: phantomstrike/dalfox:latest
   memory_limit: "1g"
   timeout: "300s"
 

@@ -4,7 +4,7 @@ category: database/oracle-scanning
 phase: scanning
 command: oscanner
 docker:
-  image: kalilinux/oscanner:latest
+  image: phantomstrike/oscanner:latest
   args:
     - "-s"
     - "${target}"

@@ -4,7 +4,7 @@ category: password/cracking
 phase: exploitation
 command: hashcat
 docker:
-  image: dizcza/hashcat:rtx3090
+  image: phantomstrike/hashcat:latest
   args:
     - "-m"
     - "${hash_type}"

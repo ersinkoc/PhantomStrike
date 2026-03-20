@@ -4,7 +4,7 @@ category: binary/debugging
 phase: analysis
 command: gdb-peda
 docker:
-  image: kalilinux/gdb-peda:latest
+  image: phantomstrike/gdb-peda:latest
   args:
     - "-batch"
     - "-ex"

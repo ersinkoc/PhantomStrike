@@ -4,7 +4,7 @@ category: network/smb-enum
 phase: reconnaissance
 command: enum4linux
 docker:
-  image: tuxpoldo/enum4linux:latest
+  image: phantomstrike/enum4linux:latest
   args:
     - "-a"
     - "${target}"

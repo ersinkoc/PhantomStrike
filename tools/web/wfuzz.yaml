@@ -4,7 +4,7 @@ category: web/fuzzing
 phase: scanning
 command: wfuzz
 docker:
-  image: ghcr.io/xmendez/wfuzz:latest
+  image: phantomstrike/wfuzz:latest
   args:
     - "-w"
     - "/wordlists/common.txt"

@@ -4,7 +4,7 @@ category: network/vpn-scanning
 phase: scanning
 command: ike-scan
 docker:
-  image: ustclug/ike-scan:latest
+  image: phantomstrike/ike-scan:latest
   args:
     - "-M"
     - "${target}"

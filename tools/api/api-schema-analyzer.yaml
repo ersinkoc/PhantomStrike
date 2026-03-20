@@ -4,7 +4,7 @@ category: api/schema-analysis
 phase: scanning
 command: api-schema-analyzer
 docker:
-  image: kalilinux/api-schema-analyzer:latest
+  image: phantomstrike/api-schema-analyzer:latest
   args:
     - "-s"
     - "/input/schema.json"

@@ -4,7 +4,7 @@ category: forensics/file-recovery
 phase: analysis
 command: foremost
 docker:
-  image: kali/foremost:latest
+  image: phantomstrike/foremost:latest
   args:
     - "-i"
     - "/input/disk-image"

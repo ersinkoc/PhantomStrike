@@ -4,7 +4,7 @@ category: steganography/png-analysis
 phase: analysis
 command: zsteg
 docker:
-  image: remnux/zsteg:latest
+  image: phantomstrike/zsteg:latest
   args:
     - "--all"
     - "/input/image.png"

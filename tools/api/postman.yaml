@@ -4,7 +4,7 @@ category: api/testing
 phase: scanning
 command: newman
 docker:
-  image: postman/newman:latest
+  image: phantomstrike/newman:latest
   args:
     - "run"
     - "/input/collection.json"

@@ -4,7 +4,7 @@ category: forensics/data-transformation
 phase: analysis
 command: cyberchef-server
 docker:
-  image: mpepping/cyberchef:latest
+  image: phantomstrike/cyberchef-server:latest
   args:
     - "--port"
     - "8080"

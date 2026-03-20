@@ -4,7 +4,7 @@ category: web/xss-automation
 phase: exploitation
 command: xsser
 docker:
-  image: kalilinux/xsser:latest
+  image: phantomstrike/xsser:latest
   args:
     - "-u"
     - "${target}"

@@ -12,7 +12,7 @@ args:
   - "${image}"
 
 docker:
-  image: aquasec/trivy:latest
+  image: phantomstrike/trivy:latest
   memory_limit: "1g"
   timeout: "600s"
 

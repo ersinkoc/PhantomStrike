@@ -4,7 +4,7 @@ category: reverse-engineering
 phase: analysis
 command: analyzeHeadless
 docker:
-  image: blacktop/ghidra:latest
+  image: phantomstrike/analyzeHeadless:latest
   args:
     - "/tmp"
     - "project"

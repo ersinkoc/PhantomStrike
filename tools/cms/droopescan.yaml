@@ -4,7 +4,7 @@ category: cms/scanning
 phase: scanning
 command: droopescan
 docker:
-  image: g0t4ly5/droopescan:latest
+  image: phantomstrike/droopescan:latest
   args:
     - "scan"
     - "drupal"

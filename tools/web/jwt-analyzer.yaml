@@ -4,7 +4,7 @@ category: web/jwt-security
 phase: scanning
 command: jwt_tool
 docker:
-  image: kalilinux/jwt-tool:latest
+  image: phantomstrike/jwt_tool:latest
   args:
     - "${token}"
     - "-t"

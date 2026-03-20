@@ -4,7 +4,7 @@ category: web/reconnaissance
 phase: reconnaissance
 command: gau
 docker:
-  image: ghcr.io/lc/gau:latest
+  image: phantomstrike/gau:latest
   args:
     - "${target}"
     - "--json"

@@ -6,7 +6,7 @@ command: masscan
 args: []
 
 docker:
-  image: adamlamar/masscan:latest
+  image: phantomstrike/masscan:latest
   memory_limit: "512m"
   timeout: "300s"
 

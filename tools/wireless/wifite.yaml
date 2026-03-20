@@ -4,7 +4,7 @@ category: wireless/wifi-automation
 phase: exploitation
 command: wifite
 docker:
-  image: wifite/wifite:latest
+  image: phantomstrike/wifite:latest
   args:
     - "--wpa"
     - "--dict"

@@ -4,7 +4,7 @@ category: binary/debugging
 phase: analysis
 command: gdb
 docker:
-  image: kalilinux/gdb:latest
+  image: phantomstrike/gdb:latest
   args:
     - "-batch"
     - "-ex"
