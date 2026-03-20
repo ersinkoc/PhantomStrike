@@ -29,13 +29,19 @@ COPY --from=projectdiscovery/katana:latest /usr/local/bin/katana /usr/local/bin/
 RUN pipx install dirsearch \
     && pipx install wfuzz \
     && pipx install arjun \
-    && pipx install xsstrike 2>/dev/null || true \
-    && pip3 install --break-system-packages exiftool 2>/dev/null || true
+    && pipx install commix \
+    && pipx install xsstrike 2>/dev/null || true
 
-# Additional apt tools
+# Ruby tools (wpscan)
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    ruby ruby-dev build-essential libcurl4-openssl-dev libxml2-dev zlib1g-dev \
     gdb exiftool \
-    && rm -rf /var/lib/apt/lists/* || true
+    && gem install wpscan --no-document 2>/dev/null || true \
+    && rm -rf /var/lib/apt/lists/*
+
+# Dalfox binary — download from GitHub releases
+RUN curl -sL "https://github.com/hahwul/dalfox/releases/latest/download/dalfox_linux_amd64" -o /usr/local/bin/dalfox \
+    && chmod +x /usr/local/bin/dalfox 2>/dev/null || true
 
 # Testssl
 RUN git clone --depth 1 https://github.com/drwetter/testssl.sh.git /opt/testssl \

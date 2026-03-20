@@ -104,6 +104,13 @@ func (d *DockerRunner) Run(ctx context.Context, def *Definition, command string,
 		}
 		if exitErr, ok := err.(*exec.ExitError); ok {
 			result.ExitCode = exitErr.ExitCode()
+
+			// Exit 125 = Docker image not found. Retry with all-in-one image.
+			if result.ExitCode == 125 && !useAllInOne {
+				slog.Info("image not found, retrying with all-in-one", "tool", def.Name, "image", image)
+				return d.runWithAllInOne(ctx, def, command, args, timeout)
+			}
+
 			result.Status = "failed"
 			return result, nil
 		}
@@ -115,9 +122,43 @@ func (d *DockerRunner) Run(ctx context.Context, def *Definition, command string,
 	return result, nil
 }
 
-func coalesce(a, b string) string {
-	if a != "" {
-		return a
+// runWithAllInOne retries a tool execution using the phantomstrike-tools all-in-one image.
+func (d *DockerRunner) runWithAllInOne(ctx context.Context, def *Definition, command string, args []string, timeout time.Duration) (*ExecResult, error) {
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
+	dockerArgs := []string{"run", "--rm", "--network", "host"}
+	if def.Docker.MemoryLimit != "" {
+		dockerArgs = append(dockerArgs, "--memory", def.Docker.MemoryLimit)
 	}
-	return b
+	dockerArgs = append(dockerArgs, "phantomstrike-tools:latest", command)
+	dockerArgs = append(dockerArgs, args...)
+
+	slog.Info("retrying with all-in-one image", "tool", def.Name, "command", command)
+
+	cmd := exec.CommandContext(ctx, "docker", dockerArgs...)
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	err := cmd.Run()
+	result := &ExecResult{Stdout: stdout.String(), Stderr: stderr.String()}
+
+	if err != nil {
+		if ctx.Err() == context.DeadlineExceeded {
+			result.Status = "timeout"
+			result.ExitCode = -1
+			return result, fmt.Errorf("timed out after %v", timeout)
+		}
+		if exitErr, ok := err.(*exec.ExitError); ok {
+			result.ExitCode = exitErr.ExitCode()
+			result.Status = "failed"
+			return result, nil
+		}
+		return result, fmt.Errorf("docker run failed: %w", err)
+	}
+
+	result.ExitCode = 0
+	result.Status = "completed"
+	return result, nil
 }
