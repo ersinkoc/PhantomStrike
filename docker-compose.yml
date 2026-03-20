@@ -22,6 +22,7 @@ services:
       - ./skills:/app/skills:ro
       - ./knowledge:/app/knowledge:ro
       - artifacts:/data/artifacts
+      - app-storage:/app/storage
       - /var/run/docker.sock:/var/run/docker.sock
     depends_on:
       postgres:
@@ -92,3 +93,4 @@ volumes:
   pgdata:
   redisdata:
   artifacts:
+  app-storage:
