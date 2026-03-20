@@ -15,6 +15,7 @@ import (
 	"github.com/ersinkoc/phantomstrike/internal/auth"
 	"github.com/ersinkoc/phantomstrike/internal/cache"
 	"github.com/ersinkoc/phantomstrike/internal/config"
+	"github.com/ersinkoc/phantomstrike/internal/knowledge"
 	"github.com/ersinkoc/phantomstrike/internal/metrics"
 	"github.com/ersinkoc/phantomstrike/internal/pkg/ratelimit"
 	"github.com/ersinkoc/phantomstrike/internal/provider"
@@ -96,6 +97,26 @@ func New(cfg *config.Config, db *store.DB) (*Server, error) {
 	// Ensure default admin user exists
 	if err := apiHandler.EnsureDefaultAdmin(context.Background()); err != nil {
 		slog.Warn("failed to ensure default admin", "error", err)
+	}
+
+	// Auto-ingest knowledge base files if the table is empty
+	if empty, err := knowledge.IsEmpty(context.Background(), db.Pool); err != nil {
+		slog.Warn("failed to check knowledge_items table", "error", err)
+	} else if empty {
+		knowledgeDir := cfg.Knowledge.Dir
+		if knowledgeDir == "" {
+			knowledgeDir = "knowledge"
+		}
+		result, err := knowledge.IngestFromDirectory(context.Background(), db.Pool, knowledgeDir)
+		if err != nil {
+			slog.Warn("knowledge auto-ingestion failed", "error", err)
+		} else {
+			slog.Info("knowledge base auto-ingested",
+				"total", result.Total,
+				"ingested", result.Ingested,
+				"skipped", result.Skipped,
+			)
+		}
 	}
 
 	apiHandler.RegisterRoutes(mux)

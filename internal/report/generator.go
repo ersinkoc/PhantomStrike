@@ -355,6 +355,389 @@ pre { background: #f8f9fa; padding: 15px; border-radius: 4px; overflow-x: auto; 
 	return b.Bytes()
 }
 
+// GeneratePDFHTML creates a full standalone HTML page optimized for printing to PDF.
+// It includes a cover page, table of contents, executive summary, detailed findings
+// with severity badges, methodology section, and print-optimized CSS with @page rules.
+func (g *Generator) GeneratePDFHTML(data *Data) []byte {
+	var b bytes.Buffer
+
+	b.WriteString(`<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Security Assessment Report</title>
+<style>
+/* ── Reset & Base ──────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-size: 11pt;
+  line-height: 1.6;
+  color: #1a1a2e;
+  background: #fff;
+}
+
+/* ── Print / @page rules ───────────────────────────── */
+@page {
+  size: A4;
+  margin: 20mm 18mm 25mm 18mm;
+  @bottom-center { content: counter(page); font-size: 9pt; color: #666; }
+}
+@media print {
+  body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .page-break { page-break-after: always; break-after: page; }
+  .no-break   { page-break-inside: avoid; break-inside: avoid; }
+  .cover-page { page-break-after: always; }
+  nav.toc     { page-break-after: always; }
+}
+
+/* ── Cover Page ────────────────────────────────────── */
+.cover-page {
+  display: flex; flex-direction: column; justify-content: center; align-items: center;
+  min-height: 90vh; text-align: center; padding: 60px 40px;
+  background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+  color: #fff; border-radius: 0;
+}
+.cover-page h1 {
+  font-size: 36pt; font-weight: 800; letter-spacing: -0.5px;
+  margin-bottom: 12px; line-height: 1.2;
+}
+.cover-page .subtitle {
+  font-size: 14pt; color: #a8a5c8; margin-bottom: 40px; font-weight: 300;
+}
+.cover-page .meta-table {
+  background: rgba(255,255,255,0.08); border-radius: 12px; padding: 28px 40px;
+  text-align: left; min-width: 400px;
+}
+.cover-page .meta-table p {
+  margin: 6px 0; font-size: 11pt; color: #d1cfe2;
+}
+.cover-page .meta-table strong { color: #fff; }
+.cover-page .logo {
+  font-size: 18pt; font-weight: 700; letter-spacing: 2px; margin-bottom: 8px;
+  color: #e94560;
+}
+
+/* ── Table of Contents ─────────────────────────────── */
+nav.toc { padding: 40px 0; }
+nav.toc h2 { font-size: 20pt; color: #1a1a2e; border-bottom: 3px solid #e94560; padding-bottom: 8px; margin-bottom: 20px; }
+nav.toc ol { list-style: decimal; padding-left: 24px; }
+nav.toc li { padding: 6px 0; font-size: 12pt; color: #333; }
+
+/* ── Section Headers ───────────────────────────────── */
+h2.section-title {
+  font-size: 18pt; color: #1a1a2e; border-bottom: 3px solid #e94560;
+  padding-bottom: 8px; margin: 40px 0 20px 0;
+}
+h3.subsection-title {
+  font-size: 14pt; color: #302b63; margin: 24px 0 12px 0;
+}
+
+/* ── Summary Cards ─────────────────────────────────── */
+.summary-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px; margin: 20px 0;
+}
+.summary-card {
+  background: #f8f9fc; border-radius: 8px; padding: 16px; text-align: center;
+  border: 1px solid #e8e8f0;
+}
+.summary-card .count { font-size: 28pt; font-weight: 700; line-height: 1; }
+.summary-card .label { font-size: 9pt; text-transform: uppercase; letter-spacing: 1px; color: #666; margin-top: 4px; }
+.count-critical { color: #dc3545; }
+.count-high     { color: #e67e22; }
+.count-medium   { color: #f0ad4e; }
+.count-low      { color: #3498db; }
+.count-info     { color: #95a5a6; }
+.count-total    { color: #1a1a2e; }
+
+/* ── Tables ────────────────────────────────────────── */
+table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: 10pt; }
+th { background: #f0f0f8; font-weight: 600; text-align: left; padding: 10px 12px; border: 1px solid #ddd; }
+td { padding: 8px 12px; border: 1px solid #ddd; vertical-align: top; }
+tr:nth-child(even) { background: #fafafe; }
+
+/* ── Severity Badges ───────────────────────────────── */
+.badge {
+  display: inline-block; padding: 3px 10px; border-radius: 4px;
+  font-size: 9pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
+}
+.badge-critical { background: #f8d7da; color: #842029; border: 1px solid #f1aeb5; }
+.badge-high     { background: #fff3cd; color: #664d03; border: 1px solid #ffe69c; }
+.badge-medium   { background: #fff8e1; color: #856404; border: 1px solid #ffe082; }
+.badge-low      { background: #d1ecf1; color: #055160; border: 1px solid #9eeaf9; }
+.badge-info     { background: #e2e3e5; color: #41464b; border: 1px solid #cbcdd0; }
+
+/* ── Findings ──────────────────────────────────────── */
+.finding {
+  border: 1px solid #e0e0ea; border-radius: 8px; padding: 20px 24px;
+  margin: 16px 0; background: #fff;
+}
+.finding-header {
+  display: flex; align-items: center; gap: 12px; margin-bottom: 14px;
+  border-bottom: 1px solid #eee; padding-bottom: 10px;
+}
+.finding-header h4 { font-size: 13pt; color: #1a1a2e; margin: 0; flex: 1; }
+.finding-section { margin: 12px 0; }
+.finding-section strong { display: block; font-size: 10pt; color: #555; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+pre.evidence {
+  background: #1e1e2e; color: #cdd6f4; padding: 14px; border-radius: 6px;
+  font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+  font-size: 9pt; overflow-x: auto; white-space: pre-wrap; word-break: break-all;
+}
+.remediation-box {
+  background: #d4edda; border: 1px solid #c3e6cb; border-radius: 6px;
+  padding: 12px 16px; color: #155724; font-size: 10pt;
+}
+
+/* ── Timeline ──────────────────────────────────────── */
+.timeline { list-style: none; padding: 0; }
+.timeline li { padding: 4px 0; font-size: 10pt; }
+.timeline li::before { content: "\25CF "; color: #e94560; font-size: 8pt; }
+
+/* ── Methodology ───────────────────────────────────── */
+.methodology-list { padding-left: 20px; }
+.methodology-list li { padding: 4px 0; }
+
+/* ── Footer ────────────────────────────────────────── */
+.report-footer {
+  margin-top: 60px; padding-top: 20px; border-top: 2px solid #e0e0ea;
+  text-align: center; color: #888; font-size: 9pt;
+}
+</style>
+</head>
+<body>
+`)
+
+	// ── Cover Page ──
+	b.WriteString(`<div class="cover-page">`)
+	b.WriteString(`<div class="logo">PHANTOMSTRIKE</div>`)
+	b.WriteString(`<h1>Security Assessment Report</h1>`)
+	b.WriteString(fmt.Sprintf(`<p class="subtitle">%s</p>`, html.EscapeString(g.missionName)))
+	b.WriteString(`<div class="meta-table">`)
+	if data.MissionDesc != "" {
+		b.WriteString(fmt.Sprintf(`<p><strong>Description:</strong> %s</p>`, html.EscapeString(data.MissionDesc)))
+	}
+	b.WriteString(fmt.Sprintf(`<p><strong>Report ID:</strong> %s</p>`, g.missionID))
+	b.WriteString(fmt.Sprintf(`<p><strong>Generated:</strong> %s</p>`, g.createdAt.Format("January 2, 2006 15:04 MST")))
+	if data.StartTime != nil {
+		b.WriteString(fmt.Sprintf(`<p><strong>Assessment Period:</strong> %s`, data.StartTime.Format("Jan 2, 2006 15:04")))
+		if data.EndTime != nil {
+			b.WriteString(fmt.Sprintf(` &mdash; %s`, data.EndTime.Format("Jan 2, 2006 15:04")))
+		}
+		b.WriteString(`</p>`)
+	}
+	b.WriteString(fmt.Sprintf(`<p><strong>Total Findings:</strong> %d</p>`, data.Summary.Total))
+	b.WriteString(`</div></div>`)
+
+	// ── Table of Contents ──
+	b.WriteString(`<nav class="toc"><h2>Table of Contents</h2><ol>`)
+	b.WriteString(`<li>Executive Summary</li>`)
+	if len(data.Target) > 0 {
+		b.WriteString(`<li>Scope &amp; Target</li>`)
+	}
+	b.WriteString(`<li>Severity Breakdown</li>`)
+	if len(data.Vulnerabilities) > 0 {
+		b.WriteString(`<li>Detailed Findings</li>`)
+	}
+	if len(data.AttackChain) > 0 {
+		b.WriteString(`<li>Attack Chain</li>`)
+	}
+	b.WriteString(`<li>Methodology</li>`)
+	b.WriteString(`<li>Disclaimer</li>`)
+	b.WriteString(`</ol></nav>`)
+
+	// ── Executive Summary ──
+	b.WriteString(`<h2 class="section-title">1. Executive Summary</h2>`)
+	b.WriteString(`<p>This report summarizes the findings from an automated security assessment `)
+	b.WriteString(fmt.Sprintf(`of <strong>%s</strong>. `, html.EscapeString(g.missionName)))
+	b.WriteString(fmt.Sprintf(`A total of <strong>%d</strong> finding(s) were identified during the assessment.</p>`, data.Summary.Total))
+
+	if data.StartTime != nil && data.EndTime != nil {
+		duration := data.EndTime.Sub(*data.StartTime)
+		b.WriteString(fmt.Sprintf(`<p>The assessment ran for <strong>%s</strong>.</p>`, formatDuration(duration)))
+	}
+
+	// Summary cards
+	b.WriteString(`<div class="summary-grid">`)
+	b.WriteString(fmt.Sprintf(`<div class="summary-card"><div class="count count-total">%d</div><div class="label">Total</div></div>`, data.Summary.Total))
+	for _, sev := range []string{"critical", "high", "medium", "low", "info"} {
+		count := data.Summary.BySeverity[sev]
+		b.WriteString(fmt.Sprintf(`<div class="summary-card"><div class="count count-%s">%d</div><div class="label">%s</div></div>`,
+			sev, count, strings.ToUpper(sev)))
+	}
+	b.WriteString(`</div>`)
+
+	// Timeline
+	if data.StartTime != nil {
+		b.WriteString(`<h3 class="subsection-title">Timeline</h3><ul class="timeline">`)
+		b.WriteString(fmt.Sprintf(`<li><strong>Started:</strong> %s</li>`, data.StartTime.Format(time.RFC3339)))
+		if data.EndTime != nil {
+			b.WriteString(fmt.Sprintf(`<li><strong>Completed:</strong> %s</li>`, data.EndTime.Format(time.RFC3339)))
+			duration := data.EndTime.Sub(*data.StartTime)
+			b.WriteString(fmt.Sprintf(`<li><strong>Duration:</strong> %s</li>`, formatDuration(duration)))
+		}
+		b.WriteString(`</ul>`)
+	}
+
+	// ── Scope & Target ──
+	if len(data.Target) > 0 {
+		b.WriteString(`<h2 class="section-title">2. Scope &amp; Target</h2>`)
+		if scope, ok := data.Target["scope"].([]any); ok {
+			b.WriteString(`<table><tr><th>Target</th></tr>`)
+			for _, s := range scope {
+				b.WriteString(fmt.Sprintf(`<tr><td>%v</td></tr>`, s))
+			}
+			b.WriteString(`</table>`)
+		}
+	}
+
+	// ── Severity Breakdown ──
+	sectionNum := 3
+	if len(data.Target) == 0 {
+		sectionNum = 2
+	}
+	b.WriteString(fmt.Sprintf(`<h2 class="section-title">%d. Severity Breakdown</h2>`, sectionNum))
+	b.WriteString(`<table><tr><th>Severity</th><th>Count</th><th>Percentage</th></tr>`)
+	for _, sev := range []string{"critical", "high", "medium", "low", "info"} {
+		count := data.Summary.BySeverity[sev]
+		if count > 0 {
+			pct := float64(0)
+			if data.Summary.Total > 0 {
+				pct = float64(count) / float64(data.Summary.Total) * 100
+			}
+			b.WriteString(fmt.Sprintf(`<tr><td><span class="badge badge-%s">%s</span></td><td>%d</td><td>%.0f%%</td></tr>`,
+				sev, strings.ToUpper(sev), count, pct))
+		}
+	}
+	b.WriteString(`</table>`)
+	sectionNum++
+
+	// ── Detailed Findings ──
+	if len(data.Vulnerabilities) > 0 {
+		b.WriteString(fmt.Sprintf(`<h2 class="section-title">%d. Detailed Findings</h2>`, sectionNum))
+		sectionNum++
+
+		bySeverity := make(map[string][]Vulnerability)
+		for _, v := range data.Vulnerabilities {
+			bySeverity[v.Severity] = append(bySeverity[v.Severity], v)
+		}
+
+		findingIdx := 1
+		for _, sev := range []string{"critical", "high", "medium", "low", "info"} {
+			vulns := bySeverity[sev]
+			if len(vulns) == 0 {
+				continue
+			}
+
+			b.WriteString(fmt.Sprintf(`<h3 class="subsection-title"><span class="badge badge-%s">%s</span> Findings (%d)</h3>`,
+				sev, strings.ToUpper(sev), len(vulns)))
+
+			for _, v := range vulns {
+				b.WriteString(`<div class="finding no-break">`)
+				b.WriteString(`<div class="finding-header">`)
+				b.WriteString(fmt.Sprintf(`<h4>%d. %s</h4>`, findingIdx, html.EscapeString(v.Title)))
+				b.WriteString(fmt.Sprintf(`<span class="badge badge-%s">%s</span>`, sev, strings.ToUpper(sev)))
+				b.WriteString(`</div>`)
+
+				// Metadata table
+				b.WriteString(`<table><tr><th>Property</th><th>Value</th></tr>`)
+				if v.CVSSScore != nil {
+					b.WriteString(fmt.Sprintf(`<tr><td>CVSS Score</td><td><strong>%.1f</strong></td></tr>`, *v.CVSSScore))
+				}
+				if v.CVSSVector != "" {
+					b.WriteString(fmt.Sprintf(`<tr><td>CVSS Vector</td><td><code>%s</code></td></tr>`, html.EscapeString(v.CVSSVector)))
+				}
+				if v.Target != "" {
+					b.WriteString(fmt.Sprintf(`<tr><td>Target</td><td>%s</td></tr>`, html.EscapeString(v.Target)))
+				}
+				if v.AffectedComponent != "" {
+					b.WriteString(fmt.Sprintf(`<tr><td>Affected Component</td><td>%s</td></tr>`, html.EscapeString(v.AffectedComponent)))
+				}
+				if v.CWEID != "" {
+					b.WriteString(fmt.Sprintf(`<tr><td>CWE</td><td>%s</td></tr>`, v.CWEID))
+				}
+				if len(v.CVEIDs) > 0 {
+					b.WriteString(fmt.Sprintf(`<tr><td>CVEs</td><td>%s</td></tr>`, strings.Join(v.CVEIDs, ", ")))
+				}
+				if v.FoundBy != "" {
+					b.WriteString(fmt.Sprintf(`<tr><td>Found By</td><td>%s</td></tr>`, html.EscapeString(v.FoundBy)))
+				}
+				b.WriteString(fmt.Sprintf(`<tr><td>Discovered</td><td>%s</td></tr>`, v.CreatedAt))
+				b.WriteString(`</table>`)
+
+				if v.Description != "" {
+					b.WriteString(`<div class="finding-section"><strong>Description</strong>`)
+					b.WriteString(fmt.Sprintf(`<p>%s</p></div>`, html.EscapeString(v.Description)))
+				}
+
+				if v.Evidence != "" {
+					b.WriteString(`<div class="finding-section"><strong>Evidence</strong>`)
+					b.WriteString(fmt.Sprintf(`<pre class="evidence">%s</pre></div>`, html.EscapeString(v.Evidence)))
+				}
+
+				if v.Remediation != "" {
+					b.WriteString(`<div class="finding-section"><strong>Remediation</strong>`)
+					b.WriteString(fmt.Sprintf(`<div class="remediation-box">%s</div></div>`, html.EscapeString(v.Remediation)))
+				}
+
+				b.WriteString(`</div>`)
+				findingIdx++
+			}
+		}
+	} else {
+		b.WriteString(fmt.Sprintf(`<h2 class="section-title">%d. Findings</h2>`, sectionNum))
+		sectionNum++
+		b.WriteString(`<p>No vulnerabilities were discovered during this assessment.</p>`)
+	}
+
+	// ── Attack Chain ──
+	if len(data.AttackChain) > 0 {
+		b.WriteString(fmt.Sprintf(`<h2 class="section-title">%d. Attack Chain</h2>`, sectionNum))
+		sectionNum++
+		b.WriteString(`<table><tr><th>#</th><th>Phase</th><th>Type</th><th>Description</th><th>Severity</th></tr>`)
+		for i, n := range data.AttackChain {
+			sevBadge := ""
+			if n.Severity != "" {
+				sevBadge = fmt.Sprintf(`<span class="badge badge-%s">%s</span>`, n.Severity, strings.ToUpper(n.Severity))
+			}
+			b.WriteString(fmt.Sprintf(`<tr><td>%d</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>`,
+				i+1, html.EscapeString(n.Phase), html.EscapeString(n.Type), html.EscapeString(n.Label), sevBadge))
+		}
+		b.WriteString(`</table>`)
+	}
+
+	// ── Methodology ──
+	b.WriteString(fmt.Sprintf(`<h2 class="section-title">%d. Methodology</h2>`, sectionNum))
+	sectionNum++
+	b.WriteString(`<p>This security assessment was conducted using <strong>PhantomStrike</strong>, an AI-native `)
+	b.WriteString(`autonomous security testing platform. The multi-agent system coordinated the following phases:</p>`)
+	b.WriteString(`<ol class="methodology-list">`)
+	b.WriteString(`<li><strong>Reconnaissance</strong> &mdash; Target enumeration, service discovery, technology fingerprinting</li>`)
+	b.WriteString(`<li><strong>Scanning</strong> &mdash; Automated vulnerability scanning, configuration analysis, port scanning</li>`)
+	b.WriteString(`<li><strong>Exploitation</strong> &mdash; Controlled exploitation of identified vulnerabilities for verification</li>`)
+	b.WriteString(`<li><strong>Reporting</strong> &mdash; Automated analysis, severity scoring, remediation recommendations</li>`)
+	b.WriteString(`</ol>`)
+
+	// ── Disclaimer ──
+	b.WriteString(fmt.Sprintf(`<h2 class="section-title">%d. Disclaimer</h2>`, sectionNum))
+	b.WriteString(`<p>This report was generated automatically by PhantomStrike. All findings should be `)
+	b.WriteString(`manually verified before taking remediation actions. The assessment was limited to the `)
+	b.WriteString(`scope defined in the mission configuration and may not represent a comprehensive review `)
+	b.WriteString(`of all potential security issues.</p>`)
+
+	// ── Footer ──
+	b.WriteString(`<div class="report-footer">`)
+	b.WriteString(fmt.Sprintf(`<p>Generated by PhantomStrike &mdash; %s</p>`, g.createdAt.Format("January 2, 2006")))
+	b.WriteString(fmt.Sprintf(`<p>Report ID: %s</p>`, g.missionID))
+	b.WriteString(`</div>`)
+
+	b.WriteString(`</body></html>`)
+
+	return b.Bytes()
+}
+
 // Helper functions
 func getSeverityEmoji(severity string) string {
 	switch severity {

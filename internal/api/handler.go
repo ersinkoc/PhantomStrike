@@ -74,6 +74,7 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
 	mux.Handle("POST /api/v1/missions/{id}/start", protected(http.HandlerFunc(h.handleStartMission)))
 	mux.Handle("POST /api/v1/missions/{id}/pause", protected(http.HandlerFunc(h.handlePauseMission)))
 	mux.Handle("POST /api/v1/missions/{id}/cancel", protected(http.HandlerFunc(h.handleCancelMission)))
+	mux.Handle("POST /api/v1/missions/{id}/retry", protected(http.HandlerFunc(h.handleRetryMission)))
 	mux.Handle("GET /api/v1/missions/{id}/chain", protected(http.HandlerFunc(h.handleGetAttackChain)))
 	mux.Handle("GET /api/v1/missions/{id}/vulns", protected(http.HandlerFunc(h.handleGetMissionVulns)))
 	mux.Handle("GET /api/v1/missions/{id}/tools", protected(http.HandlerFunc(h.handleGetMissionTools)))
@@ -113,6 +114,7 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
 	mux.Handle("GET /api/v1/knowledge", protected(http.HandlerFunc(h.handleKnowledgeList)))
 	mux.Handle("POST /api/v1/knowledge/search", protected(http.HandlerFunc(h.handleKnowledgeSearch)))
 	mux.Handle("GET /api/v1/knowledge/categories", protected(http.HandlerFunc(h.handleKnowledgeCategories)))
+	mux.Handle("POST /api/v1/knowledge/ingest", protected(http.HandlerFunc(h.handleKnowledgeIngest)))
 
 	// Reports
 	mux.Handle("GET /api/v1/reports", protected(http.HandlerFunc(h.handleListReports)))

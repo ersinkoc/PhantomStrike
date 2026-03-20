@@ -1,10 +1,12 @@
 package api
 
 import (
+	"log/slog"
 	"net/http"
 	"strconv"
 
 	"github.com/ersinkoc/phantomstrike/internal/auth"
+	"github.com/ersinkoc/phantomstrike/internal/knowledge"
 )
 
 // handleKnowledgeList returns knowledge items with optional search
@@ -140,4 +142,34 @@ func (h *Handler) handleKnowledgeCategories(w http.ResponseWriter, r *http.Reque
 	}
 
 	writeJSON(w, http.StatusOK, map[string]interface{}{"categories": categories})
+}
+
+// handleKnowledgeIngest ingests markdown files from the knowledge/ directory into the database.
+func (h *Handler) handleKnowledgeIngest(w http.ResponseWriter, r *http.Request) {
+	claims := auth.GetClaims(r.Context())
+	if claims == nil {
+		writeError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+	knowledgeDir := h.cfg.Knowledge.Dir
+	if knowledgeDir == "" {
+		knowledgeDir = "knowledge"
+	}
+
+	result, err := knowledge.IngestFromDirectory(r.Context(), h.db.Pool, knowledgeDir)
+	if err != nil {
+		slog.Error("knowledge ingestion failed", "error", err)
+		writeError(w, http.StatusInternalServerError, "ingestion failed: "+err.Error())
+		return
+	}
+
+	slog.Info("knowledge ingestion completed",
+		"total", result.Total,
+		"ingested", result.Ingested,
+		"skipped", result.Skipped,
+		"errors", result.Errors,
+	)
+
+	writeJSON(w, http.StatusOK, result)
 }

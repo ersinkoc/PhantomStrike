@@ -119,7 +119,7 @@ func (h *Handler) handleCreateReport(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Generate report synchronously for now (could be async)
-	reportData, err := h.generateReport(r.Context(), missionID, missionName, missionDesc, targetData)
+	reportData, err := h.generateReportForFormat(r.Context(), missionID, missionName, missionDesc, targetData, format)
 	if err != nil {
 		h.db.Pool.Exec(r.Context(),
 			"UPDATE reports SET status = 'failed' WHERE id = $1",
@@ -135,7 +135,12 @@ func (h *Handler) handleCreateReport(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	filePath := storage.GeneratePath("reports", reportID.String(), format)
+	// PDF format is stored as HTML (print-optimized)
+	fileExt := format
+	if fileExt == "pdf" {
+		fileExt = "html"
+	}
+	filePath := storage.GeneratePath("reports", reportID.String(), fileExt)
 	_, err = storageProvider.Save(r.Context(), filePath, reportData)
 	if err != nil {
 		h.db.Pool.Exec(r.Context(),
@@ -214,6 +219,10 @@ func (h *Handler) handleDownloadReport(w http.ResponseWriter, r *http.Request) {
 
 	// Set appropriate headers
 	contentType := storage.GetMimeType(filePath)
+	// PDF format reports are HTML with print CSS — serve as text/html for browser rendering
+	if format == "pdf" {
+		contentType = "text/html"
+	}
 	w.Header().Set("Content-Type", contentType)
 	w.Header().Set("Content-Length", strconv.Itoa(len(data)))
 
@@ -222,7 +231,11 @@ func (h *Handler) handleDownloadReport(w http.ResponseWriter, r *http.Request) {
 	if filename == "" {
 		filename = "report"
 	}
-	filename = filename + "." + format
+	ext := format
+	if ext == "pdf" {
+		ext = "html"
+	}
+	filename = filename + "." + ext
 	w.Header().Set("Content-Disposition", "attachment; filename=\""+filename+"\"")
 
 	w.WriteHeader(http.StatusOK)
@@ -311,4 +324,100 @@ func (h *Handler) generateReport(ctx context.Context, missionID uuid.UUID, missi
 	// Generate report (default to markdown)
 	gen := report.NewGenerator(missionID, missionName)
 	return gen.GenerateMarkdown(data), nil
+}
+
+// generateReportForFormat creates the report content in the specified format.
+func (h *Handler) generateReportForFormat(ctx context.Context, missionID uuid.UUID, missionName, missionDesc string, target map[string]any, format string) ([]byte, error) {
+	// Get mission timeline
+	var startTime, endTime *time.Time
+	h.db.Pool.QueryRow(ctx,
+		"SELECT started_at, completed_at FROM missions WHERE id = $1", missionID,
+	).Scan(&startTime, &endTime)
+
+	// Get vulnerabilities
+	rows, err := h.db.Pool.Query(ctx,
+		`SELECT id, title, description, severity, cvss_score, cvss_vector, target,
+			affected_component, evidence, remediation, cve_ids, cwe_id, found_by, created_at
+		 FROM vulnerabilities WHERE mission_id = $1 ORDER BY
+			CASE severity
+				WHEN 'critical' THEN 1
+				WHEN 'high' THEN 2
+				WHEN 'medium' THEN 3
+				WHEN 'low' THEN 4
+				ELSE 5
+			END, cvss_score DESC NULLS LAST`,
+		missionID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var vulns []report.Vulnerability
+	bySeverity := map[string]int{"critical": 0, "high": 0, "medium": 0, "low": 0, "info": 0}
+
+	for rows.Next() {
+		var v report.Vulnerability
+		var cveIDs []string
+		var createdAt time.Time
+		err := rows.Scan(&v.ID, &v.Title, &v.Description, &v.Severity, &v.CVSSScore, &v.CVSSVector,
+			&v.Target, &v.AffectedComponent, &v.Evidence, &v.Remediation, &cveIDs, &v.CWEID, &v.FoundBy, &createdAt)
+		if err != nil {
+			continue
+		}
+		v.CVEIDs = cveIDs
+		v.CreatedAt = createdAt.Format(time.RFC3339)
+		vulns = append(vulns, v)
+		bySeverity[v.Severity]++
+	}
+
+	// Get attack chain nodes
+	chainRows, err := h.db.Pool.Query(ctx,
+		`SELECT id, node_type, label, severity, phase FROM attack_chain_nodes WHERE mission_id = $1`,
+		missionID)
+	if err != nil {
+		chainRows = nil
+	}
+	if chainRows != nil {
+		defer chainRows.Close()
+	}
+
+	var chain []report.ChainNode
+	if chainRows != nil {
+		for chainRows.Next() {
+			var n report.ChainNode
+			if err := chainRows.Scan(&n.ID, &n.Type, &n.Label, &n.Severity, &n.Phase); err == nil {
+				chain = append(chain, n)
+			}
+		}
+	}
+
+	data := &report.Data{
+		MissionID:       missionID,
+		MissionName:     missionName,
+		MissionDesc:     missionDesc,
+		Target:          target,
+		StartTime:       startTime,
+		EndTime:         endTime,
+		Vulnerabilities: vulns,
+		Summary: report.Summary{
+			Total:      len(vulns),
+			BySeverity: bySeverity,
+		},
+		AttackChain: chain,
+	}
+
+	gen := report.NewGenerator(missionID, missionName)
+
+	switch format {
+	case "json":
+		return gen.GenerateJSON(data)
+	case "html":
+		return gen.GenerateHTML(data), nil
+	case "pdf":
+		return gen.GeneratePDFHTML(data), nil
+	case "md", "markdown":
+		return gen.GenerateMarkdown(data), nil
+	default:
+		return gen.GenerateMarkdown(data), nil
+	}
 }

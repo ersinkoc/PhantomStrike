@@ -208,13 +208,96 @@ func (h *Handler) handleDeleteMission(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = h.db.Pool.Exec(r.Context(), "DELETE FROM missions WHERE id = $1", id)
+	// Check if mission exists and get its status
+	var status string
+	err = h.db.Pool.QueryRow(r.Context(), "SELECT status FROM missions WHERE id = $1", id).Scan(&status)
+	if err != nil {
+		writeError(w, http.StatusNotFound, "mission not found")
+		return
+	}
+
+	// If mission is running, cancel it first
+	if status == "running" {
+		_, _ = h.db.Pool.Exec(r.Context(),
+			`UPDATE missions SET status = 'cancelled', updated_at = NOW() WHERE id = $1`, id)
+	}
+
+	// Cascade delete related records in dependency order
+	ctx := r.Context()
+
+	// Delete messages (depend on conversations)
+	_, _ = h.db.Pool.Exec(ctx,
+		`DELETE FROM messages WHERE conversation_id IN (SELECT id FROM conversations WHERE mission_id = $1)`, id)
+	// Delete conversations
+	_, _ = h.db.Pool.Exec(ctx, `DELETE FROM conversations WHERE mission_id = $1`, id)
+	// Delete tool executions
+	_, _ = h.db.Pool.Exec(ctx, `DELETE FROM tool_executions WHERE mission_id = $1`, id)
+	// Delete vulnerabilities
+	_, _ = h.db.Pool.Exec(ctx, `DELETE FROM vulnerabilities WHERE mission_id = $1`, id)
+	// Delete attack chain edges
+	_, _ = h.db.Pool.Exec(ctx, `DELETE FROM attack_chain_edges WHERE mission_id = $1`, id)
+	// Delete attack chain nodes
+	_, _ = h.db.Pool.Exec(ctx, `DELETE FROM attack_chain_nodes WHERE mission_id = $1`, id)
+	// Delete reports
+	_, _ = h.db.Pool.Exec(ctx, `DELETE FROM reports WHERE mission_id = $1`, id)
+
+	// Finally delete the mission itself
+	tag, err := h.db.Pool.Exec(r.Context(), "DELETE FROM missions WHERE id = $1", id)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "delete failed")
 		return
 	}
+	if tag.RowsAffected() == 0 {
+		writeError(w, http.StatusNotFound, "mission not found")
+		return
+	}
 
 	writeJSON(w, http.StatusOK, map[string]string{"status": "deleted"})
+}
+
+func (h *Handler) handleRetryMission(w http.ResponseWriter, r *http.Request) {
+	id, err := parseUUID(r.PathValue("id"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid mission ID")
+		return
+	}
+
+	// Check mission exists and is in a terminal state
+	var status string
+	err = h.db.Pool.QueryRow(r.Context(), "SELECT status FROM missions WHERE id = $1", id).Scan(&status)
+	if err != nil {
+		writeError(w, http.StatusNotFound, "mission not found")
+		return
+	}
+
+	allowedStatuses := map[string]bool{"completed": true, "failed": true, "cancelled": true}
+	if !allowedStatuses[status] {
+		writeError(w, http.StatusBadRequest, fmt.Sprintf("cannot retry mission in '%s' status; must be completed, failed, or cancelled", status))
+		return
+	}
+
+	ctx := r.Context()
+
+	// Clear old data: messages, conversations, tool_executions
+	_, _ = h.db.Pool.Exec(ctx,
+		`DELETE FROM messages WHERE conversation_id IN (SELECT id FROM conversations WHERE mission_id = $1)`, id)
+	_, _ = h.db.Pool.Exec(ctx, `DELETE FROM conversations WHERE mission_id = $1`, id)
+	_, _ = h.db.Pool.Exec(ctx, `DELETE FROM tool_executions WHERE mission_id = $1`, id)
+
+	// Reset mission status
+	_, err = h.db.Pool.Exec(ctx,
+		`UPDATE missions SET status = 'created', progress = 0, current_phase = NULL, started_at = NULL, completed_at = NULL, updated_at = NOW() WHERE id = $1`,
+		id)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to reset mission")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]any{
+		"id":     id,
+		"status": "created",
+		"message": "mission reset for retry — use POST /start to begin",
+	})
 }
 
 func (h *Handler) handleStartMission(w http.ResponseWriter, r *http.Request) {
