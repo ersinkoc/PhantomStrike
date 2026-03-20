@@ -3,11 +3,11 @@ version: "1.0"
 category: steganography/png-analysis
 phase: analysis
 command: zsteg
+args:
+  - "--all"
+  - "${image}"
 docker:
   image: phantomstrike/zsteg:latest
-  args:
-    - "--all"
-    - "/input/image.png"
   memory_limit: "512m"
   timeout: "300s"
 
@@ -25,4 +25,4 @@ parameters:
 output:
   format: text
 
-enabled: false
+enabled: true

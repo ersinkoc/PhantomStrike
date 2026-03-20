@@ -2,26 +2,25 @@ name: waybackurls
 version: "1.0"
 category: reconnaissance/url-discovery
 phase: reconnaissance
-command: waybackurls
+command: python3
+args: ["/app/tools/_custom/waybackurls.py"]
 docker:
   image: phantomstrike/waybackurls:latest
-  args:
-    - "-dates"
-  stdin: "${domains}"
   memory_limit: "512m"
-  timeout: "300s"
+  timeout: "120s"
 
 short_description: Fetch URLs from Wayback Machine
 description: |
-  waybackurls fetches all the URLs that the Wayback Machine knows about.
+  Fetches all archived URLs from the Wayback Machine CDX API
+  for a given domain including subdomains.
 
 parameters:
-  - name: domains
+  - name: target
     type: string
     required: true
-    description: Domains (newline separated)
+    description: Target domain
 
 output:
   format: text
 
-enabled: false
+enabled: true

@@ -2,28 +2,25 @@ name: swagger-scan
 version: "1.0"
 category: api/swagger-security
 phase: scanning
-command: swagger-scan
+command: python3
+args: ["/app/tools/_custom/swagger-scan.py"]
 docker:
   image: phantomstrike/swagger-scan:latest
-  args:
-    - "-P"
-    - "/input/swagger.json"
-    - "-o"
-    - "/output/swagger-scan-results.json"
-  memory_limit: "1g"
-  timeout: "600s"
+  memory_limit: "512m"
+  timeout: "120s"
 
 short_description: Swagger/OpenAPI security scanner
 description: |
-  Scans Swagger/OpenAPI specifications for security issues.
+  Scans for exposed Swagger/OpenAPI documentation endpoints.
+  Checks common paths for swagger.json, openapi.json, API docs, and Swagger UI.
 
 parameters:
-  - name: spec
+  - name: target
     type: string
     required: true
-    description: Swagger/OpenAPI spec file
+    description: Target base URL
 
 output:
-  format: json
+  format: text
 
-enabled: false
+enabled: true

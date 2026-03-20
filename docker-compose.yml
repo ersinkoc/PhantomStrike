@@ -18,6 +18,7 @@ services:
       - MCP_AUTH_TOKEN=${MCP_AUTH_TOKEN:-phantomstrike-mcp-token}
     volumes:
       - ./tools:/app/tools:ro
+      - ./tools/_custom:/app/tools/_custom:ro
       - ./roles:/app/roles:ro
       - ./skills:/app/skills:ro
       - ./knowledge:/app/knowledge:ro

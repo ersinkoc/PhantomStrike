@@ -3,16 +3,14 @@ version: "1.0"
 category: iac/policy-as-code
 phase: scanning
 command: terrascan
+args:
+  - "scan"
+  - "-d"
+  - "${path}"
+  - "-o"
+  - "json"
 docker:
   image: phantomstrike/terrascan:latest
-  args:
-    - "scan"
-    - "-d"
-    - "${path}"
-    - "-o"
-    - "json"
-    - ">"
-    - "/output/terrascan-results.json"
   memory_limit: "1g"
   timeout: "300s"
 
@@ -30,8 +28,9 @@ parameters:
     type: string
     required: false
     default: "all"
+    flag: "-i"
 
 output:
   format: json
 
-enabled: false
+enabled: true

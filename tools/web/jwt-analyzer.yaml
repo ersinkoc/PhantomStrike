@@ -2,26 +2,25 @@ name: jwt-analyzer
 version: "1.0"
 category: web/jwt-security
 phase: scanning
-command: jwt_tool
+command: python3
+args: ["/app/tools/_custom/jwt-analyzer.py"]
 docker:
-  image: phantomstrike/jwt_tool:latest
-  args:
-    - "${token}"
-    - "-t"
-  memory_limit: "512m"
-  timeout: "300s"
+  image: phantomstrike/jwt-analyzer:latest
+  memory_limit: "256m"
+  timeout: "60s"
 
 short_description: JWT security testing
 description: |
-  jwt_tool is a toolkit for validating, forging, scanning and tampering JWTs.
+  Analyzes JWT tokens for security weaknesses including algorithm issues,
+  missing expiration, sensitive data in payload, and injection points.
 
 parameters:
   - name: token
     type: string
     required: true
-    description: JWT token
+    description: JWT token to analyze
 
 output:
   format: text
 
-enabled: false
+enabled: true

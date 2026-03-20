@@ -2,23 +2,17 @@ name: dotdotpwn
 version: "1.0"
 category: web/directory-traversal
 phase: exploitation
-command: dotdotpwn
+command: python3
+args: ["/app/tools/_custom/dotdotpwn-lite.py"]
 docker:
   image: phantomstrike/dotdotpwn:latest
-  args:
-    - "-m"
-    - "http"
-    - "-h"
-    - "${target}"
-    - "-o"
-    - "json"
   memory_limit: "512m"
-  timeout: "1800s"
+  timeout: "300s"
 
 short_description: Directory traversal fuzzer
 description: |
-  Dotdotpwn is a flexible intelligent fuzzer to discover
-  directory traversal vulnerabilities.
+  Path traversal checker that tests common traversal patterns
+  including encoded variants against multiple injection points.
 
 parameters:
   - name: target
@@ -27,6 +21,6 @@ parameters:
     description: Target URL
 
 output:
-  format: json
+  format: text
 
-enabled: false
+enabled: true

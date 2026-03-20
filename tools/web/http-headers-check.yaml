@@ -1,0 +1,26 @@
+name: http-headers-check
+version: "1.0"
+category: web/security-headers
+phase: scanning
+command: python3
+args: ["/app/tools/_custom/http-headers-check.py"]
+docker:
+  image: phantomstrike/http-headers-check:latest
+  memory_limit: "256m"
+  timeout: "60s"
+
+short_description: HTTP security headers checker
+description: |
+  Checks HTTP response headers for security best practices including
+  HSTS, CSP, X-Frame-Options, X-Content-Type-Options, and more.
+
+parameters:
+  - name: target
+    type: string
+    required: true
+    description: Target URL
+
+output:
+  format: text
+
+enabled: true

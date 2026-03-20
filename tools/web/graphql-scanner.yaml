@@ -2,28 +2,25 @@ name: graphql-scanner
 version: "1.0"
 category: web/graphql-security
 phase: scanning
-command: graphql-scanner
+command: python3
+args: ["/app/tools/_custom/graphql-scanner.py"]
 docker:
   image: phantomstrike/graphql-scanner:latest
-  args:
-    - "-u"
-    - "${target}"
-    - "-o"
-    - "/output/graphql-results.json"
   memory_limit: "512m"
-  timeout: "600s"
+  timeout: "120s"
 
 short_description: GraphQL security scanner
 description: |
-  GraphQL security scanner for finding vulnerabilities in GraphQL APIs.
+  Detects GraphQL endpoints and tests for introspection.
+  Enumerates types, queries, and mutations when introspection is enabled.
 
 parameters:
   - name: target
     type: string
     required: true
-    description: GraphQL endpoint
+    description: Target base URL
 
 output:
-  format: json
+  format: text
 
-enabled: false
+enabled: true

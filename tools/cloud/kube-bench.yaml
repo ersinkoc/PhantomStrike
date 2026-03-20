@@ -3,13 +3,11 @@ version: "1.0"
 category: cloud/kubernetes-security
 phase: scanning
 command: kube-bench
+args:
+  - "run"
+  - "--json"
 docker:
   image: phantomstrike/kube-bench:latest
-  args:
-    - "run"
-    - "--json"
-    - "-o"
-    - "/output/kube-bench-results.json"
   memory_limit: "512m"
   timeout: "300s"
 
@@ -22,9 +20,10 @@ parameters:
   - name: config
     type: string
     required: false
+    flag: "--config"
     description: Kubeconfig file
 
 output:
   format: json
 
-enabled: false
+enabled: true

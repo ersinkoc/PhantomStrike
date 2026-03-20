@@ -62,15 +62,40 @@ RUN pip3 install --break-system-packages checkov 2>/dev/null || true
 RUN pip3 install --break-system-packages prowler 2>/dev/null || true
 RUN pip3 install --break-system-packages cloudsplaining 2>/dev/null || true
 
+# Task 4: Additional installable tools
+RUN pip3 install --break-system-packages enum4linux-ng 2>/dev/null || true
+RUN pip3 install --break-system-packages kube-hunter 2>/dev/null || true
+
 # APT security tools (verified available)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ike-scan reaver bully sleuthkit pdfcrack \
+    rpcclient \
     && rm -rf /var/lib/apt/lists/*
 
-# Go binaries
+# Ruby tools (additional)
+RUN gem install zsteg --no-document 2>/dev/null || true
+
+# git-secrets
+RUN git clone https://github.com/awslabs/git-secrets.git /tmp/git-secrets \
+    && cd /tmp/git-secrets && make install 2>/dev/null || true \
+    && rm -rf /tmp/git-secrets
+
+# docker-bench-security
+RUN git clone https://github.com/docker/docker-bench-security.git /opt/docker-bench-security 2>/dev/null || true \
+    && ln -sf /opt/docker-bench-security/docker-bench-security.sh /usr/local/bin/docker-bench-security 2>/dev/null || true
+
+# Go binaries — RustScan
 RUN for url in \
     "https://github.com/RustScan/RustScan/releases/latest/download/rustscan_2.3.0_amd64.deb" \
     ; do curl -sL "$url" -o /tmp/pkg.deb && dpkg -i /tmp/pkg.deb 2>/dev/null; rm -f /tmp/pkg.deb; done || true
+
+# Go binary tools — kube-bench, terrascan, tfsec
+RUN curl -sL "https://github.com/aquasecurity/kube-bench/releases/latest/download/kube-bench_0.9.3_linux_amd64.tar.gz" 2>/dev/null \
+    | tar -xz -C /usr/local/bin/ kube-bench 2>/dev/null || true
+RUN curl -sL "https://github.com/tenable/terrascan/releases/latest/download/terrascan_1.19.9_Linux_x86_64.tar.gz" 2>/dev/null \
+    | tar -xz -C /usr/local/bin/ terrascan 2>/dev/null || true
+RUN curl -sL "https://github.com/aquasecurity/tfsec/releases/latest/download/tfsec-linux-amd64" -o /usr/local/bin/tfsec \
+    && chmod +x /usr/local/bin/tfsec 2>/dev/null || true
 
 # Go binary tools
 COPY --from=projectdiscovery/katana:latest /usr/local/bin/katana /usr/local/bin/katana
@@ -97,6 +122,9 @@ RUN curl -sL "https://github.com/epi052/feroxbuster/releases/latest/download/fer
     && dpkg -i /tmp/feroxbuster_*_amd64.deb 2>/dev/null || true \
     && rm -rf /tmp/ferox*
 
+# Copy custom Python tool scripts
+COPY tools/_custom /app/tools/_custom
+
 # Verify installations
 RUN echo "=== Installed Tools ===" \
     && nmap --version | head -1 \
@@ -110,6 +138,13 @@ RUN echo "=== Installed Tools ===" \
     && hydra -h 2>&1 | head -1 \
     && nikto -Version 2>&1 | head -1 || true \
     && testssl.sh --version 2>&1 | head -2 || true \
+    && rustscan --version 2>&1 | head -1 || true \
+    && kube-bench version 2>&1 | head -1 || true \
+    && terrascan version 2>&1 | head -1 || true \
+    && tfsec --version 2>&1 | head -1 || true \
+    && zsteg --version 2>&1 | head -1 || true \
+    && git-secrets --list 2>&1 | head -1 || true \
+    && ls /app/tools/_custom/*.py | wc -l \
     && echo "=== Done ==="
 
 WORKDIR /work

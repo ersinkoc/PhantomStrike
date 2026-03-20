@@ -3,14 +3,12 @@ version: "1.0"
 category: network/smb-enum
 phase: reconnaissance
 command: enum4linux-ng
+args:
+  - "-A"
+  - "-C"
+  - "${target}"
 docker:
   image: phantomstrike/enum4linux-ng:latest
-  args:
-    - "-A"
-    - "-C"
-    - "-oY"
-    - "/output/enum4linux-ng-results.yaml"
-    - "${target}"
   memory_limit: "512m"
   timeout: "600s"
 
@@ -24,6 +22,6 @@ parameters:
     required: true
 
 output:
-  format: yaml
+  format: text
 
-enabled: false
+enabled: true

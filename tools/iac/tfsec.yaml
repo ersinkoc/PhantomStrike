@@ -3,12 +3,11 @@ version: "1.0"
 category: iac/security
 phase: scanning
 command: tfsec
+args:
+  - "${path}"
+  - "--format=json"
 docker:
   image: phantomstrike/tfsec:latest
-  args:
-    - "${path}"
-    - "--format=json"
-    - "--out=/output/tfsec-results.json"
   memory_limit: "1g"
   timeout: "300s"
 
@@ -26,6 +25,7 @@ parameters:
     type: string
     required: false
     default: "HIGH,CRITICAL"
+    flag: "--minimum-severity"
 
 output:
   format: json
@@ -39,4 +39,4 @@ chain_suggestions:
   before:
     - checkov
 
-enabled: false
+enabled: true

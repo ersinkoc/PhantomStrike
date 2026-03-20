@@ -2,27 +2,25 @@ name: enum4linux
 version: "1.0"
 category: network/smb-enum
 phase: reconnaissance
-command: enum4linux
+command: python3
+args: ["/app/tools/_custom/enum4linux-lite.py"]
 docker:
   image: phantomstrike/enum4linux:latest
-  args:
-    - "-a"
-    - "${target}"
   memory_limit: "512m"
-  timeout: "600s"
+  timeout: "300s"
 
 short_description: SMB enumeration tool
 description: |
-  enum4linux is a tool for enumerating information from Windows and Samba
-  systems through SMB/CIFS.
+  SMB enumeration using smbclient and rpcclient to list shares,
+  users, groups, and check access permissions.
 
 parameters:
   - name: target
     type: string
     required: true
-    description: Target IP
+    description: Target IP address
 
 output:
   format: text
 
-enabled: false
+enabled: true

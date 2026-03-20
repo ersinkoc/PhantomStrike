@@ -3,11 +3,9 @@ version: "1.0"
 category: container/cis-benchmarks
 phase: scanning
 command: docker-bench-security
+args: []
 docker:
   image: phantomstrike/docker-bench-security:latest
-  args:
-    - "-o"
-    - "/output/docker-bench-results"
   memory_limit: "512m"
   timeout: "300s"
   privileged: true
@@ -28,4 +26,4 @@ parameters:
 output:
   format: text
 
-enabled: false
+enabled: true

@@ -2,23 +2,17 @@ name: theharvester
 version: "1.0"
 category: reconnaissance/osint
 phase: reconnaissance
-command: theHarvester
+command: python3
+args: ["/app/tools/_custom/theharvester-lite.py"]
 docker:
   image: phantomstrike/theHarvester:latest
-  args:
-    - "-d"
-    - "${domain}"
-    - "-b"
-    - "all"
-    - "-f"
-    - "/output/harvester-results"
-  memory_limit: "1g"
-  timeout: "600s"
+  memory_limit: "512m"
+  timeout: "120s"
 
 short_description: OSINT email and subdomain discovery
 description: |
-  TheHarvester is a simple to use tool to gather emails, subdomains,
-  hosts, employee names, open ports, and banners from different public sources.
+  Lightweight email and subdomain harvester using public sources
+  including crt.sh, HackerTarget, and RapidDNS.
 
 parameters:
   - name: domain
@@ -29,9 +23,9 @@ parameters:
     type: string
     required: false
     default: "all"
-    description: Data sources (all, baidu, bing, etc.)
+    description: Data sources (all, crtsh, hackertarget, rapiddns)
 
 output:
-  format: xml
+  format: text
 
-enabled: false
+enabled: true

@@ -3,14 +3,13 @@ version: "1.0"
 category: cloud/kubernetes-pentesting
 phase: scanning
 command: kube-hunter
+args:
+  - "--remote"
+  - "${target}"
+  - "--report"
+  - "json"
 docker:
   image: phantomstrike/kube-hunter:latest
-  args:
-    - "--remote"
-    - "${target}"
-    - "--json"
-    - "--log"
-    - "/output/kube-hunter-results.log"
   memory_limit: "512m"
   timeout: "600s"
 
@@ -27,4 +26,4 @@ parameters:
 output:
   format: json
 
-enabled: false
+enabled: true

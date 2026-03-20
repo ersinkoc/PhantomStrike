@@ -3,17 +3,9 @@ version: "1.0"
 category: cloud/security-audit
 phase: scanning
 command: prowler
+args: []
 docker:
   image: phantomstrike/prowler:latest
-  args:
-    - "-c"
-    - "check310,check311,check312"
-    - "-M"
-    - "json-ocsf"
-    - "-o"
-    - "/output"
-    - "-n"
-    - "prowler-results"
   memory_limit: "2g"
   timeout: "1800s"
 
@@ -31,6 +23,7 @@ parameters:
   - name: checks
     type: string
     required: false
+    flag: "-c"
     description: Specific checks to run
 
 output:
@@ -41,4 +34,4 @@ output:
     HIGH:
       - "HIGH"
 
-enabled: false
+enabled: true
