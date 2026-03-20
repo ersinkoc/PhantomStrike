@@ -160,9 +160,10 @@ func (h *Handler) processConversationMessage(convID, userMsgID uuid.UUID, userCo
 
 	// 2. Get mission context for system prompt
 	var missionName, missionDesc string
+	var missionTarget any
 	err = h.db.Pool.QueryRow(ctx,
-		`SELECT COALESCE(name, ''), COALESCE(description, '') FROM missions WHERE id = $1`, missionID,
-	).Scan(&missionName, &missionDesc)
+		`SELECT COALESCE(name, ''), COALESCE(description, ''), target FROM missions WHERE id = $1`, missionID,
+	).Scan(&missionName, &missionDesc, &missionTarget)
 	if err != nil {
 		slog.Warn("failed to look up mission for AI processing", "mission_id", missionID, "error", err)
 		// Continue without mission context
@@ -204,11 +205,16 @@ func (h *Handler) processConversationMessage(convID, userMsgID uuid.UUID, userCo
 	}
 
 	// 4. Build system prompt
+	targetStr := fmt.Sprintf("%v", missionTarget)
 	systemPrompt := fmt.Sprintf(
 		`You are PhantomStrike, an autonomous AI security testing assistant.
 
 MISSION: %s
 DESCRIPTION: %s
+TARGET: %s
+
+CRITICAL: Always use the exact target above. Never use example.com, target.com, or made-up IPs.
+When calling tools, ALWAYS set the "target" parameter to the actual target domain/IP from this mission.
 
 YOUR ROLE:
 - Run security tools to scan the target
@@ -243,7 +249,7 @@ TOOL USAGE TIPS:
 - hydra: Complex tool — only use when credentials testing is needed.
 
 IMPORTANT: Keep scans fast. Use --top-ports, -T4, timeouts. Never run full port scans.`,
-		missionName, missionDesc,
+		missionName, missionDesc, targetStr,
 	)
 
 	// 5. Get provider from the swarm's router and build tool definitions
