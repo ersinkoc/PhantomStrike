@@ -136,7 +136,7 @@ func (h *Handler) handleCreateReport(w http.ResponseWriter, r *http.Request) {
 	}
 
 	filePath := storage.GeneratePath("reports", reportID.String(), format)
-	fullPath, err := storageProvider.Save(r.Context(), filePath, reportData)
+	_, err = storageProvider.Save(r.Context(), filePath, reportData)
 	if err != nil {
 		h.db.Pool.Exec(r.Context(),
 			"UPDATE reports SET status = 'failed' WHERE id = $1",
@@ -148,7 +148,7 @@ func (h *Handler) handleCreateReport(w http.ResponseWriter, r *http.Request) {
 	// Update report record
 	_, err = h.db.Pool.Exec(r.Context(),
 		"UPDATE reports SET status = 'ready', file_path = $1, file_size = $2 WHERE id = $3",
-		fullPath, len(reportData), reportID,
+		filePath, len(reportData), reportID,
 	)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "failed to update report")
@@ -161,7 +161,7 @@ func (h *Handler) handleCreateReport(w http.ResponseWriter, r *http.Request) {
 		"format":    format,
 		"title":     title,
 		"status":    "ready",
-		"file_path": fullPath,
+		"file_path": filePath,
 		"file_size": len(reportData),
 	})
 }

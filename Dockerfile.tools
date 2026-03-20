@@ -41,13 +41,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Ruby tools
 RUN gem install wpscan --no-document 2>/dev/null || true
 
-# Python security tools
-RUN pip3 install --break-system-packages \
-    netexec impacket droopescan \
-    theHarvester sublist3r \
-    shodan censys trufflehog3 detect-secrets \
-    paramspider bloodhound \
-    2>/dev/null || true
+# Python security tools (each in separate RUN to catch errors)
+RUN pip3 install --break-system-packages netexec impacket droopescan 2>/dev/null || true
+RUN pip3 install --break-system-packages shodan censys 2>/dev/null || true
+RUN pip3 install --break-system-packages trufflehog3 detect-secrets 2>/dev/null || true
+
+# Tools with specific install methods
+RUN pip3 install --break-system-packages git+https://github.com/laramies/theHarvester.git 2>/dev/null || true
+RUN pip3 install --break-system-packages git+https://github.com/aboul3la/Sublist3r.git 2>/dev/null || true
 
 # Trivy + Grype (container scanners) — download latest binaries
 RUN curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin 2>/dev/null || true
