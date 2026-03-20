@@ -28,28 +28,24 @@ COPY --from=projectdiscovery/katana:latest /usr/local/bin/katana /usr/local/bin/
 # Python tools (use --break-system-packages for Ubuntu 24.04 PEP 668)
 RUN pip3 install --break-system-packages dirsearch wfuzz arjun commix 2>/dev/null || true
 
-# More apt tools
+# Security tools from apt (batch 1 - stable packages)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ruby ruby-dev build-essential libcurl4-openssl-dev libxml2-dev zlib1g-dev \
     gdb exiftool binwalk foremost steghide fcrackzip xxd \
-    arp-scan nbtscan enum4linux smbclient rpcclient \
-    aircrack-ng reaver bully kismet \
+    arp-scan nbtscan smbclient \
+    aircrack-ng \
     cewl whatweb wafw00f fierce dnsenum dnsrecon \
-    checksec objdump \
-    docker.io \
-    && rm -rf /var/lib/apt/lists/* || true
+    checksec \
+    && rm -rf /var/lib/apt/lists/*
 
 # Ruby tools
 RUN gem install wpscan --no-document 2>/dev/null || true
 
-# More Python tools
+# Python security tools
 RUN pip3 install --break-system-packages \
     crackmapexec impacket droopescan \
-    theHarvester sublist3r paramspider \
+    theHarvester sublist3r \
     shodan censys trufflehog detect-secrets \
-    xsser eyewitness autorecon \
-    bloodhound volatility3 \
-    pdfcrack hash-identifier \
     2>/dev/null || true
 
 # Go binary tools
