@@ -77,7 +77,7 @@ export default function MissionDetail() {
   useEffect(() => {
     if (!token || !id) return;
 
-    const wsUrl = `${import.meta.env.VITE_WS_URL || "ws://localhost:8080"}/ws?token=${token}`;
+    const wsUrl = `ws://${window.location.host}/ws?token=${token}`;
     const ws = new WebSocket(wsUrl);
 
     ws.onopen = () => {
