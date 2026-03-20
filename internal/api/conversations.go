@@ -330,20 +330,11 @@ IMPORTANT: Keep scans fast. Use --top-ports, -T4, timeouts. Never run full port 
 			return
 		}
 
-		// Save assistant response (reasoning/text)
-		if resp.Content != "" {
-			h.saveAndBroadcast(ctx, convID, missionID, resp.Content, &resp.Model)
-
-			// Broadcast thinking event via WebSocket
-			if h.hub != nil {
-				h.hub.Broadcast(missionID, WSEvent{Type: "thinking", Data: map[string]any{
-					"agent": "executor", "thought": resp.Content, "iteration": iteration + 1,
-				}})
-			}
-		}
-
-		// No tool calls = AI is done
+		// No tool calls = AI is done, save final response
 		if len(resp.ToolCalls) == 0 {
+			if resp.Content != "" {
+				h.saveAndBroadcast(ctx, convID, missionID, resp.Content, &resp.Model)
+			}
 			slog.Info("AI processing complete — no more tool calls",
 				"conversation_id", convID, "iterations", iteration+1)
 			return
