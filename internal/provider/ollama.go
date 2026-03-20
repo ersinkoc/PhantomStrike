@@ -94,7 +94,28 @@ func (o *OllamaProvider) ChatCompletion(ctx context.Context, req ChatRequest) (*
 		msgs = append(msgs, map[string]any{"role": "system", "content": req.System})
 	}
 	for _, m := range req.Messages {
-		msgs = append(msgs, map[string]any{"role": m.Role, "content": m.Content})
+		msg := map[string]any{"role": m.Role, "content": m.Content}
+
+		// Include tool calls for assistant messages
+		if m.Role == "assistant" && len(m.ToolCalls) > 0 {
+			var tcs []map[string]any
+			for _, tc := range m.ToolCalls {
+				tcs = append(tcs, map[string]any{
+					"function": map[string]any{
+						"name":      tc.Name,
+						"arguments": tc.Input,
+					},
+				})
+			}
+			msg["tool_calls"] = tcs
+		}
+
+		// Tool results use "tool" role
+		if m.Role == "tool" {
+			msg["role"] = "tool"
+		}
+
+		msgs = append(msgs, msg)
 	}
 
 	body := map[string]any{
