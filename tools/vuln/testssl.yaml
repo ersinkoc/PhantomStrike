@@ -3,7 +3,7 @@ version: "1.0"
 category: vuln/ssl-tls
 phase: scanning
 command: testssl.sh
-args: ["--quiet", "--color", "0"]
+args: ["--quiet", "--color=0"]
 
 docker:
   image: drwetter/testssl.sh:latest

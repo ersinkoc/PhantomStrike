@@ -3,7 +3,7 @@ version: "1.0"
 category: network/ssl-testing
 phase: scanning
 command: testssl.sh
-args: ["--quiet", "--color", "0"]
+args: ["--quiet", "--color=0"]
 
 docker:
   image: drwetter/testssl.sh:latest
