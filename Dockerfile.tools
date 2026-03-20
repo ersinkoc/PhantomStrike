@@ -1,0 +1,78 @@
+# PhantomStrike All-in-One Security Tools Image
+# Contains all commonly used pentesting tools in a single image
+FROM ubuntu:24.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PATH="/root/.local/bin:/usr/local/go/bin:${PATH}"
+
+# Base tools + dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl wget git unzip jq ca-certificates gnupg bsdmainutils \
+    python3 python3-pip python3-venv pipx \
+    nmap masscan nikto \
+    hydra medusa john hashcat \
+    sqlmap dirb \
+    whois dnsutils net-tools iputils-ping \
+    tcpdump netcat-openbsd \
+    libpcap-dev \
+    gobuster ffuf \
+    && rm -rf /var/lib/apt/lists/*
+
+# ProjectDiscovery tools — use their installer script (handles versioning automatically)
+RUN curl -sL https://raw.githubusercontent.com/projectdiscovery/pdtm/main/scripts/install.sh | bash \
+    && /root/.pdtm/go/bin/pdtm -install-all 2>/dev/null || true \
+    && cp /root/.pdtm/go/bin/* /usr/local/bin/ 2>/dev/null || true \
+    # Fallback: install individually if pdtm failed
+    && for tool in nuclei httpx subfinder naabu katana; do \
+         if ! which $tool > /dev/null 2>&1; then \
+           curl -sL "https://raw.githubusercontent.com/projectdiscovery/${tool}/main/scripts/install.sh" 2>/dev/null | bash || true; \
+         fi; \
+       done \
+    && cp /root/.pdtm/go/bin/* /usr/local/bin/ 2>/dev/null || true
+
+# Python tools
+RUN pipx install dirsearch \
+    && pipx install wfuzz \
+    && pipx install arjun \
+    && pipx install xsstrike 2>/dev/null || true \
+    && pip3 install --break-system-packages exiftool 2>/dev/null || true
+
+# Additional apt tools
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gdb exiftool \
+    && rm -rf /var/lib/apt/lists/* || true
+
+# Testssl
+RUN git clone --depth 1 https://github.com/drwetter/testssl.sh.git /opt/testssl \
+    && ln -s /opt/testssl/testssl.sh /usr/local/bin/testssl.sh
+
+# Amass
+RUN curl -sL "https://github.com/owasp-amass/amass/releases/latest/download/amass_linux_amd64.zip" -o /tmp/amass.zip \
+    && unzip -o /tmp/amass.zip -d /tmp/amass \
+    && cp /tmp/amass/amass_linux_amd64/amass /usr/local/bin/ 2>/dev/null \
+    || cp /tmp/amass/amass /usr/local/bin/ 2>/dev/null \
+    || true \
+    && rm -rf /tmp/amass*
+
+# Feroxbuster
+RUN curl -sL "https://github.com/epi052/feroxbuster/releases/latest/download/feroxbuster_amd64.deb.zip" -o /tmp/ferox.zip \
+    && unzip -o /tmp/ferox.zip -d /tmp/ \
+    && dpkg -i /tmp/feroxbuster_*_amd64.deb 2>/dev/null || true \
+    && rm -rf /tmp/ferox*
+
+# Verify installations
+RUN echo "=== Installed Tools ===" \
+    && nmap --version | head -1 \
+    && nuclei -version 2>&1 | head -1 \
+    && httpx -version 2>&1 | head -1 \
+    && subfinder -version 2>&1 | head -1 \
+    && naabu -version 2>&1 | head -1 \
+    && gobuster version 2>&1 | head -1 || true \
+    && ffuf -V 2>&1 | head -1 || true \
+    && sqlmap --version 2>&1 | head -1 \
+    && hydra -h 2>&1 | head -1 \
+    && nikto -Version 2>&1 | head -1 || true \
+    && testssl.sh --version 2>&1 | head -2 || true \
+    && echo "=== Done ==="
+
+WORKDIR /work

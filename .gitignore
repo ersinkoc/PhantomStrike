@@ -151,11 +151,8 @@ config.local.yml
 # Docker
 # --------------------------------------------
 .dockerignore
-Dockerfile.*
 !Dockerfile
-!Dockerfile.server
-!Dockerfile.worker
-!Dockerfile.mcp
+!Dockerfile.*
 docker-compose.override.yml
 docker-compose.*.yml
 !.env.example
