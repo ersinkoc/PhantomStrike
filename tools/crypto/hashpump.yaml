@@ -38,4 +38,4 @@ parameters:
 output:
   format: text
 
-enabled: true
+enabled: false

@@ -28,4 +28,4 @@ parameters:
 output:
   format: directory
 
-enabled: true
+enabled: false

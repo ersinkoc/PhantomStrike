@@ -36,4 +36,4 @@ chain_suggestions:
   after:
     - trivy
 
-enabled: true
+enabled: false
