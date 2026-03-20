@@ -28,16 +28,41 @@ COPY --from=projectdiscovery/katana:latest /usr/local/bin/katana /usr/local/bin/
 # Python tools (use --break-system-packages for Ubuntu 24.04 PEP 668)
 RUN pip3 install --break-system-packages dirsearch wfuzz arjun commix 2>/dev/null || true
 
-# Ruby tools (wpscan)
+# More apt tools
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ruby ruby-dev build-essential libcurl4-openssl-dev libxml2-dev zlib1g-dev \
-    gdb exiftool \
-    && gem install wpscan --no-document 2>/dev/null || true \
-    && rm -rf /var/lib/apt/lists/*
+    gdb exiftool binwalk foremost steghide fcrackzip xxd \
+    arp-scan nbtscan enum4linux smbclient rpcclient \
+    aircrack-ng reaver bully kismet \
+    cewl whatweb wafw00f fierce dnsenum dnsrecon \
+    checksec objdump \
+    docker.io \
+    && rm -rf /var/lib/apt/lists/* || true
 
-# Dalfox binary — download from GitHub releases
+# Ruby tools
+RUN gem install wpscan --no-document 2>/dev/null || true
+
+# More Python tools
+RUN pip3 install --break-system-packages \
+    crackmapexec impacket droopescan \
+    theHarvester sublist3r paramspider \
+    shodan censys trufflehog detect-secrets \
+    xsser eyewitness autorecon \
+    bloodhound volatility3 \
+    pdfcrack hash-identifier \
+    2>/dev/null || true
+
+# Go binary tools
+COPY --from=projectdiscovery/katana:latest /usr/local/bin/katana /usr/local/bin/katana
 RUN curl -sL "https://github.com/hahwul/dalfox/releases/latest/download/dalfox_linux_amd64" -o /usr/local/bin/dalfox \
     && chmod +x /usr/local/bin/dalfox 2>/dev/null || true
+RUN curl -sL "https://github.com/tomnomnom/gau/releases/latest/download/gau_2.2.4_linux_amd64.tar.gz" 2>/dev/null | tar -xz -C /usr/local/bin/ gau 2>/dev/null || true
+RUN curl -sL "https://github.com/tomnomnom/anew/releases/latest/download/anew-linux-amd64-0.1.1.tgz" 2>/dev/null | tar -xz -C /usr/local/bin/ 2>/dev/null || true
+RUN curl -sL "https://github.com/lc/gau/releases/latest/download/gau_2.2.4_linux_amd64.tar.gz" 2>/dev/null | tar -xz -C /usr/local/bin/ 2>/dev/null || true
+RUN curl -sL "https://github.com/hakluke/hakrawler/releases/latest/download/hakrawler_linux_amd64" -o /usr/local/bin/hakrawler \
+    && chmod +x /usr/local/bin/hakrawler 2>/dev/null || true
+RUN curl -sL "https://github.com/aquasecurity/trivy/releases/latest/download/trivy_0.62.1_Linux-64bit.tar.gz" 2>/dev/null | tar -xz -C /usr/local/bin/ trivy 2>/dev/null || true
+RUN curl -sL "https://github.com/anchore/grype/releases/latest/download/grype_0.90.0_linux_amd64.tar.gz" 2>/dev/null | tar -xz -C /usr/local/bin/ grype 2>/dev/null || true
 
 # Testssl
 RUN git clone --depth 1 https://github.com/drwetter/testssl.sh.git /opt/testssl \

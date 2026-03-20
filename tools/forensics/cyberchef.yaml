@@ -27,4 +27,4 @@ parameters:
 output:
   format: web
 
-enabled: true
+enabled: false

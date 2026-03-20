@@ -30,4 +30,4 @@ parameters:
 output:
   format: csv
 
-enabled: true
+enabled: false

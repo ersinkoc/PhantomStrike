@@ -36,4 +36,4 @@ output:
   failure_patterns:
     - "error"
 
-enabled: true
+enabled: false
