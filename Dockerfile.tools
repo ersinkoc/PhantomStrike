@@ -43,10 +43,15 @@ RUN gem install wpscan --no-document 2>/dev/null || true
 
 # Python security tools
 RUN pip3 install --break-system-packages \
-    crackmapexec impacket droopescan \
+    netexec impacket droopescan \
     theHarvester sublist3r \
-    shodan censys trufflehog detect-secrets \
+    shodan censys trufflehog3 detect-secrets \
+    paramspider bloodhound \
     2>/dev/null || true
+
+# Trivy + Grype (container scanners) — download latest binaries
+RUN curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin 2>/dev/null || true
+RUN curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin 2>/dev/null || true
 
 # Go binary tools
 COPY --from=projectdiscovery/katana:latest /usr/local/bin/katana /usr/local/bin/katana
