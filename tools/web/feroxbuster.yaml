@@ -26,7 +26,7 @@ parameters:
     type: string
     required: false
     flag: "-w"
-    default: "/usr/share/seclists/Discovery/Web-Content/common.txt"
+    default: "/usr/share/dirb/wordlists/common.txt"
     description: "Path to wordlist file"
   - name: threads
     type: string
