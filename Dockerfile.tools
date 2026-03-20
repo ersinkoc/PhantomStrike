@@ -25,12 +25,8 @@ COPY --from=projectdiscovery/subfinder:latest /usr/local/bin/subfinder /usr/loca
 COPY --from=projectdiscovery/naabu:latest /usr/local/bin/naabu /usr/local/bin/naabu
 COPY --from=projectdiscovery/katana:latest /usr/local/bin/katana /usr/local/bin/katana
 
-# Python tools
-RUN pipx install dirsearch \
-    && pipx install wfuzz \
-    && pipx install arjun \
-    && pipx install commix \
-    && pipx install xsstrike 2>/dev/null || true
+# Python tools (use --break-system-packages for Ubuntu 24.04 PEP 668)
+RUN pip3 install --break-system-packages dirsearch wfuzz arjun commix 2>/dev/null || true
 
 # Ruby tools (wpscan)
 RUN apt-get update && apt-get install -y --no-install-recommends \

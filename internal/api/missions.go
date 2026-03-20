@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -257,10 +258,26 @@ func (h *Handler) handleStartMission(w http.ResponseWriter, r *http.Request) {
 	go func() {
 		ctx := context.Background()
 
+		// Create conversation for this mission so frontend can see activity
+		var convID uuid.UUID
+		_ = h.db.Pool.QueryRow(ctx,
+			`INSERT INTO conversations (mission_id, title, agent_type, status)
+			 VALUES ($1, 'Mission Execution', 'executor', 'active') RETURNING id`,
+			id,
+		).Scan(&convID)
+
+		// Send initial system message with target info
+		targetStr := fmt.Sprintf("%v", mission.Target)
+		h.db.Pool.Exec(ctx,
+			`INSERT INTO messages (conversation_id, role, content)
+			 VALUES ($1, 'assistant', $2)`,
+			convID, fmt.Sprintf("Starting autonomous security scan.\nTarget: %s\nMode: %s", targetStr, mission.Mode),
+		)
+
 		// Create event channel for this mission
 		events := make(chan agent.SwarmEvent, 100)
 
-		// Start event broadcaster
+		// Start event broadcaster — save events as messages too
 		go func() {
 			for event := range events {
 				// Broadcast to WebSocket clients
@@ -271,6 +288,30 @@ func (h *Handler) handleStartMission(w http.ResponseWriter, r *http.Request) {
 						"data":  event.Data,
 					},
 				})
+
+				// Save tool events as messages in the conversation
+				if convID != uuid.Nil {
+					switch event.Type {
+					case "thinking":
+						if thought, ok := event.Data.(map[string]any)["thought"]; ok {
+							h.db.Pool.Exec(ctx,
+								`INSERT INTO messages (conversation_id, role, content) VALUES ($1, 'assistant', $2)`,
+								convID, thought)
+						}
+					case "tool_start":
+						if data, ok := event.Data.(map[string]any); ok {
+							h.db.Pool.Exec(ctx,
+								`INSERT INTO messages (conversation_id, role, content) VALUES ($1, 'assistant', $2)`,
+								convID, fmt.Sprintf("Running tool: %v with params: %v", data["tool"], data["params"]))
+						}
+					case "tool_complete":
+						if data, ok := event.Data.(map[string]any); ok {
+							h.db.Pool.Exec(ctx,
+								`INSERT INTO messages (conversation_id, role, content) VALUES ($1, 'tool', $2)`,
+								convID, fmt.Sprintf("Tool %v completed (exit %v, %vms)", data["tool"], data["exit_code"], data["duration_ms"]))
+						}
+					}
+				}
 			}
 		}()
 
