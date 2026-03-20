@@ -3,33 +3,37 @@ version: "1.0"
 category: wireless/wps-cracking
 phase: exploitation
 command: bully
+
 docker:
   image: phantomstrike/bully:latest
-  args:
-    - "-b"
-    - "${bssid}"
-    - "-c"
-    - "${channel}"
-    - "-o"
-    - "/output/bully-results"
   memory_limit: "512m"
   timeout: "3600s"
-  privileged: true
 
 short_description: WPS brute force attack
 description: |
   Bully is a new implementation of the WPS brute force attack.
   It is faster and more robust than Reaver.
+notes: |
+  - Syntax: bully -b <bssid> -c <channel> <interface>
+  - Interface is a positional argument
+  - Requires monitor mode wireless interface
 
 parameters:
   - name: bssid
     type: string
     required: true
-    description: Target BSSID
+    flag: "-b"
+    description: "Target BSSID (MAC address)"
   - name: channel
-    type: integer
+    type: string
     required: true
-    description: Channel number
+    flag: "-c"
+    description: "WiFi channel number"
+  - name: target
+    type: string
+    required: true
+    flag: ""
+    description: "Wireless interface in monitor mode (e.g. wlan0mon)"
 
 output:
   format: text

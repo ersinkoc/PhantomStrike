@@ -3,13 +3,10 @@ version: "1.0"
 category: forensics/metadata
 phase: analysis
 command: exiftool
+args: ["-json"]
+
 docker:
   image: phantomstrike/exiftool:latest
-  args:
-    - "-json"
-    - "/input/file"
-    - ">"
-    - "/output/exif-results.json"
   memory_limit: "256m"
   timeout: "60s"
 
@@ -17,12 +14,17 @@ short_description: Metadata reader/writer
 description: |
   ExifTool is a platform-independent Perl library plus a command-line
   application for reading, writing and editing meta information.
+  This is an offline tool that operates on local files, not remote targets.
+notes: |
+  - Syntax: exiftool [options] <file>
+  - File path is a positional argument
 
 parameters:
-  - name: file
+  - name: target
     type: string
     required: true
-    description: File to analyze
+    flag: ""
+    description: "Path to file to analyze (offline tool — provide file path, not hostname)"
 
 output:
   format: json

@@ -96,7 +96,7 @@ func TestRegistryNonexistentDir(t *testing.T) {
 	assert.Empty(t, r.List())
 }
 
-func TestBuildCommand(t *testing.T) {
+func TestBuildCommandBasic(t *testing.T) {
 	def := &Definition{
 		Command: "nmap",
 		Args:    []string{"-sV"},

@@ -3,15 +3,10 @@ version: "1.0"
 category: cms/scanning
 phase: scanning
 command: droopescan
+args: ["scan"]
+
 docker:
   image: phantomstrike/droopescan:latest
-  args:
-    - "scan"
-    - "drupal"
-    - "-u"
-    - "${target}"
-    - "-o"
-    - "json"
   memory_limit: "512m"
   timeout: "600s"
 
@@ -19,17 +14,29 @@ short_description: CMS vulnerability scanner
 description: |
   A plugin-based scanner that aids security researchers in identifying
   issues with several CMSs: Drupal, WordPress, Joomla, SilverStripe.
+notes: |
+  - Syntax: droopescan scan <cms> -u <url> [options]
+  - CMS type is a positional argument after 'scan'
 
 parameters:
-  - name: target
-    type: string
-    required: true
-    description: Target URL
   - name: cms
     type: string
     required: false
+    flag: ""
     default: "drupal"
+    description: "CMS type to scan for"
     enum: [drupal, wordpress, joomla, silverstripe, moodle]
+  - name: target
+    type: string
+    required: true
+    flag: "-u"
+    description: "Target URL to scan (e.g. http://target.com)"
+  - name: output_format
+    type: string
+    required: false
+    flag: "-o"
+    default: "json"
+    description: "Output format"
 
 output:
   format: json

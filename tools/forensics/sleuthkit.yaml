@@ -3,24 +3,28 @@ version: "1.0"
 category: forensics/disk-analysis
 phase: analysis
 command: fls
+args: ["-r"]
+
 docker:
   image: phantomstrike/fls:latest
-  args:
-    - "-r"
-    - "/input/disk-image"
   memory_limit: "1g"
   timeout: "600s"
 
 short_description: File system analysis tools
 description: |
   The Sleuth Kit (TSK) is a library and collection of command line tools
-  that allow you to investigate disk images.
+  that allow you to investigate disk images. This is an offline tool that
+  operates on local disk image files, not remote targets.
+notes: |
+  - Syntax: fls -r <disk_image>
+  - Disk image is a positional argument
 
 parameters:
-  - name: disk_image
+  - name: target
     type: string
     required: true
-    description: Disk image file
+    flag: ""
+    description: "Path to disk image file (offline tool — provide file path, not hostname)"
 
 output:
   format: text

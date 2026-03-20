@@ -3,15 +3,10 @@ version: "1.0"
 category: reconnaissance/osint
 phase: reconnaissance
 command: censys
+args: ["search", "--index-type", "hosts", "-f", "json"]
+
 docker:
   image: phantomstrike/censys:latest
-  args:
-    - "search"
-    - "${query}"
-    - "--index-type"
-    - "hosts"
-    - "-f"
-    - "json"
   memory_limit: "512m"
   timeout: "300s"
 
@@ -19,12 +14,16 @@ short_description: Attack surface discovery
 description: |
   Censys helps organizations secure their networks by providing an accurate
   and up-to-date view of their internet-facing assets.
+notes: |
+  - Syntax: censys search <query> [options]
+  - Query is a positional argument after the subcommand
 
 parameters:
-  - name: query
+  - name: target
     type: string
     required: true
-    description: Censys search query
+    flag: ""
+    description: "Censys search query (e.g. 'services.port=443 and location.country=US')"
 
 output:
   format: json

@@ -3,32 +3,37 @@ version: "1.0"
 category: protocol/ms-rpc
 phase: reconnaissance
 command: rpcclient
+args: ["-c", "enumdomusers"]
+
 docker:
   image: phantomstrike/rpcclient:latest
-  args:
-    - "-U"
-    - "${username}%${password}"
-    - "${target}"
-    - "-c"
-    - "enumdomusers"
   memory_limit: "512m"
   timeout: "300s"
 
 short_description: MS-RPC client
 description: |
   rpcclient is a tool for executing client side MS-RPC functions.
+notes: |
+  - Syntax: rpcclient -U <user>%<pass> <target> -c <command>
+  - Username and password combined via -U flag as user%pass
+  - Target IP is a positional argument
 
 parameters:
+  - name: credentials
+    type: string
+    required: true
+    flag: "-U"
+    description: "Credentials in format username%password (e.g. admin%password123)"
+  - name: rpc_command
+    type: string
+    required: false
+    flag: "-c"
+    description: "RPC command to execute (default: enumdomusers)"
   - name: target
     type: string
     required: true
-    description: Target IP
-  - name: username
-    type: string
-    required: true
-  - name: password
-    type: string
-    required: true
+    flag: ""
+    description: "Target IP address"
 
 output:
   format: text

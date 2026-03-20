@@ -3,25 +3,25 @@ version: "1.0"
 category: protocol/dns-reconnaissance
 phase: reconnaissance
 command: fierce
+args: ["--output", "/output/fierce-results.txt"]
+
 docker:
   image: phantomstrike/fierce:latest
-  args:
-    - "--domain"
-    - "${domain}"
-    - "--output"
-    - "/output/fierce-results.txt"
   memory_limit: "512m"
   timeout: "600s"
 
 short_description: DNS reconnaissance tool
 description: |
   Fierce is a semi-lightweight scanner that helps locate non-contiguous IP space.
+notes: |
+  - Syntax: fierce --domain <domain> [options]
 
 parameters:
-  - name: domain
+  - name: target
     type: string
     required: true
-    description: Target domain
+    flag: "--domain"
+    description: "Target domain for DNS reconnaissance (e.g. example.com)"
 
 output:
   format: text

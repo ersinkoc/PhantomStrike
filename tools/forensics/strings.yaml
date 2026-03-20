@@ -3,30 +3,32 @@ version: "1.0"
 category: forensics/string-extraction
 phase: analysis
 command: strings
+
 docker:
   image: phantomstrike/strings:latest
-  args:
-    - "-n"
-    - "6"
-    - "/input/binary"
-    - ">"
-    - "/output/strings-results.txt"
   memory_limit: "256m"
   timeout: "60s"
 
 short_description: Extract strings from binary
 description: |
   strings extracts printable strings from binary files.
+  This is an offline tool that operates on local files, not remote targets.
+notes: |
+  - Syntax: strings -n <min_length> <file>
+  - File path is a positional argument
 
 parameters:
-  - name: binary
+  - name: min_length
+    type: string
+    required: false
+    flag: "-n"
+    default: "6"
+    description: "Minimum string length to extract"
+  - name: target
     type: string
     required: true
-    description: Binary file
-  - name: min_length
-    type: integer
-    required: false
-    default: 6
+    flag: ""
+    description: "Path to binary file to extract strings from (offline tool — provide file path)"
 
 output:
   format: text

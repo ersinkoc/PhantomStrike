@@ -3,13 +3,10 @@ version: "1.0"
 category: web/reconnaissance
 phase: reconnaissance
 command: gau
+args: ["--json", "--o", "/output/gau-urls.json"]
+
 docker:
   image: phantomstrike/gau:latest
-  args:
-    - "${target}"
-    - "--json"
-    - "--o"
-    - "/output/gau-urls.json"
   memory_limit: "512m"
   timeout: "600s"
 
@@ -17,12 +14,16 @@ short_description: GetAllUrls - Fetch known URLs
 description: |
   gau fetches known URLs from AlienVault's Open Threat Exchange,
   the Wayback Machine, Common Crawl, and URLScan.
+notes: |
+  - Syntax: gau <domain> [options]
+  - Domain is a positional argument
 
 parameters:
   - name: target
     type: string
     required: true
-    description: Target domain
+    flag: ""
+    description: "Target domain to fetch URLs for (e.g. example.com)"
 
 output:
   format: json

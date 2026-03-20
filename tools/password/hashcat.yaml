@@ -3,40 +3,39 @@ version: "1.0"
 category: password/cracking
 phase: exploitation
 command: hashcat
+args: ["-o", "/output/cracked.txt"]
+
 docker:
   image: phantomstrike/hashcat:latest
-  args:
-    - "-m"
-    - "${hash_type}"
-    - "-a"
-    - "0"
-    - "/input/hashes.txt"
-    - "/wordlists/rockyou.txt"
-    - "-o"
-    - "/output/cracked.txt"
   memory_limit: "4g"
   timeout: "3600s"
-  privileged: true
-  devices: ["/dev/dri:/dev/dri"]
 
 short_description: Advanced password recovery
 description: |
   Hashcat is the world's fastest password recovery tool supporting 300+ hash types.
+  This is an offline tool that operates on local hash files, not remote targets.
+notes: |
+  - Syntax: hashcat -m <type> -a <mode> <hashfile> <wordlist> [options]
+  - This is an offline cracking tool — target is a file path, not a hostname
+  - Hash file must be mounted into the container at /input/
 
 parameters:
   - name: hash_type
-    type: integer
-    required: true
-    description: Hash type (0=MD5, 100=SHA1, etc.)
-  - name: hashes
     type: string
     required: true
-    description: Hash file
+    flag: "-m"
+    description: "Hash type (0=MD5, 100=SHA1, 1000=NTLM, 1800=SHA-512, etc.)"
   - name: attack_mode
-    type: integer
+    type: string
     required: false
-    default: 0
-    description: Attack mode (0=dictionary, 3=brute-force)
+    flag: "-a"
+    default: "0"
+    description: "Attack mode (0=dictionary, 1=combination, 3=brute-force, 6=hybrid)"
+  - name: target
+    type: string
+    required: true
+    flag: ""
+    description: "Path to hash file and wordlist as positional args (offline tool — provide file paths, not hostname). Example: '/input/hashes.txt /wordlists/rockyou.txt'"
 
 output:
   format: text

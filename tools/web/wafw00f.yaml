@@ -3,14 +3,10 @@ version: "1.0"
 category: web/waf-detection
 phase: reconnaissance
 command: wafw00f
+args: ["-o", "/output/wafw00f-results.json", "-f", "json"]
+
 docker:
   image: phantomstrike/wafw00f:latest
-  args:
-    - "${target}"
-    - "-o"
-    - "/output/wafw00f-results.json"
-    - "-f"
-    - "json"
   memory_limit: "256m"
   timeout: "300s"
 
@@ -18,12 +14,16 @@ short_description: Web Application Firewall detector
 description: |
   WAFW00F identifies and fingerprints Web Application Firewall (WAF)
   products protecting a website.
+notes: |
+  - Syntax: wafw00f <url> [options]
+  - URL is a positional argument
 
 parameters:
   - name: target
     type: string
     required: true
-    description: Target URL
+    flag: ""
+    description: "Target URL to check for WAF (e.g. http://example.com)"
 
 output:
   format: json

@@ -3,13 +3,10 @@ version: "1.0"
 category: reconnaissance/osint
 phase: reconnaissance
 command: shodan
+args: ["search", "--fields=ip_str,port,hostnames", "--format=json"]
+
 docker:
   image: phantomstrike/shodan:latest
-  args:
-    - "search"
-    - "--fields=ip_str,port,hostnames"
-    - "--format=json"
-    - "${query}"
   memory_limit: "512m"
   timeout: "300s"
 
@@ -17,16 +14,17 @@ short_description: Shodan search engine
 description: |
   Shodan is the world's first search engine for Internet-connected devices.
   Find exposed devices, open ports, and vulnerabilities.
+notes: |
+  - Syntax: shodan search [options] <query>
+  - Query is a positional argument
+  - API key must be configured with 'shodan init <api_key>' before use
 
 parameters:
-  - name: query
+  - name: target
     type: string
     required: true
-    description: Shodan search query
-  - name: api_key
-    type: string
-    required: true
-    description: Shodan API key
+    flag: ""
+    description: "Shodan search query (e.g. 'apache port:443 country:US')"
 
 output:
   format: json

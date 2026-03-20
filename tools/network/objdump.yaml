@@ -3,24 +3,27 @@ version: "1.0"
 category: binary/disassembly
 phase: analysis
 command: objdump
+args: ["-d"]
+
 docker:
   image: phantomstrike/objdump:latest
-  args:
-    - "-d"
-    - "/input/binary"
-    - ">"
-    - "/output/objdump-results.txt"
   memory_limit: "512m"
   timeout: "300s"
 
 short_description: Binary disassembler
 description: |
   objdump displays information about object files.
+  This is an offline tool that operates on local binary files.
+notes: |
+  - Syntax: objdump -d <binary>
+  - Binary path is a positional argument
 
 parameters:
-  - name: binary
+  - name: target
     type: string
     required: true
+    flag: ""
+    description: "Path to binary file to disassemble (offline tool — provide file path)"
 
 output:
   format: text

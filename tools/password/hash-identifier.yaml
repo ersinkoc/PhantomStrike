@@ -3,11 +3,9 @@ version: "1.0"
 category: password/hash-identification
 phase: analysis
 command: hash-identifier
+
 docker:
   image: phantomstrike/hash-identifier:latest
-  args:
-    - "${hash}"
-  stdin: "${hash}"
   memory_limit: "256m"
   timeout: "60s"
 
@@ -15,12 +13,16 @@ short_description: Hash type identifier
 description: |
   Hash-Identifier is a tool to identify the different types of hashes
   used to encrypt data.
+notes: |
+  - Syntax: hash-identifier <hash_string>
+  - Hash string is a positional argument
 
 parameters:
-  - name: hash
+  - name: target
     type: string
     required: true
-    description: Hash string
+    flag: ""
+    description: "Hash string to identify (e.g. '5f4dcc3b5aa765d61d8327deb882cf99')"
 
 output:
   format: text

@@ -3,14 +3,10 @@ version: "1.0"
 category: cloud/iam-security
 phase: scanning
 command: cloudsplaining
+args: ["scan", "--output", "/output/cloudsplaining-results.json"]
+
 docker:
   image: phantomstrike/cloudsplaining:latest
-  args:
-    - "scan"
-    - "--input-file"
-    - "/input/iam-data.json"
-    - "--output"
-    - "/output/cloudsplaining-results.json"
   memory_limit: "1g"
   timeout: "300s"
 
@@ -18,12 +14,16 @@ short_description: AWS IAM security assessment
 description: |
   Cloudsplaining identifies violations of least privilege in AWS IAM policies
   and generates a risk-prioritized HTML report.
+  This is an offline tool that operates on local IAM data files.
+notes: |
+  - Syntax: cloudsplaining scan --input-file <file> [options]
 
 parameters:
-  - name: iam_data
+  - name: target
     type: string
     required: true
-    description: IAM data file
+    flag: "--input-file"
+    description: "Path to IAM data JSON file (offline tool — provide file path)"
 
 output:
   format: json

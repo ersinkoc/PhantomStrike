@@ -3,25 +3,32 @@ version: "1.0"
 category: binary/debugging
 phase: analysis
 command: gdb
+args: ["-batch", "-ex", "info functions"]
+
 docker:
   image: phantomstrike/gdb:latest
-  args:
-    - "-batch"
-    - "-ex"
-    - "info functions"
-    - "/input/binary"
   memory_limit: "1g"
   timeout: "300s"
 
 short_description: GNU debugger
 description: |
   GDB is the GNU Project debugger for debugging applications.
+  This is an offline tool that operates on local binary files.
+notes: |
+  - Syntax: gdb -batch -ex <command> <binary>
+  - Binary path is a positional argument
 
 parameters:
-  - name: binary
+  - name: gdb_command
+    type: string
+    required: false
+    flag: "-ex"
+    description: "GDB command to execute (overrides default 'info functions')"
+  - name: target
     type: string
     required: true
-    description: Binary file
+    flag: ""
+    description: "Path to binary file to debug (offline tool — provide file path)"
 
 output:
   format: text

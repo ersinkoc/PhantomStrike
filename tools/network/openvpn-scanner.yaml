@@ -3,30 +3,31 @@ version: "1.0"
 category: network/vpn-scanning
 phase: scanning
 command: python3
+args: ["/tools/openvpn-scanner.py"]
+
 docker:
   image: phantomstrike/python3:latest
-  args:
-    - "/tools/openvpn-scanner.py"
-    - "-t"
-    - "${target}"
-    - "-p"
-    - "${port}"
   memory_limit: "512m"
   timeout: "300s"
 
 short_description: OpenVPN security scanner
 description: |
   Scans OpenVPN servers for common misconfigurations and vulnerabilities.
+notes: |
+  - Syntax: python3 /tools/openvpn-scanner.py -t <target> -p <port>
 
 parameters:
   - name: target
     type: string
     required: true
-    description: Target IP
+    flag: "-t"
+    description: "Target IP address"
   - name: port
-    type: integer
+    type: string
     required: false
-    default: 1194
+    flag: "-p"
+    default: "1194"
+    description: "OpenVPN port (default 1194)"
 
 output:
   format: json

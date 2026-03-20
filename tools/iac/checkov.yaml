@@ -3,14 +3,10 @@ version: "1.0"
 category: iac/security
 phase: scanning
 command: checkov
+args: ["-o", "json", "--quiet"]
+
 docker:
   image: phantomstrike/checkov:latest
-  args:
-    - "-d"
-    - "."
-    - "-o"
-    - "json"
-    - "--quiet"
   memory_limit: "1g"
   timeout: "600s"
 
@@ -18,27 +14,34 @@ short_description: Infrastructure as Code security scanner
 description: |
   Checkov scans Terraform, CloudFormation, Kubernetes, Dockerfile, and ARM templates
   for security and compliance misconfigurations. Includes 750+ built-in policies.
+  This is an offline tool that operates on local IaC files.
+notes: |
+  - Syntax: checkov -d <directory> [options]
 
 parameters:
-  - name: directory
+  - name: target
     type: string
     required: true
-    description: Directory containing IaC files
+    flag: "-d"
+    description: "Directory containing IaC files to scan (offline tool — provide directory path)"
   - name: framework
     type: string
     required: false
+    flag: "--framework"
     enum: [terraform, cloudformation, kubernetes, dockerfile, arm, serverless, ansible, helm]
-    description: IaC framework type
-  - name: skip-check
+    description: "IaC framework type"
+  - name: skip_check
     type: string
     required: false
-    description: Checks to skip (comma-separated)
+    flag: "--skip-check"
+    description: "Checks to skip (comma-separated)"
   - name: severity
     type: string
     required: false
+    flag: "--check"
     default: "HIGH,CRITICAL"
     enum: [LOW, MEDIUM, HIGH, CRITICAL]
-    description: Minimum severity to report
+    description: "Minimum severity to report"
 
 output:
   format: json

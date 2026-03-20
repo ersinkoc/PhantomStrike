@@ -3,26 +3,28 @@ version: "1.0"
 category: protocol/dns-enumeration
 phase: reconnaissance
 command: dnsenum
+args: ["-o", "/output/dnsenum-results.xml", "--threads", "5"]
+
 docker:
   image: phantomstrike/dnsenum:latest
-  args:
-    - "${domain}"
-    - "-o"
-    - "/output/dnsenum-results.xml"
-    - "--threads"
-    - "5"
   memory_limit: "512m"
   timeout: "600s"
 
 short_description: DNS enumeration script
 description: |
   Dnsenum is a perl script that enumerates DNS information from a domain.
+  It performs host address lookups, nameserver lookups, MX record queries,
+  zone transfer attempts, and subdomain brute-forcing.
+notes: |
+  - Syntax: dnsenum <domain> [options]
+  - Domain is a positional argument (no flag)
 
 parameters:
-  - name: domain
+  - name: target
     type: string
     required: true
-    description: Target domain
+    flag: ""
+    description: "Target domain to enumerate (e.g. example.com)"
 
 output:
   format: xml

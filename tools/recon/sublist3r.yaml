@@ -3,16 +3,10 @@ version: "1.0"
 category: reconnaissance/subdomain
 phase: reconnaissance
 command: sublist3r
+args: ["-o", "/output/sublist3r-results.txt", "-v"]
+
 docker:
   image: phantomstrike/sublist3r:latest
-  args:
-    - "-d"
-    - "${domain}"
-    - "-o"
-    - "/output/sublist3r-results.txt"
-    - "-v"
-    - "-t"
-    - "50"
   memory_limit: "512m"
   timeout: "600s"
 
@@ -21,12 +15,21 @@ description: |
   Sublist3r is a python tool designed to enumerate subdomains of websites
   using OSINT. It helps penetration testers and bug hunters collect
   and gather subdomains for the domain they are targeting.
+notes: |
+  - Syntax: sublist3r -d <domain> [options]
 
 parameters:
-  - name: domain
+  - name: target
     type: string
     required: true
-    description: Domain to enumerate
+    flag: "-d"
+    description: "Target domain to enumerate subdomains for (e.g. example.com)"
+  - name: threads
+    type: string
+    required: false
+    flag: "-t"
+    default: "50"
+    description: "Number of threads"
 
 output:
   format: text

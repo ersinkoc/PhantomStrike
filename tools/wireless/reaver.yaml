@@ -3,34 +3,32 @@ version: "1.0"
 category: wireless/wps-cracking
 phase: exploitation
 command: reaver
+args: ["-vv"]
+
 docker:
   image: phantomstrike/reaver:latest
-  args:
-    - "-i"
-    - "${interface}"
-    - "-b"
-    - "${bssid}"
-    - "-vv"
-    - "-o"
-    - "/output/reaver-results.txt"
   memory_limit: "512m"
   timeout: "3600s"
-  privileged: true
 
 short_description: WPS PIN brute forcer
 description: |
   Reaver implements a brute force attack against WiFi Protected Setup
   (WPS) registrar PINs.
+notes: |
+  - Syntax: reaver -i <interface> -b <bssid> [options]
+  - Requires monitor mode wireless interface
 
 parameters:
   - name: interface
     type: string
     required: true
-    description: Wireless interface
-  - name: bssid
+    flag: "-i"
+    description: "Wireless interface in monitor mode (e.g. wlan0mon)"
+  - name: target
     type: string
     required: true
-    description: Target BSSID
+    flag: "-b"
+    description: "Target BSSID (MAC address)"
 
 output:
   format: text

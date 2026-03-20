@@ -3,25 +3,33 @@ version: "1.0"
 category: password/pdf-cracker
 phase: exploitation
 command: pdfcrack
+
 docker:
   image: phantomstrike/pdfcrack:latest
-  args:
-    - "-f"
-    - "/input/file.pdf"
-    - "-w"
-    - "/wordlists/passwords.txt"
   memory_limit: "512m"
   timeout: "3600s"
 
 short_description: PDF password recovery
 description: |
   pdfcrack is a command line password recovery tool for PDF files.
+  This is an offline tool that operates on local PDF files, not remote targets.
+notes: |
+  - Syntax: pdfcrack -f <file.pdf> [-w <wordlist>]
+  - This is an offline tool — target is a file path, not a hostname
+  - PDF file must be mounted into the container at /input/
 
 parameters:
-  - name: pdffile
+  - name: target
     type: string
     required: true
-    description: PDF file
+    flag: "-f"
+    description: "Path to PDF file to crack (offline tool — provide file path, not hostname)"
+  - name: wordlist
+    type: string
+    required: false
+    flag: "-w"
+    default: "/wordlists/passwords.txt"
+    description: "Wordlist file path for dictionary attack"
 
 output:
   format: text

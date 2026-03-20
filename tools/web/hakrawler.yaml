@@ -3,14 +3,10 @@ version: "1.0"
 category: web/crawling
 phase: reconnaissance
 command: hakrawler
+args: ["-plain"]
+
 docker:
   image: phantomstrike/hakrawler:latest
-  args:
-    - "-url"
-    - "${target}"
-    - "-depth"
-    - "3"
-    - "-plain"
   memory_limit: "1g"
   timeout: "600s"
 
@@ -18,16 +14,21 @@ short_description: Fast web crawler
 description: |
   Hakrawler is a fast, flexible, and easily configurable web crawler.
   Designed for quick, easy content discovery.
+notes: |
+  - Syntax: hakrawler -url <url> [options]
 
 parameters:
   - name: target
     type: string
     required: true
-    description: Target URL
+    flag: "-url"
+    description: "Target URL to crawl"
   - name: depth
-    type: integer
+    type: string
     required: false
-    default: 3
+    flag: "-depth"
+    default: "3"
+    description: "Maximum crawl depth"
 
 output:
   format: text

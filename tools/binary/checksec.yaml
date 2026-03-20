@@ -3,11 +3,10 @@ version: "1.0"
 category: binary/security-checks
 phase: analysis
 command: checksec
+args: ["--json"]
+
 docker:
   image: phantomstrike/checksec:latest
-  args:
-    - "--file=/input/binary"
-    - "--json"
   memory_limit: "256m"
   timeout: "60s"
 
@@ -15,12 +14,16 @@ short_description: Binary security checker
 description: |
   checksec.sh is a bash script to check executable properties.
   It checks for PIE, RELRO, NX, CANARY, and FORTIFY.
+  This is an offline tool that operates on local binary files.
+notes: |
+  - Syntax: checksec --file=<binary> [options]
 
 parameters:
-  - name: binary
+  - name: target
     type: string
     required: true
-    description: Binary file
+    flag: "--file"
+    description: "Path to binary file to check (offline tool — provide file path)"
 
 output:
   format: json

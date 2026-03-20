@@ -3,28 +3,28 @@ version: "1.0"
 category: password/zip-cracker
 phase: exploitation
 command: fcrackzip
+args: ["-b", "-c", "a1", "-l", "1-6", "-u"]
+
 docker:
   image: phantomstrike/fcrackzip:latest
-  args:
-    - "-b"
-    - "-c"
-    - "a1"
-    - "-l"
-    - "1-6"
-    - "-u"
-    - "/input/file.zip"
   memory_limit: "512m"
   timeout: "3600s"
 
 short_description: ZIP password cracker
 description: |
   fcrackzip is a fast password cracker for ZIP archives.
+  This is an offline tool that operates on local ZIP files, not remote targets.
+notes: |
+  - Syntax: fcrackzip [options] <zipfile>
+  - ZIP file path is a positional argument
+  - -b = brute force, -c a1 = charset (lowercase+digits), -l 1-6 = length 1-6, -u = unzip check
 
 parameters:
-  - name: zipfile
+  - name: target
     type: string
     required: true
-    description: ZIP file
+    flag: ""
+    description: "Path to ZIP file to crack (offline tool — provide file path, not hostname)"
 
 output:
   format: text

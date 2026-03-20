@@ -3,34 +3,39 @@ version: "1.0"
 category: wireless/wifi-cracking
 phase: exploitation
 command: aircrack-ng
+
 docker:
   image: phantomstrike/aircrack-ng:latest
-  args:
-    - "-w"
-    - "/wordlists/wpa.txt"
-    - "-b"
-    - "${bssid}"
-    - "/input/capture.cap"
   memory_limit: "1g"
   timeout: "3600s"
-  privileged: true
-  network_mode: host
-  devices: ["/dev/net/tun:/dev/net/tun"]
 
 short_description: WiFi security auditing suite
 description: |
   Aircrack-ng is a complete suite of tools to assess WiFi network security.
-  It focuses on different areas of WiFi security.
+  It focuses on different areas of WiFi security. This is an offline tool
+  that operates on capture files, not remote targets.
+notes: |
+  - Syntax: aircrack-ng -w <wordlist> -b <bssid> <capture_file>
+  - Capture file is a positional argument
+  - Requires a capture file (.cap) from airodump-ng
 
 parameters:
-  - name: bssid
-    type: string
-    required: true
-    description: Target BSSID
   - name: wordlist
     type: string
     required: false
-    description: Password wordlist
+    flag: "-w"
+    default: "/wordlists/wpa.txt"
+    description: "Wordlist file for cracking"
+  - name: bssid
+    type: string
+    required: true
+    flag: "-b"
+    description: "Target BSSID (MAC address)"
+  - name: target
+    type: string
+    required: true
+    flag: ""
+    description: "Path to capture file (offline tool — provide .cap file path)"
 
 output:
   format: text

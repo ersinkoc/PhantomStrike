@@ -3,14 +3,10 @@ version: "1.0"
 category: container/vulnerability-scanning
 phase: scanning
 command: grype
+args: ["-o", "json", "--file", "/output/grype-results.json"]
+
 docker:
   image: phantomstrike/grype:latest
-  args:
-    - "${image}"
-    - "-o"
-    - "json"
-    - "--file"
-    - "/output/grype-results.json"
   memory_limit: "2g"
   timeout: "600s"
 
@@ -18,17 +14,23 @@ short_description: Vulnerability scanner for images
 description: |
   A vulnerability scanner for container images and filesystems. Works with
   Syft, the powerful SBOM (software bill of materials) tool for container images.
+notes: |
+  - Syntax: grype <image> [options]
+  - Image is a positional argument
 
 parameters:
-  - name: image
-    type: string
-    required: true
-    description: Container image or SBOM
   - name: scope
     type: string
     required: false
+    flag: "--scope"
     default: "squashed"
+    description: "Scope of analysis (squashed or all-layers)"
     enum: [squashed, all-layers]
+  - name: target
+    type: string
+    required: true
+    flag: ""
+    description: "Container image to scan (e.g. nginx:latest)"
 
 output:
   format: json

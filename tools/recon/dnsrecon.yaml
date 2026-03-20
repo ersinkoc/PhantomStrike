@@ -3,15 +3,10 @@ version: "1.0"
 category: reconnaissance/dns
 phase: reconnaissance
 command: dnsrecon
+args: ["-t", "std,axfr", "-j", "/output/dnsrecon-results.json"]
+
 docker:
   image: phantomstrike/dnsrecon:latest
-  args:
-    - "-d"
-    - "${domain}"
-    - "-t"
-    - "std,axfr"
-    - "-j"
-    - "/output/dnsrecon-results.json"
   memory_limit: "512m"
   timeout: "300s"
 
@@ -19,12 +14,16 @@ short_description: DNS enumeration tool
 description: |
   DNSRecon is a Python script that provides the ability to perform DNS
   enumeration and validation.
+notes: |
+  - Syntax: dnsrecon -d <domain> [options]
+  - Domain requires the -d flag
 
 parameters:
-  - name: domain
+  - name: target
     type: string
     required: true
-    description: Target domain
+    flag: "-d"
+    description: "Target domain to enumerate (e.g. example.com)"
 
 output:
   format: json

@@ -3,15 +3,10 @@ version: "1.0"
 category: api/parameter-discovery
 phase: scanning
 command: arjun
+args: ["-oJ", "/output/arjun-results.json"]
+
 docker:
   image: phantomstrike/arjun:latest
-  args:
-    - "-u"
-    - "${target}"
-    - "-oJ"
-    - "/output/arjun-results.json"
-    - "-t"
-    - "10"
   memory_limit: "512m"
   timeout: "600s"
 
@@ -19,17 +14,28 @@ short_description: HTTP parameter discovery
 description: |
   Arjun is a command-line tool that's designed for HTTP parameter discovery.
   It helps find query parameters for URL endpoints.
+notes: |
+  - Syntax: arjun -u <url> [options]
 
 parameters:
   - name: target
     type: string
     required: true
-    description: Target URL
+    flag: "-u"
+    description: "Target URL to discover parameters for (e.g. http://target.com/page)"
   - name: method
     type: string
     required: false
+    flag: "-m"
     default: "GET"
+    description: "HTTP method to use"
     enum: [GET, POST, JSON]
+  - name: threads
+    type: string
+    required: false
+    flag: "-t"
+    default: "10"
+    description: "Number of concurrent threads"
 
 output:
   format: json

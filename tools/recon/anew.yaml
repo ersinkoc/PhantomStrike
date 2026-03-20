@@ -3,22 +3,27 @@ version: "1.0"
 category: reconnaissance/text-processing
 phase: post-processing
 command: anew
+
 docker:
   image: phantomstrike/anew:latest
-  args:
-    - "/output/new-lines.txt"
-  stdin: "${input}"
   memory_limit: "256m"
   timeout: "60s"
 
 short_description: Append new lines to file
 description: |
   anew appends lines from stdin to a file if they don't already exist.
+  Takes a filename as positional argument and reads input from stdin.
+notes: |
+  - Syntax: echo "lines" | anew <output_file>
+  - Output file is a positional argument
 
 parameters:
-  - name: input
+  - name: target
     type: string
     required: true
+    flag: ""
+    description: "Output file path to append unique lines to"
+    default: "/output/new-lines.txt"
 
 output:
   format: text

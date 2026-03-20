@@ -3,27 +3,30 @@ version: "1.0"
 category: binary/firmware-analysis
 phase: analysis
 command: binwalk
+args: ["-e", "-M", "-C", "/output/binwalk"]
+
 docker:
   image: phantomstrike/binwalk:latest
-  args:
-    - "-e"
-    - "-M"
-    - "-C"
-    - "/output/binwalk"
-    - "/input/firmware"
   memory_limit: "2g"
   timeout: "1800s"
 
 short_description: Firmware analysis tool
 description: |
   Binwalk is a fast, easy to use tool for analyzing, reverse engineering,
-  and extracting firmware images.
+  and extracting firmware images. This is an offline tool that operates
+  on local firmware files, not remote targets.
+notes: |
+  - Syntax: binwalk [options] <firmware>
+  - This is an offline tool — target is a file path, not a hostname
+  - Firmware file must be mounted into the container at /input/
+  - -e extracts, -M enables matryoshka (recursive) scanning
 
 parameters:
-  - name: firmware
+  - name: target
     type: string
     required: true
-    description: Firmware file
+    flag: ""
+    description: "Path to firmware file to analyze (offline tool — provide file path, not hostname)"
 
 output:
   format: directory

@@ -3,10 +3,9 @@ version: "1.0"
 category: binary/symbolic-execution
 phase: analysis
 command: python3
+
 docker:
   image: phantomstrike/python3:latest
-  args:
-    - "/input/solve.py"
   memory_limit: "4g"
   timeout: "1800s"
 
@@ -14,12 +13,17 @@ short_description: Binary analysis framework
 description: |
   angr is a python framework for analyzing binaries.
   It combines both static and dynamic symbolic analysis.
+  This is an offline tool that operates on local script files.
+notes: |
+  - Syntax: python3 <script.py>
+  - Script path is a positional argument
 
 parameters:
-  - name: script
+  - name: target
     type: string
     required: true
-    description: Python script
+    flag: ""
+    description: "Path to Python analysis script (offline tool — provide file path)"
 
 output:
   format: text

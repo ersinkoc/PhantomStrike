@@ -3,13 +3,7 @@ version: "1.0"
 category: container/vulnerability-scanning
 phase: scanning
 command: trivy
-args:
-  - "image"
-  - "--format"
-  - "json"
-  - "--output"
-  - "/output/trivy-report.json"
-  - "${image}"
+args: ["image", "--format", "json", "--output", "/output/trivy-report.json"]
 
 docker:
   image: phantomstrike/trivy:latest
@@ -20,22 +14,28 @@ short_description: Container vulnerability scanner
 description: |
   Trivy is a comprehensive and versatile security scanner.
   It finds vulnerabilities, IaC misconfigurations, secrets and SBOM in containers and more.
+notes: |
+  - Syntax: trivy image [options] <image>
+  - Image name is a positional argument
 
 parameters:
-  - name: image
-    type: string
-    required: true
-    description: Container image to scan
   - name: severity
     type: string
     required: false
+    flag: "--severity"
     default: "UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL"
-    description: Severities to include
-  - name: ignore-unfixed
-    type: boolean
+    description: "Severities to include (comma-separated)"
+  - name: ignore_unfixed
+    type: bool
     required: false
+    flag: "--ignore-unfixed"
     default: false
-    description: Ignore unfixed vulnerabilities
+    description: "Ignore unfixed vulnerabilities"
+  - name: target
+    type: string
+    required: true
+    flag: ""
+    description: "Container image to scan (e.g. nginx:latest)"
 
 output:
   format: json

@@ -3,28 +3,28 @@ version: "1.0"
 category: network/arp-scanning
 phase: reconnaissance
 command: arp-scan
+args: ["-l"]
+
 docker:
   image: phantomstrike/arp-scan:latest
-  args:
-    - "-l"
-    - "${network}"
-    - "-o"
-    - "/output/arp-scan-results"
   memory_limit: "256m"
   timeout: "300s"
-  privileged: true
-  network_mode: host
 
 short_description: ARP scanning tool
 description: |
   arp-scan sends ARP packets to hosts on the local network and displays
   any responses.
+notes: |
+  - Syntax: arp-scan -l <network_range>
+  - Network range is a positional argument
+  - Requires privileged mode for raw packet access
 
 parameters:
-  - name: network
+  - name: target
     type: string
     required: true
-    description: Network range
+    flag: ""
+    description: "Network range to scan (e.g. 192.168.1.0/24)"
 
 output:
   format: text

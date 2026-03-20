@@ -3,33 +3,39 @@ version: "1.0"
 category: password/cracking
 phase: exploitation
 command: john
+
 docker:
   image: phantomstrike/john:latest
-  args:
-    - "--format=${format}"
-    - "--wordlist=/wordlists/rockyou.txt"
-    - "/input/hashes.txt"
   memory_limit: "2g"
   timeout: "3600s"
 
 short_description: John the Ripper password cracker
 description: |
   John the Ripper is a fast password cracker, currently available for many
-  flavors of Unix, Windows, and more.
+  flavors of Unix, Windows, and more. This is an offline tool that operates
+  on local hash files, not remote targets.
+notes: |
+  - Syntax: john [options] <hashfile>
+  - This is an offline cracking tool — target is a file path, not a hostname
+  - Hash file must be mounted into the container at /input/
 
 parameters:
-  - name: hashes
-    type: string
-    required: true
-    description: Hash file
   - name: format
     type: string
     required: false
-    description: Hash format
+    flag: "--format"
+    description: "Hash format (e.g. raw-md5, raw-sha1, bcrypt, ntlm)"
   - name: wordlist
     type: string
     required: false
-    description: Wordlist file
+    flag: "--wordlist"
+    default: "/wordlists/rockyou.txt"
+    description: "Wordlist file path for dictionary attack"
+  - name: target
+    type: string
+    required: true
+    flag: ""
+    description: "Path to hash file (offline tool — provide file path, not hostname)"
 
 output:
   format: text

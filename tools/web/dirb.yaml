@@ -3,7 +3,6 @@ version: "1.0"
 category: web/directory-discovery
 phase: scanning
 command: dirb
-args: ["-r", "-S"]
 
 docker:
   image: phantomstrike/dirb:latest
@@ -20,6 +19,7 @@ notes: |
   - -r disables recursive scanning by default, -S enables silent mode
   - target (URL) and wordlist are positional arguments
   - Dirb syntax: dirb <url> <wordlist> [options]
+  - Positional args must come first (URL then wordlist), flags after
 
 parameters:
   - name: target
@@ -33,6 +33,12 @@ parameters:
     flag: ""
     default: "/usr/share/dirb/wordlists/common.txt"
     description: "Wordlist file path"
+  - name: options
+    type: string
+    required: false
+    flag: ""
+    default: "-r -S"
+    description: "Additional dirb options (e.g. '-r -S' for no-recursion and silent mode)"
 
 output:
   format: text

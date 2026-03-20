@@ -3,24 +3,26 @@ version: "1.0"
 category: forensics/hex-dump
 phase: analysis
 command: xxd
+
 docker:
   image: phantomstrike/xxd:latest
-  args:
-    - "/input/binary"
-    - ">"
-    - "/output/xxd-results.txt"
   memory_limit: "256m"
   timeout: "60s"
 
 short_description: Hex dump tool
 description: |
   xxd creates a hex dump of a given file or standard input.
+  This is an offline tool that operates on local files, not remote targets.
+notes: |
+  - Syntax: xxd <file>
+  - File path is a positional argument
 
 parameters:
-  - name: binary
+  - name: target
     type: string
     required: true
-    description: Binary file
+    flag: ""
+    description: "Path to binary file for hex dump (offline tool — provide file path)"
 
 output:
   format: text

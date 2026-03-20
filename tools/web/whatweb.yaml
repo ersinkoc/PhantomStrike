@@ -3,13 +3,10 @@ version: "1.0"
 category: web/fingerprinting
 phase: reconnaissance
 command: whatweb
+args: ["--log-json=/output/whatweb-results.json"]
+
 docker:
   image: phantomstrike/whatweb:latest
-  args:
-    - "${target}"
-    - "--log-json=/output/whatweb-results.json"
-    - "-a"
-    - "3"
   memory_limit: "512m"
   timeout: "300s"
 
@@ -17,17 +14,22 @@ short_description: Web fingerprinting scanner
 description: |
   WhatWeb identifies websites. It recognizes web technologies including
   content management systems (CMS), blogging platforms, and more.
+notes: |
+  - Syntax: whatweb [options] <url>
+  - URL is a positional argument
 
 parameters:
+  - name: aggression
+    type: string
+    required: false
+    flag: "-a"
+    default: "3"
+    description: "Aggression level (1=stealthy, 3=aggressive, 4=heavy)"
   - name: target
     type: string
     required: true
-    description: Target URL
-  - name: aggression
-    type: integer
-    required: false
-    default: 3
-    description: Aggression level (1-4)
+    flag: ""
+    description: "Target URL to fingerprint (e.g. http://example.com)"
 
 output:
   format: json

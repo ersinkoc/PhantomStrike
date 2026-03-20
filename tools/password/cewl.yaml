@@ -3,16 +3,10 @@ version: "1.0"
 category: password/wordlist-generator
 phase: reconnaissance
 command: cewl
+args: ["-w", "/output/cewl-wordlist.txt"]
+
 docker:
   image: phantomstrike/cewl:latest
-  args:
-    - "${target}"
-    - "-d"
-    - "2"
-    - "-m"
-    - "6"
-    - "-w"
-    - "/output/cewl-wordlist.txt"
   memory_limit: "512m"
   timeout: "300s"
 
@@ -20,16 +14,28 @@ short_description: Custom wordlist generator
 description: |
   CeWL (Custom Word List generator) is a ruby app which spiders a
   given URL and creates a word list.
+notes: |
+  - Syntax: cewl <url> [options]
+  - URL is a positional argument (no flag)
 
 parameters:
   - name: target
     type: string
     required: true
-    description: Target URL
+    flag: ""
+    description: "Target URL to spider (e.g. http://example.com)"
   - name: depth
-    type: integer
+    type: string
     required: false
-    default: 2
+    flag: "-d"
+    default: "2"
+    description: "Depth to spider (default 2)"
+  - name: min_word_length
+    type: string
+    required: false
+    flag: "-m"
+    default: "6"
+    description: "Minimum word length (default 6)"
 
 output:
   format: text
