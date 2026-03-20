@@ -69,7 +69,6 @@ RUN pip3 install --break-system-packages kube-hunter 2>/dev/null || true
 # APT security tools (verified available)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ike-scan reaver bully sleuthkit pdfcrack \
-    rpcclient \
     && rm -rf /var/lib/apt/lists/*
 
 # Ruby tools (additional)

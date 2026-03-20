@@ -1,0 +1,53 @@
+name: default-creds
+version: "1.0"
+category: web/authentication
+phase: exploitation
+command: python3
+args: ["/app/tools/_custom/default-creds.py"]
+docker:
+  image: phantomstrike/custom:latest
+  memory_limit: "256m"
+  timeout: "120s"
+
+short_description: Default credentials checker for common services
+description: |
+  Discovers login pages and tests for default credentials on common services
+  including WordPress, Joomla, Tomcat Manager, phpMyAdmin, Jenkins, and
+  Grafana. Supports both HTTP Basic Auth and form-based login detection.
+  WARNING: Only use with explicit authorization.
+
+parameters:
+  - name: target
+    type: string
+    required: true
+    flag: ""
+    description: "Target URL or host:port"
+  - name: timeout
+    type: string
+    required: false
+    flag: "-t"
+    default: "10"
+    description: "Request timeout in seconds"
+  - name: no_form
+    type: bool
+    required: false
+    flag: "--no-form"
+    default: false
+    description: "Skip form-based login attempts"
+
+output:
+  format: text
+  severity_indicators:
+    critical:
+      - "CRITICAL"
+      - "LOGIN SUCCESSFUL"
+      - "default credential"
+
+chain_suggestions:
+  before:
+    - "tech-fingerprint"
+    - "httpx"
+  after:
+    - "nuclei"
+
+enabled: true

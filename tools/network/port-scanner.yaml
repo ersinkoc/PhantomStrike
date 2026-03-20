@@ -1,0 +1,64 @@
+name: port-scanner
+version: "1.0"
+category: network/scanning
+phase: scanning
+command: python3
+args: ["/app/tools/_custom/port-scanner.py"]
+docker:
+  image: phantomstrike/custom:latest
+  memory_limit: "512m"
+  timeout: "300s"
+
+short_description: Fast async TCP port scanner
+description: |
+  Fast TCP port scanner using asyncio for concurrent scanning.
+  Scans top 1000 ports by default with configurable port ranges,
+  timeout, and concurrency. Identifies services by well-known port mappings.
+
+parameters:
+  - name: target
+    type: string
+    required: true
+    flag: ""
+    description: "Target host or IP address"
+  - name: ports
+    type: string
+    required: false
+    flag: "-p"
+    description: "Port specification (e.g., 80,443,8000-8100)"
+  - name: timeout
+    type: string
+    required: false
+    flag: "-t"
+    default: "1.5"
+    description: "Connection timeout per port in seconds"
+  - name: threads
+    type: string
+    required: false
+    flag: "--threads"
+    default: "200"
+    description: "Number of concurrent connections"
+  - name: banner
+    type: bool
+    required: false
+    flag: "--banner"
+    default: false
+    description: "Attempt banner grabbing on open ports"
+  - name: top100
+    type: bool
+    required: false
+    flag: "--top100"
+    default: false
+    description: "Scan top 100 ports only"
+
+output:
+  format: text
+
+chain_suggestions:
+  before:
+    - "httpx"
+  after:
+    - "nmap"
+    - "nuclei"
+
+enabled: true

@@ -1,0 +1,57 @@
+name: subdomain-takeover
+version: "1.0"
+category: reconnaissance/subdomain
+phase: reconnaissance
+command: python3
+args: ["/app/tools/_custom/subdomain-takeover.py"]
+docker:
+  image: phantomstrike/custom:latest
+  memory_limit: "512m"
+  timeout: "120s"
+
+short_description: Subdomain takeover vulnerability checker
+description: |
+  Checks subdomains for takeover vulnerabilities by resolving CNAME records
+  and checking for fingerprints of known vulnerable services including GitHub
+  Pages, Heroku, S3, Azure, Shopify, Fastly, and more.
+
+parameters:
+  - name: target
+    type: string
+    required: true
+    flag: ""
+    description: "Target domain or file with subdomains (one per line)"
+  - name: timeout
+    type: string
+    required: false
+    flag: "-t"
+    default: "10"
+    description: "Request timeout in seconds"
+  - name: stdin
+    type: bool
+    required: false
+    flag: "--stdin"
+    default: false
+    description: "Read subdomains from stdin"
+
+output:
+  format: text
+  severity_indicators:
+    critical:
+      - "CRITICAL"
+      - "vulnerable to takeover"
+    high:
+      - "HIGH"
+      - "takeover fingerprint"
+    medium:
+      - "MEDIUM"
+
+chain_suggestions:
+  before:
+    - "subfinder"
+    - "amass"
+    - "theharvester"
+  after:
+    - "httpx"
+
+enabled: true

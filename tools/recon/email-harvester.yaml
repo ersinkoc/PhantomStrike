@@ -1,0 +1,52 @@
+name: email-harvester
+version: "1.0"
+category: reconnaissance/osint
+phase: reconnaissance
+command: python3
+args: ["/app/tools/_custom/email-harvester.py"]
+docker:
+  image: phantomstrike/custom:latest
+  memory_limit: "512m"
+  timeout: "120s"
+
+short_description: Email address harvester from public sources
+description: |
+  Harvests email addresses from multiple public sources including
+  certificate transparency logs (crt.sh), HackerTarget, PGP key servers,
+  and target website scraping. Can also generate common email patterns.
+
+parameters:
+  - name: target
+    type: string
+    required: true
+    flag: ""
+    description: "Target domain (e.g., example.com)"
+  - name: timeout
+    type: string
+    required: false
+    flag: "-t"
+    default: "15"
+    description: "Request timeout in seconds"
+  - name: deep
+    type: bool
+    required: false
+    flag: "--deep"
+    default: false
+    description: "Scrape multiple website pages for emails"
+  - name: common
+    type: bool
+    required: false
+    flag: "--common"
+    default: false
+    description: "Include common email pattern guesses"
+
+output:
+  format: text
+
+chain_suggestions:
+  before:
+    - "subfinder"
+  after:
+    - "theharvester"
+
+enabled: true

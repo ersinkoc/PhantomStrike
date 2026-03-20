@@ -1,0 +1,62 @@
+name: dns-recon
+version: "1.0"
+category: reconnaissance/dns
+phase: reconnaissance
+command: python3
+args: ["/app/tools/_custom/dns-recon.py"]
+docker:
+  image: phantomstrike/custom:latest
+  memory_limit: "256m"
+  timeout: "120s"
+
+short_description: Comprehensive DNS record collector and security checker
+description: |
+  Collects DNS records (A, AAAA, MX, NS, TXT, SOA, CNAME, SRV) and
+  checks for email security (SPF, DKIM, DMARC). Can also attempt zone
+  transfers. Uses raw DNS queries via socket.
+
+parameters:
+  - name: target
+    type: string
+    required: true
+    flag: ""
+    description: "Target domain (e.g., example.com)"
+  - name: nameserver
+    type: string
+    required: false
+    flag: "-n"
+    default: "8.8.8.8"
+    description: "DNS server to query"
+  - name: timeout
+    type: string
+    required: false
+    flag: "-t"
+    default: "5"
+    description: "Query timeout in seconds"
+  - name: axfr
+    type: bool
+    required: false
+    flag: "--axfr"
+    default: false
+    description: "Attempt zone transfer"
+
+output:
+  format: text
+  severity_indicators:
+    critical:
+      - "Zone transfer ALLOWED"
+    high:
+      - "No SPF record"
+      - "No DMARC record"
+    medium:
+      - "soft fail"
+      - "p=none"
+
+chain_suggestions:
+  before:
+    - "httpx"
+  after:
+    - "subfinder"
+    - "dnsrecon"
+
+enabled: true

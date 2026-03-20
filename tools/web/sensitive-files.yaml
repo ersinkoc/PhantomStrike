@@ -1,0 +1,62 @@
+name: sensitive-files
+version: "1.0"
+category: web/discovery
+phase: scanning
+command: python3
+args: ["/app/tools/_custom/sensitive-files.py"]
+docker:
+  image: phantomstrike/custom:latest
+  memory_limit: "256m"
+  timeout: "120s"
+
+short_description: Exposed sensitive files and directories checker
+description: |
+  Checks for exposed sensitive files including .env, .git/config, backup
+  files, debug endpoints, credentials, and configuration files. Also
+  parses robots.txt for interesting disallowed paths. Uses smart 404
+  detection to reduce false positives.
+
+parameters:
+  - name: target
+    type: string
+    required: true
+    flag: ""
+    description: "Target URL (e.g., https://example.com)"
+  - name: timeout
+    type: string
+    required: false
+    flag: "-t"
+    default: "10"
+    description: "Request timeout in seconds"
+  - name: category
+    type: string
+    required: false
+    flag: "--category"
+    description: "Check specific category only"
+
+output:
+  format: text
+  severity_indicators:
+    critical:
+      - "CRITICAL"
+      - ".env"
+      - "credentials"
+      - "backup.sql"
+    high:
+      - "HIGH"
+      - ".git"
+      - "phpinfo"
+      - "server-status"
+    medium:
+      - "MEDIUM"
+      - ".htaccess"
+      - "backup"
+
+chain_suggestions:
+  before:
+    - "httpx"
+  after:
+    - "dirsearch"
+    - "gobuster"
+
+enabled: true

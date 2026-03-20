@@ -1,0 +1,50 @@
+name: vuln-correlator
+version: "1.0"
+category: vuln/analysis
+phase: reporting
+command: python3
+args: ["/app/tools/_custom/vuln-correlator.py"]
+docker:
+  image: phantomstrike/custom:latest
+  memory_limit: "512m"
+  timeout: "60s"
+
+short_description: Correlate and deduplicate security findings
+description: |
+  Accepts JSON findings from multiple security tools via stdin or file,
+  deduplicates similar findings, classifies by vulnerability type, groups
+  by target and category, and generates a correlated risk assessment report.
+
+parameters:
+  - name: target
+    type: string
+    required: false
+    flag: ""
+    default: "-"
+    description: "Input file with JSON findings or '-' for stdin"
+  - name: json
+    type: bool
+    required: false
+    flag: "--json"
+    default: false
+    description: "Output as JSON"
+  - name: dedup_only
+    type: bool
+    required: false
+    flag: "--dedup-only"
+    default: false
+    description: "Only deduplicate, skip grouping"
+
+output:
+  format: text
+
+chain_suggestions:
+  before:
+    - "nuclei"
+    - "xss-scanner"
+    - "cors-checker"
+    - "ssl-analyzer"
+  after:
+    - "risk-scorer"
+
+enabled: true

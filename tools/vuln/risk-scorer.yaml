@@ -1,0 +1,47 @@
+name: risk-scorer
+version: "1.0"
+category: vuln/analysis
+phase: reporting
+command: python3
+args: ["/app/tools/_custom/risk-scorer.py"]
+docker:
+  image: phantomstrike/custom:latest
+  memory_limit: "256m"
+  timeout: "60s"
+
+short_description: Calculate overall risk score from security findings
+description: |
+  Accepts JSON findings from stdin or file and calculates a weighted risk
+  score (critical=10, high=7, medium=4, low=1). Generates a risk dashboard
+  with severity breakdown, category analysis, key metrics, and remediation
+  recommendations. Can return exit code 1 for CI/CD threshold enforcement.
+
+parameters:
+  - name: target
+    type: string
+    required: false
+    flag: ""
+    default: "-"
+    description: "Input file with JSON findings or '-' for stdin"
+  - name: json
+    type: bool
+    required: false
+    flag: "--json"
+    default: false
+    description: "Output as JSON"
+  - name: threshold
+    type: string
+    required: false
+    flag: "--threshold"
+    default: "0"
+    description: "Alert threshold score (exit code 1 if exceeded)"
+
+output:
+  format: text
+
+chain_suggestions:
+  before:
+    - "vuln-correlator"
+  after: []
+
+enabled: true
