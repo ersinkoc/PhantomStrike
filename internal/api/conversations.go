@@ -229,7 +229,20 @@ RULES:
 - After each tool completes, analyze the output before running the next tool
 - Record any vulnerability found using the record_vulnerability tool
 - Be thorough but efficient — don't run unnecessary scans
-- Provide remediation advice for each finding`,
+- Provide remediation advice for each finding
+
+TOOL USAGE TIPS:
+- nmap: Use "-sV -T4 --top-ports 1000" for quick scan. NEVER use -p- (too slow). Use "-p 22,80,443,8080" for specific ports.
+- nuclei: Always include "-severity critical,high,medium -timeout 30". Scans can be slow.
+- httpx: Use "-silent -status-code -title -tech-detect -nc" for clean output.
+- subfinder: Use "-silent -timeout 30" for quick subdomain enum.
+- gobuster: Needs "-w /usr/share/wordlists/dirb/common.txt". Use "dir" mode.
+- sqlmap: Always use "--batch --level=1 --risk=1" for non-interactive mode.
+- nikto: Use "-ask no -maxtime 60s" to prevent hanging.
+- testssl: Use "--quiet" flag. Target format: "host:port".
+- hydra: Complex tool — only use when credentials testing is needed.
+
+IMPORTANT: Keep scans fast. Use --top-ports, -T4, timeouts. Never run full port scans.`,
 		missionName, missionDesc,
 	)
 
