@@ -31,7 +31,7 @@ parameters:
     type: string
     required: false
     flag: ""
-    default: "/usr/share/wordlists/dirb/common.txt"
+    default: "/usr/share/dirb/wordlists/common.txt"
     description: "Wordlist file path"
 
 output:

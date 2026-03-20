@@ -3,7 +3,7 @@ version: "1.0"
 category: web/vulnerability-scanning
 phase: scanning
 command: nikto
-args: ["-ask", "no", "-nointeractive"]
+args: ["-ask", "no", "-nointeractive", "-maxtime", "120s"]
 
 docker:
   image: phantomstrike/nikto:latest
