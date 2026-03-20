@@ -23,7 +23,7 @@ parameters:
     type: string
     required: false
     flag: ""
-    default: "-sV -T4"
+    default: "-sV --top-ports 100 -T4"
     description: "Raw nmap flags (e.g. -sV -sS -O -p 80,443 -A)"
   - name: target
     type: string
