@@ -1,0 +1,20 @@
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Copy ALL config files first
+COPY package.json package-lock.json* ./
+COPY tsconfig.json tsconfig.app.json tsconfig.node.json ./
+COPY vite.config.ts ./
+COPY index.html ./
+COPY tailwind.config.* ./
+
+RUN npm install
+
+# Copy source (will be overridden by volume mount in dev)
+COPY src/ ./src/
+COPY public/ ./public/
+
+EXPOSE 15173
+
+CMD ["npx", "vite", "--host", "0.0.0.0", "--port", "15173"]

@@ -18,17 +18,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     gobuster ffuf \
     && rm -rf /var/lib/apt/lists/*
 
-# ProjectDiscovery tools — use their installer script (handles versioning automatically)
-RUN curl -sL https://raw.githubusercontent.com/projectdiscovery/pdtm/main/scripts/install.sh | bash \
-    && /root/.pdtm/go/bin/pdtm -install-all 2>/dev/null || true \
-    && cp /root/.pdtm/go/bin/* /usr/local/bin/ 2>/dev/null || true \
-    # Fallback: install individually if pdtm failed
-    && for tool in nuclei httpx subfinder naabu katana; do \
-         if ! which $tool > /dev/null 2>&1; then \
-           curl -sL "https://raw.githubusercontent.com/projectdiscovery/${tool}/main/scripts/install.sh" 2>/dev/null | bash || true; \
-         fi; \
-       done \
-    && cp /root/.pdtm/go/bin/* /usr/local/bin/ 2>/dev/null || true
+# ProjectDiscovery tools — copy from their official Docker images
+COPY --from=projectdiscovery/nuclei:latest /usr/local/bin/nuclei /usr/local/bin/nuclei
+COPY --from=projectdiscovery/httpx:latest /usr/local/bin/httpx /usr/local/bin/httpx
+COPY --from=projectdiscovery/subfinder:latest /usr/local/bin/subfinder /usr/local/bin/subfinder
+COPY --from=projectdiscovery/naabu:latest /usr/local/bin/naabu /usr/local/bin/naabu
+COPY --from=projectdiscovery/katana:latest /usr/local/bin/katana /usr/local/bin/katana
 
 # Python tools
 RUN pipx install dirsearch \
@@ -46,13 +41,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN git clone --depth 1 https://github.com/drwetter/testssl.sh.git /opt/testssl \
     && ln -s /opt/testssl/testssl.sh /usr/local/bin/testssl.sh
 
-# Amass
-RUN curl -sL "https://github.com/owasp-amass/amass/releases/latest/download/amass_linux_amd64.zip" -o /tmp/amass.zip \
-    && unzip -o /tmp/amass.zip -d /tmp/amass \
-    && cp /tmp/amass/amass_linux_amd64/amass /usr/local/bin/ 2>/dev/null \
-    || cp /tmp/amass/amass /usr/local/bin/ 2>/dev/null \
-    || true \
-    && rm -rf /tmp/amass*
+# Amass — copy from official image
+COPY --from=caffix/amass:latest /bin/amass /usr/local/bin/amass
 
 # Feroxbuster
 RUN curl -sL "https://github.com/epi052/feroxbuster/releases/latest/download/feroxbuster_amd64.deb.zip" -o /tmp/ferox.zip \
